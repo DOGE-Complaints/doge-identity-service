@@ -1,0 +1,22 @@
+Metadata-Version: 2.4
+Name: doge-identity-service
+Version: 0.1.0
+Summary: DOGEstonia Identity and Authorization Service
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: fastapi>=0.115.0
+Requires-Dist: uvicorn>=0.30.0
+Requires-Dist: psycopg[binary]>=3.2.0
+Requires-Dist: httpx>=0.27.0
+Requires-Dist: joserfc>=1.0.0
+Requires-Dist: cryptography>=42.0.0
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.24.0; extra == "dev"
+Requires-Dist: httpx>=0.27.0; extra == "dev"
+Dynamic: license-file
+
+# doge-identity-service
+
+Scaffold for DOGEstonia Identity and Authorization Service.
