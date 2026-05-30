@@ -93,18 +93,20 @@ def test_cors_disallowed_origin_not_reflected(test_client: TestClient) -> None:
     assert response.headers.get("access-control-allow-origin") != "http://evil.com"
 
 
-def test_ready_supabase_backend_reports_degraded() -> None:
+def test_ready_supabase_backend_reports_degraded(monkeypatch: pytest.MonkeyPatch) -> None:
     _clear_api_dependencies_cache()
-    config = provide_app_config(
-        {
-            "APP_PROFILE": "demo",
-            "API_BASE_URL": "http://localhost:8100",
-            "DB_BACKEND": "supabase",
-            "EID_PROVIDER": "mock",
-            "SUPABASE_URL": "https://example.supabase.co",
-            "SUPABASE_SERVICE_ROLE": "service-role-key",
-        }
-    )
+    supabase_env = {
+        "APP_PROFILE": "demo",
+        "API_BASE_URL": "http://localhost:8100",
+        "DB_BACKEND": "supabase",
+        "EID_PROVIDER": "mock",
+        "SUPABASE_URL": "https://example.supabase.co",
+        "SUPABASE_SERVICE_ROLE": "service-role-key",
+        "CORS_ALLOWED_ORIGINS": "http://localhost:3000",
+    }
+    for key, value in supabase_env.items():
+        monkeypatch.setenv(key, value)
+    config = provide_app_config()
     app = create_app(config)
     with TestClient(app, raise_server_exceptions=False) as client:
         response = client.get("/ready")

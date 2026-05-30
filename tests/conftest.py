@@ -18,9 +18,11 @@ _TEST_ENV = {
 
 
 @pytest.fixture
-def test_client() -> TestClient:
+def test_client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
     _clear_api_dependencies_cache()
-    config = provide_app_config(_TEST_ENV)
+    for key, value in _TEST_ENV.items():
+        monkeypatch.setenv(key, value)
+    config = provide_app_config()
     app = create_app(config)
     with TestClient(app) as client:
         yield client

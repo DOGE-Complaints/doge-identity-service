@@ -37,18 +37,16 @@ def test_stub_validate_bearer_returns_user_claims() -> None:
     )
 
 
-def test_get_current_user_uses_deps_bearer_auth() -> None:
+def test_get_current_user_uses_deps_bearer_auth(monkeypatch: pytest.MonkeyPatch) -> None:
     _clear_api_dependencies_cache()
-    create_app(
-        provide_app_config(
-            {
-                "APP_PROFILE": "demo",
-                "API_BASE_URL": "http://localhost:8100",
-                "DB_BACKEND": "in_memory",
-                "EID_PROVIDER": "mock",
-            }
-        )
-    )
+    for key, value in {
+        "APP_PROFILE": "demo",
+        "API_BASE_URL": "http://localhost:8100",
+        "DB_BACKEND": "in_memory",
+        "EID_PROVIDER": "mock",
+    }.items():
+        monkeypatch.setenv(key, value)
+    create_app(provide_app_config())
     scope = {
         "type": "http",
         "headers": [(b"authorization", b"Bearer xyz")],
@@ -60,18 +58,16 @@ def test_get_current_user_uses_deps_bearer_auth() -> None:
     assert user.supabase_user_id == STUB_SUPABASE_USER_ID
 
 
-def test_get_current_user_without_auth_raises() -> None:
+def test_get_current_user_without_auth_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     _clear_api_dependencies_cache()
-    create_app(
-        provide_app_config(
-            {
-                "APP_PROFILE": "demo",
-                "API_BASE_URL": "http://localhost:8100",
-                "DB_BACKEND": "in_memory",
-                "EID_PROVIDER": "mock",
-            }
-        )
-    )
+    for key, value in {
+        "APP_PROFILE": "demo",
+        "API_BASE_URL": "http://localhost:8100",
+        "DB_BACKEND": "in_memory",
+        "EID_PROVIDER": "mock",
+    }.items():
+        monkeypatch.setenv(key, value)
+    create_app(provide_app_config())
     scope = {"type": "http", "headers": [], "method": "GET", "path": "/me"}
     request = Request(scope)
     with pytest.raises(UnauthorizedError):
