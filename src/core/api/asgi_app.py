@@ -22,8 +22,6 @@ from core.api.security import UnauthorizedError, UserClaims, get_current_user
 from core.config import AppConfig, ConfigError, provide_app_config
 from core.logging_setup import configure_logging, log_runtime_exception
 
-_config_for_dependencies: AppConfig | None = None
-
 PROTECTED_OPTIONS_PATHS: tuple[str, ...] = (
     "/me",
     "/auth/eid/start",
@@ -47,8 +45,7 @@ def _json_envelope(body: dict, status_code: int) -> JSONResponse:
 
 @lru_cache(maxsize=1)
 def _cached_dependencies() -> ApiDependencies:
-    config = _config_for_dependencies or provide_app_config()
-    return build_api_dependencies(config)
+    return build_api_dependencies()
 
 
 def get_api_dependencies() -> ApiDependencies:
@@ -60,9 +57,14 @@ def _clear_api_dependencies_cache() -> None:
 
 
 def create_app(config: AppConfig) -> FastAPI:
-    global _config_for_dependencies
+    """Build FastAPI app; CORS uses ``config``, DI reads env via ``provide_app_config()``.
+
+    NOTE: ``config`` is used only for ``CORSMiddleware`` ``allow_origins``.
+    The DI container loads its own config through ``build_api_dependencies()``
+    -> ``provide_app_config()`` from ``os.environ``. Mirror env in tests with
+    ``monkeypatch.setenv`` (see ``tests/conftest.py``).
+    """
     _clear_api_dependencies_cache()
-    _config_for_dependencies = config
 
     app = FastAPI(
         title="doge-identity-service",
