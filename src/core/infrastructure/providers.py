@@ -1,0 +1,98 @@
+from __future__ import annotations
+
+import logging
+
+from core.api.security import SupabaseJwtBearerTokenAuth
+from core.application.factory import ServiceFactory
+from core.auth.supabase_validator import SupabaseJwtValidatorImpl
+from core.config.providers import provide_app_config
+from core.config.schema import AppConfig
+from core.infrastructure.repositories import (
+    InMemoryEIDAuditLogRepository,
+    InMemoryHealthRepository,
+    InMemoryOAuthClientStore,
+    InMemoryOAuthTokenService,
+    InMemoryProfileRepository,
+    InMemoryStoryDraftRepository,
+    InMemoryVerificationSessionStore,
+)
+from core.infrastructure.service_factory import DefaultServiceFactory
+from core.providers.mock.mock_provider import MockEIDProvider
+from core.providers.registry import EIDProviderRegistry
+
+logger = logging.getLogger(__name__)
+
+__all__ = ["provide_service_factory"]
+
+
+def _build_in_memory_repositories(
+    config: AppConfig,
+) -> tuple[
+    InMemoryHealthRepository,
+    InMemoryProfileRepository,
+    InMemoryVerificationSessionStore,
+    InMemoryEIDAuditLogRepository,
+    InMemoryOAuthClientStore,
+    InMemoryStoryDraftRepository,
+]:
+    return (
+        InMemoryHealthRepository(),
+        InMemoryProfileRepository(),
+        InMemoryVerificationSessionStore(),
+        InMemoryEIDAuditLogRepository(),
+        InMemoryOAuthClientStore.from_config(config),
+        InMemoryStoryDraftRepository(),
+    )
+
+
+def provide_service_factory(config: AppConfig | None = None) -> ServiceFactory:
+    resolved_config = config or provide_app_config()
+
+    if resolved_config.db_backend == "in_memory":
+        (
+            health_repository,
+            profile_repository,
+            verification_session_store,
+            eid_audit_log_repository,
+            oauth_client_store,
+            story_draft_repository,
+        ) = _build_in_memory_repositories(resolved_config)
+    elif resolved_config.db_backend == "supabase":
+        logger.warning(
+            "DB_BACKEND=supabase but Supabase repositories are not implemented "
+            "(EPIC-IDS-05); falling back to InMemory repositories"
+        )
+        (
+            health_repository,
+            profile_repository,
+            verification_session_store,
+            eid_audit_log_repository,
+            oauth_client_store,
+            story_draft_repository,
+        ) = _build_in_memory_repositories(resolved_config)
+    else:
+        raise ValueError(f"Unsupported db_backend: {resolved_config.db_backend}")
+
+    oauth_token_service = InMemoryOAuthTokenService(config=resolved_config)
+
+    supabase_jwt_validator = SupabaseJwtValidatorImpl(
+        jwt_secret=resolved_config.supabase_jwt_secret or "test-secret-for-demo",
+        supabase_url=resolved_config.supabase_url or "https://demo.local",
+    )
+    bearer_token_auth = SupabaseJwtBearerTokenAuth(validator=supabase_jwt_validator)
+
+    registry = EIDProviderRegistry({"mock": MockEIDProvider(verification_session_store)})
+
+    return DefaultServiceFactory(
+        config=resolved_config,
+        health_repository=health_repository,
+        profile_repository=profile_repository,
+        verification_session_store=verification_session_store,
+        eid_audit_log_repository=eid_audit_log_repository,
+        oauth_client_store=oauth_client_store,
+        oauth_token_service=oauth_token_service,
+        story_draft_repository=story_draft_repository,
+        supabase_jwt_validator=supabase_jwt_validator,
+        bearer_token_auth=bearer_token_auth,
+        eid_provider_registry=registry,
+    )
