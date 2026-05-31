@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import time
+
 import pytest
+from joserfc import jwt
+from joserfc.jwk import OctKey
 from starlette.requests import Request
 
 from core.api.asgi_app import _clear_api_dependencies_cache, create_app, get_api_dependencies
@@ -13,6 +17,22 @@ from core.api.security import (
     UserClaims,
     get_current_user,
 )
+
+_DEMO_USER_ID = "11111111-1111-1111-1111-111111111111"
+
+
+def _make_demo_bearer_token() -> str:
+    now = int(time.time())
+    claims = {
+        "sub": _DEMO_USER_ID,
+        "role": "authenticated",
+        "aud": "authenticated",
+        "iss": "https://demo.local/auth/v1",
+        "exp": now + 3600,
+        "iat": now,
+    }
+    key = OctKey.import_key("test-secret-for-demo")
+    return jwt.encode({"alg": "HS256"}, claims, key)
 
 
 def test_unauthorized_error_code() -> None:
@@ -47,15 +67,16 @@ def test_get_current_user_uses_deps_bearer_auth(monkeypatch: pytest.MonkeyPatch)
     }.items():
         monkeypatch.setenv(key, value)
     create_app(provide_app_config())
+    token = _make_demo_bearer_token()
     scope = {
         "type": "http",
-        "headers": [(b"authorization", b"Bearer xyz")],
+        "headers": [(b"authorization", f"Bearer {token}".encode())],
         "method": "GET",
         "path": "/me",
     }
     request = Request(scope)
     user = get_current_user(request, get_api_dependencies())
-    assert user.supabase_user_id == STUB_SUPABASE_USER_ID
+    assert user.supabase_user_id == _DEMO_USER_ID
 
 
 def test_get_current_user_without_auth_raises(monkeypatch: pytest.MonkeyPatch) -> None:

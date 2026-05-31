@@ -84,7 +84,8 @@ def test_build_api_dependencies_zero_arg(monkeypatch: pytest.MonkeyPatch) -> Non
     deps = build_api_dependencies()
     assert deps.db_backend == "in_memory"
     assert deps.db_ready is True
-    assert deps.profile_repository is None
+    assert deps.profile_repository is not None
+    assert type(deps.bearer_token_auth).__name__ == "SupabaseJwtBearerTokenAuth"
 
 
 def test_get_api_dependencies_is_singleton(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -148,12 +149,12 @@ def test_epic_ids_04_optional_fields_match_factory_getters() -> None:
         assert field_name in ApiDependencies.__dataclass_fields__
 
 
-def test_build_api_dependencies_has_epic_hook_comments() -> None:
+def test_build_api_dependencies_uses_provide_service_factory() -> None:
     from pathlib import Path
 
     source = Path(__file__).resolve().parents[1] / "src" / "core" / "api" / "dependencies.py"
     text = source.read_text(encoding="utf-8")
-    assert "# TODO EPIC-IDS-04: replace with provide_service_factory(...)" in text
+    assert "from core.infrastructure.providers import provide_service_factory" in text
+    assert "service_factory = provide_service_factory(config)" in text
     assert "# TODO EPIC-IDS-05: run 5-level Supabase healthchecks" in text
-    assert "provide_service_factory" in text
     assert "get_story_draft_repository" in text
