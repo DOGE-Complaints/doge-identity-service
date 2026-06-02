@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import time
 
 import pytest
@@ -97,17 +96,12 @@ def test_provide_service_factory_in_memory_returns_default_factory(
     assert isinstance(factory.get_story_draft_repository(), InMemoryStoryDraftRepository)
 
 
-def test_provide_service_factory_supabase_falls_back_with_warning(
-    monkeypatch: pytest.MonkeyPatch,
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    for key, value in _SUPABASE_ENV.items():
-        monkeypatch.setenv(key, value)
-    config = provide_app_config()
-    with caplog.at_level(logging.WARNING):
-        factory = provide_service_factory(config)
-    assert isinstance(factory.get_profile_repository(), InMemoryProfileRepository)
-    assert any("EPIC-IDS-05" in record.message for record in caplog.records)
+def test_provide_service_factory_supabase_missing_creds_raises_value_error() -> None:
+    """EPIC-IDS-05 replaces EPIC-IDS-04 InMemory fallback (see EPIC-IDS-06 L316)."""
+    config = provide_app_config(_SUPABASE_ENV)
+    broken = AppConfig(**{**config.__dict__, "supabase_url": ""})
+    with pytest.raises(ValueError, match="SUPABASE_URL and SUPABASE_SERVICE_ROLE"):
+        provide_service_factory(broken)
 
 
 def test_provide_service_factory_unsupported_backend_raises() -> None:

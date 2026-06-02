@@ -156,5 +156,7 @@ def test_build_api_dependencies_uses_provide_service_factory() -> None:
     text = source.read_text(encoding="utf-8")
     assert "from core.infrastructure.providers import provide_service_factory" in text
     assert "service_factory = provide_service_factory(config)" in text
-    assert "# TODO EPIC-IDS-05: run 5-level Supabase healthchecks" in text
+    assert "connectivity" in text
+    assert "policy_probe" in text
+    assert "# TODO EPIC-IDS-05: run 5-level Supabase healthchecks" not in text
     assert "get_story_draft_repository" in text

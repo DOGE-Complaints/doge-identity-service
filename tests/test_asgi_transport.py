@@ -135,5 +135,39 @@ def test_ready_supabase_backend_reports_degraded(monkeypatch: pytest.MonkeyPatch
         response = client.get("/ready")
     assert response.status_code == 503
     data = response.json()["data"]
+    assert data["status"] == "degraded"
     assert data["db_backend"] == "supabase"
     assert data["db_ready"] is False
+    assert set(data["db_checks"]) == {
+        "connectivity",
+        "schema",
+        "columns",
+        "provider_state",
+        "policy_probe",
+    }
+    assert all(value is False for value in data["db_checks"].values())
+
+
+def test_startup_log_emits_db_checks(monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
+    _clear_api_dependencies_cache()
+    supabase_env = {
+        "APP_PROFILE": "demo",
+        "API_BASE_URL": "http://localhost:8100",
+        "DB_BACKEND": "supabase",
+        "EID_PROVIDER": "mock",
+        "SUPABASE_URL": "https://example.supabase.co",
+        "SUPABASE_SERVICE_ROLE": "service-role-key",
+        "CORS_ALLOWED_ORIGINS": "http://localhost:3000",
+        "LOG_LEVEL": "INFO",
+    }
+    for key, value in supabase_env.items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.setattr("core.api.asgi_app.configure_logging", lambda *args, **kwargs: None)
+    app = create_app(provide_app_config())
+    with caplog.at_level("INFO", logger="core.api.asgi_app"):
+        with TestClient(app) as client:
+            client.get("/health")
+    assert any(
+        "startup.persistence_backend" in record.message and "db_checks=" in record.message
+        for record in caplog.records
+    )
