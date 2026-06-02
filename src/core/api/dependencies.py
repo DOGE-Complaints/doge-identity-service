@@ -58,14 +58,33 @@ def build_api_dependencies() -> ApiDependencies:
     """
     Build the DI container. Called once per process via lru_cache (in asgi_app).
     """
+    from core.infrastructure.db_supabase import SupabaseDatabase
     from core.infrastructure.providers import provide_service_factory
 
     config = provide_app_config()
     db_backend = config.db_backend
-    # TODO EPIC-IDS-05: run 5-level Supabase healthchecks
     db_checks: dict[str, bool] = {}
-    # degraded ready for supabase until EPIC-IDS-05 (epic §9)
-    db_ready = db_backend == "in_memory"
+    if db_backend == "in_memory":
+        db_ready = True
+    elif db_backend == "supabase":
+        # Startup probe uses a separate SupabaseDatabase instance from
+        # provide_service_factory() (providers.py supabase_db). Unifying them is
+        # out of scope here; see EPIC-IDS-06 / re-audit S3-1.
+        health_db = SupabaseDatabase.from_http(
+            supabase_url=config.supabase_url,
+            service_role_key=config.supabase_service_role,
+            timeout_s=float(config.request_timeout_s or 15),
+        )
+        db_checks = {
+            "connectivity": health_db.healthcheck(),
+            "schema": health_db.required_tables_ready(),
+            "columns": health_db.required_columns_ready(),
+            "provider_state": health_db.provider_state_ready(),
+            "policy_probe": health_db.service_role_policy_probe(),
+        }
+        db_ready = all(db_checks.values())
+    else:
+        db_ready = False
 
     service_factory = provide_service_factory(config)
     return ApiDependencies(

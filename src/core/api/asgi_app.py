@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from contextlib import asynccontextmanager
 from functools import lru_cache
 from typing import Any
@@ -89,6 +90,12 @@ async def _lifespan(app: FastAPI):
     configure_logging(
         deps.config.log_level,
         log_format=deps.config.log_format,
+    )
+    logging.getLogger(__name__).info(
+        "startup.persistence_backend backend=%s db_ready=%s db_checks=%s",
+        deps.db_backend,
+        deps.db_ready,
+        dict(deps.db_checks),
     )
     yield
 

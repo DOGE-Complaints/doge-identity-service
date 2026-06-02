@@ -3,10 +3,18 @@ from __future__ import annotations
 import logging
 
 from core.api.security import SupabaseJwtBearerTokenAuth
-from core.application.factory import ServiceFactory
 from core.auth.supabase_validator import SupabaseJwtValidatorImpl
 from core.config.providers import provide_app_config
 from core.config.schema import AppConfig
+from core.infrastructure.db_supabase import (
+    SupabaseDatabase,
+    SupabaseEIDAuditLogRepository,
+    SupabaseHealthRepository,
+    SupabaseOAuthClientStore,
+    SupabaseProfileRepository,
+    SupabaseStoryDraftRepository,
+    SupabaseVerificationSessionStore,
+)
 from core.infrastructure.repositories import (
     InMemoryEIDAuditLogRepository,
     InMemoryHealthRepository,
@@ -45,7 +53,7 @@ def _build_in_memory_repositories(
     )
 
 
-def provide_service_factory(config: AppConfig | None = None) -> ServiceFactory:
+def provide_service_factory(config: AppConfig | None = None) -> DefaultServiceFactory:
     resolved_config = config or provide_app_config()
 
     if resolved_config.db_backend == "in_memory":
@@ -58,18 +66,24 @@ def provide_service_factory(config: AppConfig | None = None) -> ServiceFactory:
             story_draft_repository,
         ) = _build_in_memory_repositories(resolved_config)
     elif resolved_config.db_backend == "supabase":
-        logger.warning(
-            "DB_BACKEND=supabase but Supabase repositories are not implemented "
-            "(EPIC-IDS-05); falling back to InMemory repositories"
+        if not resolved_config.supabase_url or not resolved_config.supabase_service_role:
+            raise ValueError(
+                "DB_BACKEND=supabase requires SUPABASE_URL and SUPABASE_SERVICE_ROLE"
+            )
+        supabase_db = SupabaseDatabase.from_http(
+            supabase_url=resolved_config.supabase_url,
+            service_role_key=resolved_config.supabase_service_role,
+            timeout_s=float(resolved_config.request_timeout_s or 15),
         )
-        (
-            health_repository,
-            profile_repository,
-            verification_session_store,
-            eid_audit_log_repository,
-            oauth_client_store,
-            story_draft_repository,
-        ) = _build_in_memory_repositories(resolved_config)
+        health_repository = SupabaseHealthRepository(supabase_db)
+        profile_repository = SupabaseProfileRepository(supabase_db)
+        verification_session_store = SupabaseVerificationSessionStore(supabase_db)
+        eid_audit_log_repository = SupabaseEIDAuditLogRepository(supabase_db)
+        oauth_client_store = SupabaseOAuthClientStore(
+            supabase_db,
+            fallback_config=resolved_config,
+        )
+        story_draft_repository = SupabaseStoryDraftRepository(supabase_db)
     else:
         raise ValueError(f"Unsupported db_backend: {resolved_config.db_backend}")
 

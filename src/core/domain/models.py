@@ -8,6 +8,10 @@ class JwtValidationError(Exception):
     """Raised when Supabase JWT validation fails (Story 5 maps to UnauthorizedError)."""
 
 
+class ProfileConflictError(Exception):
+    """Raised when verified_person_hash unique constraint conflicts (req-08 partial index)."""
+
+
 @dataclass(frozen=True)
 class UserClaims:
     supabase_user_id: str

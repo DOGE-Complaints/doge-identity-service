@@ -20,7 +20,7 @@ def handle_readiness(deps: ApiDependencies, *, trace_id: str) -> tuple[dict, int
         "status": "ready" if ready else "degraded",
         "db_backend": deps.db_backend,
         "db_ready": ready,
-        "checks": deps.db_checks,
+        "db_checks": deps.db_checks,
         "trace_id": trace_id,
     }
     return build_success_envelope(payload), 200 if ready else 503
