@@ -343,5 +343,13 @@ def _bearer_route(
     return _json_envelope(body, status)
 
 
-_config = provide_app_config()
-app = create_app(_config)
+@lru_cache(maxsize=1)
+def _default_production_app() -> FastAPI:
+    """Uvicorn entry (`core.api.asgi_app:app`); evaluated on first access, not at import."""
+    return create_app(provide_app_config())
+
+
+def __getattr__(name: str) -> FastAPI:
+    if name == "app":
+        return _default_production_app()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
