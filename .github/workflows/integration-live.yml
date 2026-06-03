@@ -1,0 +1,53 @@
+# Live Supabase integration (EPIC-IDS-06 Story 3 + 4).
+#
+# Required GitHub repository secrets:
+#   SUPABASE_TEST_URL              — PostgREST base URL (dedicated test project)
+#   SUPABASE_TEST_SERVICE_ROLE_KEY — service_role key for test project
+#   SUPABASE_TEST_JWT_SECRET       — JWT secret (optional for current live_integration suite)
+#
+# Operator: docs/runbook/supabase-project-setup.md § CI
+
+name: Identity integration-live
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  pytest-live-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Materialize Supabase test .env for live_integration
+        env:
+          SUPABASE_TEST_URL: ${{ secrets.SUPABASE_TEST_URL }}
+          SUPABASE_TEST_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_TEST_SERVICE_ROLE_KEY }}
+        run: |
+          cat > .env <<EOF
+          SUPABASE_TEST_URL=${SUPABASE_TEST_URL}
+          SUPABASE_TEST_SERVICE_ROLE=${SUPABASE_TEST_SERVICE_ROLE_KEY}
+          EOF
+
+      - name: Pytest live_integration
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_TEST_URL }}
+          SUPABASE_SERVICE_ROLE: ${{ secrets.SUPABASE_TEST_SERVICE_ROLE_KEY }}
+          SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_TEST_JWT_SECRET }}
+          DB_BACKEND: supabase
+          APP_PROFILE: demo
+          API_BASE_URL: https://test.local
+          EID_PROVIDER: mock
+          DOGESTONIA_EID_SECRET: ci-test-hash-secret
+        run: python -m pytest -q -m live_integration -v
