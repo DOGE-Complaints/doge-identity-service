@@ -55,7 +55,6 @@ def test_config_fail_fast_on_pilot_empty_eid_secret(monkeypatch: pytest.MonkeyPa
     monkeypatch.setenv("SUPABASE_JWT_SECRET", "jwt")
     monkeypatch.setenv("DATABASE_URL", "postgresql://localhost/db")
     monkeypatch.setenv("DOGESTONIA_EID_SECRET", "")
-    monkeypatch.setenv("CODE_VERIFIER_ENCRYPTION_KEY", "enc-key")
     monkeypatch.setenv("OAUTH_ACCESS_TOKEN_SECRET", "oauth")
     monkeypatch.setenv("GPT_OAUTH_CLIENT_SECRET", "gpt")
     with pytest.raises(ConfigError):

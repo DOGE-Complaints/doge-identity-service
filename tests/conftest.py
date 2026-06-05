@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import base64
 import os
 
 import pytest
@@ -51,11 +50,6 @@ def _block_dotenv_leakage(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("EID_PROVIDER", "mock")
     monkeypatch.setenv("DOGESTONIA_EID_SECRET", "test-eid-hash-secret-not-real")
     monkeypatch.setenv("NODE_ID", "test-node")
-    # AES key (req-07) — 32 bytes base64
-    monkeypatch.setenv(
-        "CODE_VERIFIER_ENCRYPTION_KEY",
-        base64.b64encode(b"\x00" * 32).decode(),
-    )
     # OAuth server
     monkeypatch.setenv("OAUTH_ACCESS_TOKEN_SECRET", "test-oauth-secret-not-real")
     monkeypatch.setenv("OAUTH_ACCESS_TOKEN_TTL_S", "3600")

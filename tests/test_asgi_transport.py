@@ -12,6 +12,11 @@ from core.config.providers import provide_app_config
 
 _DEMO_JWT_SECRET = "test-secret-for-demo"
 _DEMO_SUPABASE_URL = "https://demo.local"
+_TEST_CLIENT_ENV = {
+    "CORS_ALLOWED_ORIGINS": "http://localhost:3000,http://127.0.0.1:3000",
+    "REQUEST_TIMEOUT_S": "15",
+    "OIDC_REQUEST_TIMEOUT_S": "10",
+}
 
 
 def _make_demo_bearer_token() -> str:
@@ -67,6 +72,44 @@ def test_me_with_bearer_returns_200_not_verified(test_client: TestClient) -> Non
     data = response.json()["data"]
     assert data["supabase_user_id"] == "11111111-1111-1111-1111-111111111111"
     assert data["eid_verified"] is False
+
+
+def test_auth_eid_start_rejects_foreign_return_url(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _clear_api_dependencies_cache()
+    for key, value in _TEST_CLIENT_ENV.items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.setenv("ALLOWED_RETURN_URLS", "https://dogestonia.ee/verify")
+    app = create_app(provide_app_config())
+    token = _make_demo_bearer_token()
+    with TestClient(app) as client:
+        response = client.post(
+            "/auth/eid/start",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"return_url": "https://evil.com/phish"},
+        )
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "invalid_return_url"
+
+
+def test_auth_eid_start_allows_listed_return_url_before_stub(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _clear_api_dependencies_cache()
+    for key, value in _TEST_CLIENT_ENV.items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.setenv("ALLOWED_RETURN_URLS", "https://dogestonia.ee/verify")
+    app = create_app(provide_app_config())
+    token = _make_demo_bearer_token()
+    with TestClient(app) as client:
+        response = client.post(
+            "/auth/eid/start",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"return_url": "https://dogestonia.ee/verify"},
+        )
+    assert response.status_code == 501
+    assert response.json()["error"]["code"] == "NOT_IMPLEMENTED"
 
 
 def test_options_me_returns_200(test_client: TestClient) -> None:

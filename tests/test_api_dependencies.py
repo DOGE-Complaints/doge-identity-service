@@ -14,8 +14,9 @@ from core.api.dependencies import (
     HandlerDependencies,
     build_api_dependencies,
 )
-from core.api.security import StubBearerTokenAuth
+from core.api.security import SupabaseJwtBearerTokenAuth
 from core.config.providers import provide_app_config
+from core.domain.models import UserClaims
 
 
 IDENTITY_OPTIONAL_FIELDS = EPIC_IDS_04_OPTIONAL_FIELDS
@@ -36,6 +37,16 @@ def _apply_env(monkeypatch: pytest.MonkeyPatch, env: dict[str, str]) -> None:
         monkeypatch.setenv(key, value)
 
 
+class _StubBearerValidator:
+    def validate(self, token: str) -> UserClaims:
+        del token
+        return UserClaims(supabase_user_id="stub-user", email=None, role="authenticated")
+
+
+def _stub_bearer_auth() -> SupabaseJwtBearerTokenAuth:
+    return SupabaseJwtBearerTokenAuth(validator=_StubBearerValidator())
+
+
 def test_handler_dependencies_is_alias() -> None:
     assert HandlerDependencies is ApiDependencies
 
@@ -50,7 +61,7 @@ def test_api_dependencies_identity_slots_default_none() -> None:
     config = provide_app_config(_BASE_ENV)
     deps = ApiDependencies(
         config=config,
-        bearer_token_auth=StubBearerTokenAuth(),
+        bearer_token_auth=_stub_bearer_auth(),
         db_backend="in_memory",
         db_ready=True,
     )
@@ -62,7 +73,7 @@ def test_api_dependencies_is_frozen() -> None:
     config = provide_app_config(_BASE_ENV)
     deps = ApiDependencies(
         config=config,
-        bearer_token_auth=StubBearerTokenAuth(),
+        bearer_token_auth=_stub_bearer_auth(),
         db_backend="in_memory",
         db_ready=True,
     )

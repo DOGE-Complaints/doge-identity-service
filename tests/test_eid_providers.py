@@ -30,7 +30,6 @@ def _demo_config(**overrides: object) -> AppConfig:
         "authentigate_redirect_uri": "",
         "authentigate_scopes": "",
         "eid_secret": "",
-        "code_verifier_encryption_key": "",
         "node_id": "test-node",
         "oauth_access_token_secret": "demo-key",
         "oauth_access_token_ttl_s": 3600,

@@ -7,7 +7,6 @@ from core.api.envelope import (
     build_success_envelope,
     ensure_trace_id,
 )
-from core.api.idempotency import resolve_idempotency_key
 
 
 def test_build_success_envelope_shape() -> None:
@@ -40,16 +39,3 @@ def test_ensure_trace_id_generates_uuid4_when_missing() -> None:
 
 def test_ensure_trace_id_preserves_incoming() -> None:
     assert ensure_trace_id("  my-trace  ") == "my-trace"
-
-
-def test_resolve_idempotency_key_lowercase_header() -> None:
-    assert resolve_idempotency_key({"idempotency-key": "K"}) == "K"
-
-
-def test_resolve_idempotency_key_case_insensitive() -> None:
-    assert resolve_idempotency_key({"Idempotency-Key": "K2"}) == "K2"
-    assert resolve_idempotency_key({"IDEMPOTENCY-KEY": "K3"}) == "K3"
-
-
-def test_resolve_idempotency_key_missing() -> None:
-    assert resolve_idempotency_key({}) is None

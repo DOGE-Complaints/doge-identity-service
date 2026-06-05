@@ -108,7 +108,6 @@ def test_pilot_requires_api_base_url() -> None:
                 "SUPABASE_JWT_SECRET": "jwt",
                 "DATABASE_URL": "postgresql://postgres:pass@example:5432/postgres",
                 "DOGESTONIA_EID_SECRET": "eid-secret",
-                "CODE_VERIFIER_ENCRYPTION_KEY": "enc",
                 "OAUTH_ACCESS_TOKEN_SECRET": "oauth",
                 "GPT_OAUTH_CLIENT_SECRET": "gpt-secret",
             }
@@ -128,7 +127,6 @@ def test_pilot_requires_oauth_access_token_secret_explicitly() -> None:
                 "SUPABASE_JWT_SECRET": "jwt",
                 "DATABASE_URL": "postgresql://postgres:pass@example:5432/postgres",
                 "DOGESTONIA_EID_SECRET": "eid-secret",
-                "CODE_VERIFIER_ENCRYPTION_KEY": "enc",
                 "GPT_OAUTH_CLIENT_SECRET": "gpt-secret",
             }
         )
@@ -147,7 +145,6 @@ def test_pilot_empty_eid_secret_rejected() -> None:
                 "SUPABASE_JWT_SECRET": "jwt",
                 "DATABASE_URL": "postgresql://postgres:pass@example:5432/postgres",
                 "DOGESTONIA_EID_SECRET": "",
-                "CODE_VERIFIER_ENCRYPTION_KEY": "enc",
                 "OAUTH_ACCESS_TOKEN_SECRET": "oauth",
                 "GPT_OAUTH_CLIENT_SECRET": "gpt-secret",
             }

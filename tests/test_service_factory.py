@@ -4,7 +4,7 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from core.api.security import StubBearerTokenAuth
+from core.api.security import SupabaseJwtBearerTokenAuth
 from core.application.factory import ServiceFactory
 from core.config.schema import AppConfig, DeploymentProfile
 from core.domain.models import UserClaims
@@ -45,7 +45,6 @@ def _demo_config(**overrides: object) -> AppConfig:
         "authentigate_redirect_uri": "",
         "authentigate_scopes": "",
         "eid_secret": "",
-        "code_verifier_encryption_key": "",
         "node_id": "test-node",
         "oauth_access_token_secret": "demo-key",
         "oauth_access_token_ttl_s": 3600,
@@ -82,7 +81,7 @@ def _build_factory(config: AppConfig | None = None) -> DefaultServiceFactory:
         oauth_client_store=InMemoryOAuthClientStore.from_config(resolved),
         oauth_token_service=InMemoryOAuthTokenService(config=resolved),
         supabase_jwt_validator=_StubSupabaseJwtValidator(),
-        bearer_token_auth=StubBearerTokenAuth(),
+        bearer_token_auth=SupabaseJwtBearerTokenAuth(validator=_StubSupabaseJwtValidator()),
         eid_provider_registry=EIDProviderRegistry({}),
     )
 

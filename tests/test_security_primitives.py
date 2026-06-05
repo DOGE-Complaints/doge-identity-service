@@ -8,17 +8,23 @@ from joserfc.jwk import OctKey
 from starlette.requests import Request
 
 from core.api.asgi_app import _clear_api_dependencies_cache, create_app, get_api_dependencies
-from core.config.providers import provide_app_config
 from core.api.security import (
-    STUB_SUPABASE_USER_ID,
-    BearerTokenAuth,
-    StubBearerTokenAuth,
+    SupabaseJwtBearerTokenAuth,
     UnauthorizedError,
     UserClaims,
     get_current_user,
 )
+from core.config.providers import provide_app_config
+from core.domain.contracts import BearerTokenAuth
+from core.domain.models import JwtValidationError
 
 _DEMO_USER_ID = "11111111-1111-1111-1111-111111111111"
+
+
+class _StubSupabaseJwtValidator:
+    def validate(self, token: str) -> UserClaims:
+        del token
+        return UserClaims(supabase_user_id=_DEMO_USER_ID, email=None, role="authenticated")
 
 
 def _make_demo_bearer_token() -> str:
@@ -40,21 +46,31 @@ def test_unauthorized_error_code() -> None:
 
 
 def test_bearer_token_auth_is_protocol() -> None:
-    assert isinstance(StubBearerTokenAuth(), BearerTokenAuth)
+    auth = SupabaseJwtBearerTokenAuth(validator=_StubSupabaseJwtValidator())
+    assert isinstance(auth, BearerTokenAuth)
 
 
-def test_stub_validate_empty_headers_raises() -> None:
+def test_supabase_jwt_validate_empty_headers_raises() -> None:
+    auth = SupabaseJwtBearerTokenAuth(validator=_StubSupabaseJwtValidator())
     with pytest.raises(UnauthorizedError):
-        StubBearerTokenAuth().validate({})
+        auth.validate({})
 
 
-def test_stub_validate_bearer_returns_user_claims() -> None:
-    claims = StubBearerTokenAuth().validate({"authorization": "Bearer xyz"})
-    assert claims == UserClaims(
-        supabase_user_id=STUB_SUPABASE_USER_ID,
-        email=None,
-        role="authenticated",
-    )
+def test_supabase_jwt_validate_bearer_returns_user_claims() -> None:
+    auth = SupabaseJwtBearerTokenAuth(validator=_StubSupabaseJwtValidator())
+    claims = auth.validate({"authorization": "Bearer xyz"})
+    assert claims.supabase_user_id == _DEMO_USER_ID
+
+
+def test_supabase_jwt_maps_jwt_validation_error() -> None:
+    class _RejectingValidator:
+        def validate(self, token: str) -> UserClaims:
+            del token
+            raise JwtValidationError("bad token")
+
+    auth = SupabaseJwtBearerTokenAuth(validator=_RejectingValidator())
+    with pytest.raises(UnauthorizedError):
+        auth.validate({"authorization": "Bearer bad"})
 
 
 def test_get_current_user_uses_deps_bearer_auth(monkeypatch: pytest.MonkeyPatch) -> None:
