@@ -36,6 +36,20 @@ def _trace_id_from_request(request: Request) -> str:
     return ensure_trace_id(request.headers.get("x-trace-id"))
 
 
+async def _return_url_from_request(request: Request) -> str | None:
+    content_type = request.headers.get("content-type", "")
+    if not content_type.startswith("application/json"):
+        return None
+    try:
+        payload = await request.json()
+    except Exception:
+        return None
+    if not isinstance(payload, dict):
+        return None
+    value = payload.get("return_url")
+    return value if isinstance(value, str) else None
+
+
 def _json_envelope(body: dict, status_code: int) -> JSONResponse:
     return JSONResponse(content=body, status_code=status_code)
 
@@ -171,8 +185,12 @@ def _register_routes(app: FastAPI) -> None:
     ) -> JSONResponse:
         deps = get_api_dependencies()
         trace_id = _trace_id_from_request(request)
+        return_url = await _return_url_from_request(request)
         body, status = handle_auth_eid_start_stub(
-            deps, current_user=current_user, trace_id=trace_id
+            deps,
+            current_user=current_user,
+            trace_id=trace_id,
+            return_url=return_url,
         )
         return _json_envelope(body, status)
 

@@ -5,10 +5,8 @@ from typing import Mapping
 from fastapi import Depends, Request
 
 from core.api.dependencies import ApiDependencies
-from core.domain.contracts import BearerTokenAuth, SupabaseJwtValidator
+from core.domain.contracts import SupabaseJwtValidator
 from core.domain.models import JwtValidationError, UserClaims
-
-STUB_SUPABASE_USER_ID = "00000000-0000-0000-0000-000000000000"
 
 
 class UnauthorizedError(Exception):
@@ -17,18 +15,6 @@ class UnauthorizedError(Exception):
     def __init__(self, message: str = "Authentication required") -> None:
         self.message = message
         super().__init__(message)
-
-
-class StubBearerTokenAuth:
-    def validate(self, headers: Mapping[str, str]) -> UserClaims:
-        token = _extract_bearer_token(headers)
-        if token is None:
-            raise UnauthorizedError("Bearer token required")
-        return UserClaims(
-            supabase_user_id=STUB_SUPABASE_USER_ID,
-            email=None,
-            role="authenticated",
-        )
 
 
 class SupabaseJwtBearerTokenAuth:

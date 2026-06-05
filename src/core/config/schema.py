@@ -34,7 +34,6 @@ class AppConfig:
     authentigate_redirect_uri: str
     authentigate_scopes: str
     eid_secret: str
-    code_verifier_encryption_key: str
     node_id: str
     oauth_access_token_secret: str
     oauth_access_token_ttl_s: int
@@ -120,7 +119,6 @@ def load_config_from_env(source: Mapping[str, str] | None = None) -> AppConfig:
             ("SUPABASE_JWT_SECRET", supabase_jwt_secret),
             ("DATABASE_URL", database_url),
             ("DOGESTONIA_EID_SECRET", eid_secret),
-            ("CODE_VERIFIER_ENCRYPTION_KEY", _value(env, "CODE_VERIFIER_ENCRYPTION_KEY", "")),
             ("OAUTH_ACCESS_TOKEN_SECRET", _value(env, "OAUTH_ACCESS_TOKEN_SECRET", "")),
             ("GPT_OAUTH_CLIENT_SECRET", _value(env, "GPT_OAUTH_CLIENT_SECRET", "")),
         )
@@ -146,7 +144,6 @@ def load_config_from_env(source: Mapping[str, str] | None = None) -> AppConfig:
         authentigate_redirect_uri=_value(env, "AUTHENTIGATE_REDIRECT_URI", ""),
         authentigate_scopes=_value(env, "AUTHENTIGATE_SCOPES", "openid personal_code personal_code_country"),
         eid_secret=eid_secret,
-        code_verifier_encryption_key=_value(env, "CODE_VERIFIER_ENCRYPTION_KEY", ""),
         node_id=_value(env, "NODE_ID", "tallinn"),
         oauth_access_token_secret=_value(env, "OAUTH_ACCESS_TOKEN_SECRET", ""),
         oauth_access_token_ttl_s=_int(env, "OAUTH_ACCESS_TOKEN_TTL_S", "3600"),

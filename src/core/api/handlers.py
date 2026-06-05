@@ -4,6 +4,11 @@ from typing import TYPE_CHECKING
 
 from core.api.envelope import build_error_envelope, build_success_envelope
 from core.api.me_response import build_me_data
+from core.security.return_url import (
+    InvalidReturnUrlError,
+    parse_allowed_return_urls,
+    validate_return_url,
+)
 
 if TYPE_CHECKING:
     from core.api.dependencies import ApiDependencies
@@ -67,8 +72,19 @@ def handle_auth_eid_start_stub(
     *,
     current_user: UserClaims,
     trace_id: str,
+    return_url: str | None = None,
 ) -> tuple[dict, int]:
-    del deps, current_user
+    del current_user
+    allowed = parse_allowed_return_urls(deps.config.allowed_return_urls)
+    try:
+        validate_return_url(return_url, allowed)
+    except InvalidReturnUrlError as exc:
+        body = build_error_envelope(
+            InvalidReturnUrlError.code,
+            str(exc),
+            trace_id=trace_id,
+        )
+        return body, 400
     return _not_implemented(
         "POST /auth/eid/start implemented in EPIC-IDS-EID",
         trace_id=trace_id,
