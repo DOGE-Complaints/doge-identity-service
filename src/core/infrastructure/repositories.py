@@ -17,7 +17,6 @@ from core.domain.models import (
     OAuthClient,
     OAuthTokenClaims,
     ProfileRecord,
-    StoryDraft,
     VerificationSession,
 )
 from core.security.hashing import hash_secret
@@ -346,19 +345,3 @@ class InMemoryOAuthTokenService:
         return payload
 
 
-class InMemoryStoryDraftRepository:
-    def __init__(self) -> None:
-        self._drafts: dict[str, StoryDraft] = {}
-
-    def create(self, draft: StoryDraft) -> StoryDraft:
-        self._drafts[draft.draft_id] = draft
-        return draft
-
-    def get(self, draft_id: str) -> StoryDraft | None:
-        return self._drafts.get(draft_id)
-
-    def update_status(self, draft_id: str, status: str) -> None:
-        draft = self._drafts.get(draft_id)
-        if draft is None:
-            return
-        self._drafts[draft_id] = dataclasses.replace(draft, status=status)

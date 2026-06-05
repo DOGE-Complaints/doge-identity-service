@@ -11,7 +11,6 @@ if TYPE_CHECKING:
         OAuthClientStore,
         OAuthTokenService,
         ProfileRepository,
-        StoryDraftRepository,
         SupabaseJwtValidator,
         VerificationSessionStore,
     )
@@ -40,5 +39,3 @@ class ServiceFactory(Protocol):
     def get_oauth_client_store(self) -> OAuthClientStore: ...
 
     def get_oauth_token_service(self) -> OAuthTokenService: ...
-
-    def get_story_draft_repository(self) -> StoryDraftRepository: ...

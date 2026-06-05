@@ -10,7 +10,6 @@ from core.domain.contracts import (
     OAuthClientStore,
     OAuthTokenService,
     ProfileRepository,
-    StoryDraftRepository,
     SupabaseJwtValidator,
     VerificationSessionStore,
 )
@@ -26,7 +25,6 @@ class DefaultServiceFactory:
     eid_audit_log_repository: EIDAuditLogRepository
     oauth_client_store: OAuthClientStore
     oauth_token_service: OAuthTokenService
-    story_draft_repository: StoryDraftRepository
     supabase_jwt_validator: SupabaseJwtValidator
     bearer_token_auth: BearerTokenAuth
     eid_provider_registry: EIDProviderRegistry
@@ -57,6 +55,3 @@ class DefaultServiceFactory:
 
     def get_oauth_token_service(self) -> OAuthTokenService:
         return self.oauth_token_service
-
-    def get_story_draft_repository(self) -> StoryDraftRepository:
-        return self.story_draft_repository

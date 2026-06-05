@@ -29,10 +29,6 @@ PROTECTED_OPTIONS_PATHS: tuple[str, ...] = (
     "/oauth/authorize",
     "/oauth/authorize/complete",
     "/oauth/token",
-    "/story-drafts",
-    "/story-drafts/{draft_id}/submit",
-    "/stories",
-    "/gpt/actions/submit-story",
 )
 
 
@@ -253,60 +249,6 @@ def _register_routes(app: FastAPI) -> None:
             path="/oauth/token",
             method="POST",
             next_epic="EPIC-IDS-OAUTH",
-        )
-
-    @app.post("/story-drafts")
-    async def story_drafts_create(
-        request: Request,
-        current_user: UserClaims = Depends(get_current_user),
-    ) -> JSONResponse:
-        return _bearer_route(
-            request,
-            current_user,
-            path="/story-drafts",
-            method="POST",
-            next_epic="EPIC-IDS-STORIES",
-        )
-
-    @app.post("/story-drafts/{draft_id}/submit")
-    async def story_drafts_submit(
-        request: Request,
-        draft_id: str,
-        current_user: UserClaims = Depends(get_current_user),
-    ) -> JSONResponse:
-        del draft_id
-        return _bearer_route(
-            request,
-            current_user,
-            path="/story-drafts/{draft_id}/submit",
-            method="POST",
-            next_epic="EPIC-IDS-STORIES",
-        )
-
-    @app.post("/stories")
-    async def stories_create(
-        request: Request,
-        current_user: UserClaims = Depends(get_current_user),
-    ) -> JSONResponse:
-        return _bearer_route(
-            request,
-            current_user,
-            path="/stories",
-            method="POST",
-            next_epic="EPIC-IDS-STORIES",
-        )
-
-    @app.post("/gpt/actions/submit-story")
-    async def gpt_submit_story(
-        request: Request,
-        current_user: UserClaims = Depends(get_current_user),
-    ) -> JSONResponse:
-        return _bearer_route(
-            request,
-            current_user,
-            path="/gpt/actions/submit-story",
-            method="POST",
-            next_epic="EPIC-IDS-STORIES",
         )
 
     for options_path in PROTECTED_OPTIONS_PATHS:

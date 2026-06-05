@@ -10,7 +10,6 @@ from core.domain.contracts import (
     OAuthClientStore,
     OAuthTokenService,
     ProfileRepository,
-    StoryDraftRepository,
     SupabaseJwtValidator,
     VerificationSessionStore,
 )
@@ -25,7 +24,6 @@ EPIC_IDS_04_OPTIONAL_FIELDS: tuple[str, ...] = (
     "eid_provider_registry",
     "oauth_client_store",
     "oauth_token_service",
-    "story_draft_repository",
 )
 
 
@@ -48,7 +46,6 @@ class ApiDependencies:
     eid_provider_registry: EIDProviderRegistry | None = None
     oauth_client_store: OAuthClientStore | None = None
     oauth_token_service: OAuthTokenService | None = None
-    story_draft_repository: StoryDraftRepository | None = None
 
 
 HandlerDependencies = ApiDependencies
@@ -100,5 +97,4 @@ def build_api_dependencies() -> ApiDependencies:
         eid_provider_registry=service_factory.get_eid_provider_registry(),
         oauth_client_store=service_factory.get_oauth_client_store(),
         oauth_token_service=service_factory.get_oauth_token_service(),
-        story_draft_repository=service_factory.get_story_draft_repository(),
     )

@@ -91,12 +91,3 @@ class OAuthTokenClaims:
     exp: int
     client_id: str
 
-
-@dataclass(frozen=True)
-class StoryDraft:
-    draft_id: str
-    supabase_user_id: str
-    payload: dict[str, object]
-    status: str
-    created_at: datetime
-    submitted_at: datetime | None

@@ -26,7 +26,6 @@ from core.domain.models import (
     OAuthClient,
     ProfileConflictError,
     ProfileRecord,
-    StoryDraft,
     VerificationSession,
 )
 from core.security.hashing import hash_secret
@@ -39,7 +38,6 @@ __all__ = [
     "SupabaseVerificationSessionStore",
     "SupabaseEIDAuditLogRepository",
     "SupabaseOAuthClientStore",
-    "SupabaseStoryDraftRepository",
     "SupabaseHealthRepository",
 ]
 
@@ -208,32 +206,6 @@ def _audit_event_from_row(row: dict[str, Any]) -> EIDAuditEvent:
     )
 
 
-def _story_draft_to_row(draft: StoryDraft) -> dict[str, Any]:
-    return {
-        "draft_id": draft.draft_id,
-        "supabase_user_id": draft.supabase_user_id,
-        "payload": draft.payload,
-        "status": draft.status,
-        "created_at": _format_datetime(draft.created_at),
-        "submitted_at": _format_datetime(draft.submitted_at),
-    }
-
-
-def _story_draft_from_row(row: dict[str, Any]) -> StoryDraft:
-    normalized = _jsonb_normalize(row, ("payload",))
-    payload = normalized.get("payload") or {}
-    if not isinstance(payload, dict):
-        payload = {}
-    return StoryDraft(
-        draft_id=str(normalized.get("draft_id") or normalized.get("id")),
-        supabase_user_id=str(normalized["supabase_user_id"]),
-        payload=payload,
-        status=str(normalized["status"]),
-        created_at=_parse_datetime(normalized["created_at"]) or _utcnow(),
-        submitted_at=_parse_datetime(normalized.get("submitted_at")),
-    )
-
-
 @dataclass(frozen=True)
 class SupabaseDatabase:
     base_url: str
@@ -316,7 +288,6 @@ class SupabaseDatabase:
         "profiles",
         "eid_verification_sessions",
         "eid_audit_events",
-        "story_drafts",
     )
 
     def required_tables_ready(self) -> bool:
@@ -617,41 +588,6 @@ class SupabaseOAuthClientStore:
 
     def list_clients(self) -> list[OAuthClient]:
         return list(self._clients.values())
-
-
-class SupabaseStoryDraftRepository:
-    def __init__(self, db: SupabaseDatabase) -> None:
-        self._db = db
-
-    def create(self, draft: StoryDraft) -> StoryDraft:
-        rows = self._db._request(
-            method="POST",
-            path="/rest/v1/story_drafts",
-            json_body=_story_draft_to_row(draft),
-            prefer="return=representation",
-        )
-        row = _first_row(rows)
-        return _story_draft_from_row(row) if row else draft
-
-    def get(self, draft_id: str) -> StoryDraft | None:
-        rows = self._db._request(
-            method="GET",
-            path="/rest/v1/story_drafts",
-            params={"draft_id": f"eq.{draft_id}", "limit": "1"},
-        )
-        row = _first_row(rows)
-        return _story_draft_from_row(row) if row else None
-
-    def update_status(self, draft_id: str, status: str) -> None:
-        body: dict[str, Any] = {"status": status}
-        if status == "submitted":
-            body["submitted_at"] = _format_datetime(_utcnow())
-        self._db._request(
-            method="PATCH",
-            path="/rest/v1/story_drafts",
-            params={"draft_id": f"eq.{draft_id}"},
-            json_body=body,
-        )
 
 
 class SupabaseHealthRepository:

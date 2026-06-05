@@ -12,7 +12,6 @@ from core.infrastructure.db_supabase import (
     SupabaseHealthRepository,
     SupabaseOAuthClientStore,
     SupabaseProfileRepository,
-    SupabaseStoryDraftRepository,
     SupabaseVerificationSessionStore,
 )
 from core.infrastructure.repositories import (
@@ -21,7 +20,6 @@ from core.infrastructure.repositories import (
     InMemoryOAuthClientStore,
     InMemoryOAuthTokenService,
     InMemoryProfileRepository,
-    InMemoryStoryDraftRepository,
     InMemoryVerificationSessionStore,
 )
 from core.infrastructure.service_factory import DefaultServiceFactory
@@ -41,7 +39,6 @@ def _build_in_memory_repositories(
     InMemoryVerificationSessionStore,
     InMemoryEIDAuditLogRepository,
     InMemoryOAuthClientStore,
-    InMemoryStoryDraftRepository,
 ]:
     return (
         InMemoryHealthRepository(),
@@ -49,7 +46,6 @@ def _build_in_memory_repositories(
         InMemoryVerificationSessionStore(),
         InMemoryEIDAuditLogRepository(),
         InMemoryOAuthClientStore.from_config(config),
-        InMemoryStoryDraftRepository(),
     )
 
 
@@ -63,7 +59,6 @@ def provide_service_factory(config: AppConfig | None = None) -> DefaultServiceFa
             verification_session_store,
             eid_audit_log_repository,
             oauth_client_store,
-            story_draft_repository,
         ) = _build_in_memory_repositories(resolved_config)
     elif resolved_config.db_backend == "supabase":
         if not resolved_config.supabase_url or not resolved_config.supabase_service_role:
@@ -83,7 +78,6 @@ def provide_service_factory(config: AppConfig | None = None) -> DefaultServiceFa
             supabase_db,
             fallback_config=resolved_config,
         )
-        story_draft_repository = SupabaseStoryDraftRepository(supabase_db)
     else:
         raise ValueError(f"Unsupported db_backend: {resolved_config.db_backend}")
 
@@ -105,7 +99,6 @@ def provide_service_factory(config: AppConfig | None = None) -> DefaultServiceFa
         eid_audit_log_repository=eid_audit_log_repository,
         oauth_client_store=oauth_client_store,
         oauth_token_service=oauth_token_service,
-        story_draft_repository=story_draft_repository,
         supabase_jwt_validator=supabase_jwt_validator,
         bearer_token_auth=bearer_token_auth,
         eid_provider_registry=registry,

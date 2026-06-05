@@ -9,7 +9,6 @@ if TYPE_CHECKING:
         OAuthClient,
         OAuthTokenClaims,
         ProfileRecord,
-        StoryDraft,
         UserClaims,
         VerificationSession,
     )
@@ -97,15 +96,6 @@ class OAuthTokenService(Protocol):
     ) -> str: ...
 
     def validate_access_token(self, token: str) -> OAuthTokenClaims: ...
-
-
-@runtime_checkable
-class StoryDraftRepository(Protocol):
-    def create(self, draft: StoryDraft) -> StoryDraft: ...
-
-    def get(self, draft_id: str) -> StoryDraft | None: ...
-
-    def update_status(self, draft_id: str, status: str) -> None: ...
 
 
 @runtime_checkable

@@ -5,7 +5,6 @@ from core.domain.contracts import (
     OAuthClientStore,
     OAuthTokenService,
     ProfileRepository,
-    StoryDraftRepository,
     SupabaseJwtValidator,
     VerificationSessionStore,
 )
@@ -15,7 +14,6 @@ from core.domain.models import (
     OAuthClient,
     OAuthTokenClaims,
     ProfileRecord,
-    StoryDraft,
     UserClaims,
     VerificationSession,
 )
@@ -32,8 +30,6 @@ __all__ = [
     "OAuthTokenService",
     "ProfileRecord",
     "ProfileRepository",
-    "StoryDraft",
-    "StoryDraftRepository",
     "SupabaseJwtValidator",
     "UserClaims",
     "VerificationSession",
