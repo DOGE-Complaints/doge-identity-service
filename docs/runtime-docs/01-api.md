@@ -47,4 +47,4 @@
 
 - **CORS** ([`asgi_app.py:75-80`](../../src/core/api/asgi_app.py)) — разрешённые origin'ы берутся из `CORS_ALLOWED_ORIGINS`; методы GET/POST/OPTIONS.
 - **Перехват ошибок** ([`asgi_app.py:123-141`](../../src/core/api/asgi_app.py)) — любое необработанное исключение превращается в аккуратный `500 INTERNAL_ERROR` с `trace_id`, сервис не «падает голым стеком».
-- **Idempotency-key** ([`idempotency.py`](../../src/core/api/idempotency.py)) — резолвер заголовка готов, но потребителей пока нет (⚪ заготовка под будущие POST-операции).
+- **Idempotency-key** — резолвер удалён в EPIC-IDS-08 CLEANUP-02 (owner decision E21); idempotency для POST-маршрутов — в функциональных эпиках, когда появятся потребители.
