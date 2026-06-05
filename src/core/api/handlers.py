@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from core.api.envelope import build_error_envelope, build_success_envelope
+from core.api.me_response import build_me_data
 
 if TYPE_CHECKING:
     from core.api.dependencies import ApiDependencies
@@ -37,18 +38,28 @@ def _not_implemented(
     return body, 501
 
 
-def handle_me_stub(
+def handle_me(
     deps: ApiDependencies,
     *,
     current_user: UserClaims,
     trace_id: str,
 ) -> tuple[dict, int]:
-    del deps, current_user
-    return _not_implemented(
-        "GET /me implemented in EPIC-IDS-AUTH-CORE",
-        trace_id=trace_id,
-        next_epic="EPIC-IDS-AUTH-CORE",
-    )
+    """GET /me — profile + eid_verified + role from JWT.
+
+    Missing profile (t01): 200, no DB write; ``eid_verified=false``, profile fields null.
+    """
+    repo = deps.profile_repository
+    if repo is None:
+        body = build_error_envelope(
+            "CONFIG_ERROR",
+            "Profile repository is not configured.",
+            trace_id=trace_id,
+        )
+        return body, 500
+
+    profile = repo.get_by_supabase_user_id(current_user.supabase_user_id)
+    payload = build_me_data(profile, current_user)
+    return build_success_envelope(payload), 200
 
 
 def handle_auth_eid_start_stub(

@@ -15,7 +15,7 @@ from core.api.handlers import (
     handle_auth_eid_start_stub,
     handle_bearer_stub,
     handle_health,
-    handle_me_stub,
+    handle_me,
     handle_public_stub,
     handle_readiness,
 )
@@ -163,7 +163,7 @@ def _register_routes(app: FastAPI) -> None:
     ) -> JSONResponse:
         deps = get_api_dependencies()
         trace_id = _trace_id_from_request(request)
-        body, status = handle_me_stub(
+        body, status = handle_me(
             deps, current_user=current_user, trace_id=trace_id
         )
         return _json_envelope(body, status)
