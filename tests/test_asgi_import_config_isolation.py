@@ -27,7 +27,10 @@ def test_import_asgi_app_module_without_config_error(monkeypatch: pytest.MonkeyP
 
 def test_access_app_with_incomplete_supabase_env_raises_config_error(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
+    """Isolate from cwd ``.env`` — deleted env vars must not be back-filled from disk."""
+    monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("DB_BACKEND", "supabase")
     monkeypatch.setenv("SUPABASE_URL", "https://prod.local")
     monkeypatch.delenv("SUPABASE_SERVICE_ROLE", raising=False)

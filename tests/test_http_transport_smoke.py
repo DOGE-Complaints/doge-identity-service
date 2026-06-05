@@ -76,11 +76,13 @@ def test_me_without_auth_returns_401(test_client: TestClient) -> None:
     assert response.json()["error"]["code"] == "AUTHENTICATION_REQUIRED"
 
 
-def test_me_with_stub_bearer_returns_501(test_client: TestClient) -> None:
+def test_me_with_bearer_returns_200_not_verified(test_client: TestClient) -> None:
     token = _demo_bearer_token()
     response = test_client.get("/me", headers={"Authorization": f"Bearer {token}"})
-    assert response.status_code == 501
-    assert response.json()["error"]["code"] == "NOT_IMPLEMENTED"
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["supabase_user_id"] == "11111111-1111-1111-1111-111111111111"
+    assert data["eid_verified"] is False
 
 
 def test_options_me_cors_preflight(test_client: TestClient) -> None:

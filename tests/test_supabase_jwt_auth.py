@@ -137,9 +137,9 @@ def test_supabase_jwt_validator_impl_satisfies_protocol(
     assert isinstance(validator, SupabaseJwtValidator)
 
 
-def test_get_me_with_valid_supabase_token_not_401(test_client: TestClient) -> None:
-    """Default DI uses demo JWT fallbacks; /me stub must pass auth (not 401)."""
+def test_get_me_with_valid_supabase_token_returns_200(test_client: TestClient) -> None:
+    """Default DI uses demo JWT fallbacks; /me returns profile payload (not 401)."""
     token = _make_demo_jwt()
     response = test_client.get("/me", headers={"authorization": f"Bearer {token}"})
-    assert response.status_code != 401
-    assert response.status_code == 501
+    assert response.status_code == 200
+    assert response.json()["data"]["eid_verified"] is False
