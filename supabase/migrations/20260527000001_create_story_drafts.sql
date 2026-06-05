@@ -1,3 +1,5 @@
+-- DEPRECATED — identity scope removed 2026-06 (stories are gateway domain).
+-- Historical migration only; do not apply on new identity deployments.
 -- 20260527000001_create_story_drafts.sql
 -- Story draft persistence for identity-service (req-15 / EPIC-IDS-05 Story 4).
 

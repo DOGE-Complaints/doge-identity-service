@@ -51,6 +51,8 @@ EID_PROVIDER=mock
 
 ## 3. Apply SQL migrations (Story 4)
 
+For **new identity deployments**, apply migrations **1–4** only. Canonical full schema (without `story_drafts`): [`supabase/bootstrap/000_full_init.sql`](../../supabase/bootstrap/000_full_init.sql).
+
 В **SQL Editor** выполните файлы **по порядку** (каждый файл целиком → Run):
 
 | Order | File |
@@ -59,7 +61,8 @@ EID_PROVIDER=mock
 | 2 | [`supabase/migrations/20260525000002_create_eid_verification_sessions.sql`](../../supabase/migrations/20260525000002_create_eid_verification_sessions.sql) |
 | 3 | [`supabase/migrations/20260525000003_create_eid_audit_events.sql`](../../supabase/migrations/20260525000003_create_eid_audit_events.sql) |
 | 4 | [`supabase/migrations/20260526000001_eid_sessions_provider_abstraction.sql`](../../supabase/migrations/20260526000001_eid_sessions_provider_abstraction.sql) |
-| 5 | [`supabase/migrations/20260527000001_create_story_drafts.sql`](../../supabase/migrations/20260527000001_create_story_drafts.sql) |
+
+> **Historical (do not apply on new deployments):** [`20260527000001_create_story_drafts.sql`](../../supabase/migrations/20260527000001_create_story_drafts.sql) — **DEPRECATED** 2026-06 (stories are gateway domain). File retained for audit trail only; not in bootstrap and not in `_REQUIRED_TABLES` healthcheck.
 
 ### Optional: Supabase CLI
 
@@ -143,6 +146,17 @@ print('policy_probe:', db.service_role_policy_probe())
 ## CI: test project secrets (EPIC-IDS-06)
 
 Live integration tests используют **отдельный** Supabase-проект. URL тестового проекта **должен отличаться** от production/staging `SUPABASE_URL`.
+
+### GitHub Actions workflows
+
+| Workflow | File | When |
+|----------|------|------|
+| Offline tests (every push/PR) | [`.github/workflows/test-offline.yml`](../../.github/workflows/test-offline.yml) | `push`, `pull_request` — `pytest -m "not live_integration"` |
+| Live Supabase integration | [`.github/workflows/integration-live.yml`](../../.github/workflows/integration-live.yml) | `push` to `main`, `workflow_dispatch` — `pytest -m live_integration` |
+
+`test-offline.yml` **не** использует Supabase secrets — live-тесты в CI offline job не запускаются (marker deselect / skip).
+
+`integration-live.yml` перед pytest записывает `.env` с `SUPABASE_TEST_*` (live tests читают файл напрямую, минуя autouse env block) и выставляет runner env для `DB_BACKEND=supabase` и smoke будущих job.
 
 ### GitHub Actions secrets
 
