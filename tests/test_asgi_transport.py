@@ -92,10 +92,6 @@ def test_route_table_contains_identity_contract_paths(test_client: TestClient) -
         "/oauth/authorize",
         "/oauth/authorize/complete",
         "/oauth/token",
-        "/story-drafts",
-        "/story-drafts/{draft_id}/submit",
-        "/stories",
-        "/gpt/actions/submit-story",
     }
     assert expected.issubset(paths)
 

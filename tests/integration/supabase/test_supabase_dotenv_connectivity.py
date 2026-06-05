@@ -20,7 +20,7 @@ def test_supabase_identity_tables_ready() -> None:
     db = SupabaseDatabase.from_http(url, key)
     assert db.required_tables_ready() is True, (
         "Required identity tables missing — run bootstrap SQL "
-        "(profiles, eid_verification_sessions, eid_audit_events, story_drafts)"
+        "(profiles, eid_verification_sessions, eid_audit_events)"
     )
 
 

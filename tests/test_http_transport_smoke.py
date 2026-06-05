@@ -27,10 +27,6 @@ _IDENTITY_ROUTE_PATHS = frozenset(
         "/oauth/authorize",
         "/oauth/authorize/complete",
         "/oauth/token",
-        "/story-drafts",
-        "/story-drafts/{draft_id}/submit",
-        "/stories",
-        "/gpt/actions/submit-story",
     }
 )
 

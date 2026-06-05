@@ -9,11 +9,14 @@ RUNBOOK = REPO_ROOT / "docs" / "runbook" / "supabase-project-setup.md"
 ENV_EXAMPLE = REPO_ROOT / ".env.example"
 MIGRATIONS_DIR = REPO_ROOT / "supabase" / "migrations"
 
-EXPECTED_MIGRATION_FILES = (
+OPERATIONAL_MIGRATION_FILES = (
     "20260525000001_create_profiles.sql",
     "20260525000002_create_eid_verification_sessions.sql",
     "20260525000003_create_eid_audit_events.sql",
     "20260526000001_eid_sessions_provider_abstraction.sql",
+)
+
+HISTORICAL_MIGRATION_FILES = (
     "20260527000001_create_story_drafts.sql",
 )
 
@@ -40,11 +43,18 @@ def test_runbook_contains_epic_story5_steps(snippet: str) -> None:
     assert snippet in text
 
 
-@pytest.mark.parametrize("migration_file", EXPECTED_MIGRATION_FILES)
-def test_runbook_lists_story4_migrations_in_order(migration_file: str) -> None:
+@pytest.mark.parametrize("migration_file", OPERATIONAL_MIGRATION_FILES)
+def test_runbook_lists_operational_migrations_in_order(migration_file: str) -> None:
     text = RUNBOOK.read_text(encoding="utf-8")
     assert migration_file in text
     assert (MIGRATIONS_DIR / migration_file).is_file()
+
+
+def test_runbook_marks_story_drafts_migration_historical() -> None:
+    text = RUNBOOK.read_text(encoding="utf-8")
+    assert "20260527000001_create_story_drafts.sql" in text
+    assert "DEPRECATED" in text or "do not apply" in text.lower()
+    assert "Historical" in text or "historical" in text
 
 
 def test_runbook_documents_ci_test_secrets() -> None:
@@ -62,3 +72,8 @@ def test_env_example_has_supabase_backend_vars() -> None:
     text = ENV_EXAMPLE.read_text(encoding="utf-8")
     for key in ("DB_BACKEND", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE", "SUPABASE_JWT_SECRET"):
         assert key in text
+
+
+@pytest.mark.parametrize("migration_file", HISTORICAL_MIGRATION_FILES)
+def test_historical_migration_file_exists_on_disk(migration_file: str) -> None:
+    assert (MIGRATIONS_DIR / migration_file).is_file()

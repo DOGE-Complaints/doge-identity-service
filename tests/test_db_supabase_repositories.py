@@ -11,14 +11,12 @@ from core.domain.contracts import (
     HealthRepository,
     OAuthClientStore,
     ProfileRepository,
-    StoryDraftRepository,
     VerificationSessionStore,
 )
 from core.domain.models import (
     EIDAuditEvent,
     ProfileConflictError,
     ProfileRecord,
-    StoryDraft,
     VerificationSession,
 )
 from core.infrastructure.db_supabase import (
@@ -27,7 +25,6 @@ from core.infrastructure.db_supabase import (
     SupabaseHealthRepository,
     SupabaseOAuthClientStore,
     SupabaseProfileRepository,
-    SupabaseStoryDraftRepository,
     SupabaseVerificationSessionStore,
     _verification_session_from_row,
 )
@@ -203,4 +200,3 @@ def test_supabase_repositories_satisfy_protocols() -> None:
         SupabaseOAuthClientStore(db, fallback_config=None, clients={}),
         OAuthClientStore,
     )
-    assert isinstance(SupabaseStoryDraftRepository(db), StoryDraftRepository)

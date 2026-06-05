@@ -10,7 +10,6 @@ from core.infrastructure.repositories import (
     InMemoryHealthRepository,
     InMemoryOAuthClientStore,
     InMemoryProfileRepository,
-    InMemoryStoryDraftRepository,
     InMemoryVerificationSessionStore,
 )
 from core.infrastructure.service_factory import DefaultServiceFactory
@@ -24,7 +23,6 @@ def test_factory_for_in_memory() -> None:
     assert isinstance(factory.get_verification_session_store(), InMemoryVerificationSessionStore)
     assert isinstance(factory.get_eid_audit_log_repository(), InMemoryEIDAuditLogRepository)
     assert isinstance(factory.get_oauth_client_store(), InMemoryOAuthClientStore)
-    assert isinstance(factory.get_story_draft_repository(), InMemoryStoryDraftRepository)
 
 
 def test_factory_raises_without_supabase_creds(monkeypatch: pytest.MonkeyPatch) -> None:

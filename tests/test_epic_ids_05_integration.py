@@ -11,7 +11,6 @@ from core.infrastructure.db_supabase import (
     SupabaseHealthRepository,
     SupabaseOAuthClientStore,
     SupabaseProfileRepository,
-    SupabaseStoryDraftRepository,
     SupabaseVerificationSessionStore,
 )
 from core.infrastructure.providers import provide_service_factory
@@ -51,7 +50,6 @@ def test_provide_service_factory_supabase_returns_supabase_repositories(
     )
     assert isinstance(factory.get_health_repository(), SupabaseHealthRepository)
     assert isinstance(factory.get_oauth_client_store(), SupabaseOAuthClientStore)
-    assert isinstance(factory.get_story_draft_repository(), SupabaseStoryDraftRepository)
 
 
 def test_backend_switch_is_env_only(monkeypatch: pytest.MonkeyPatch) -> None:

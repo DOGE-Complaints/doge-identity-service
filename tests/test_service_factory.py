@@ -14,7 +14,6 @@ from core.infrastructure.repositories import (
     InMemoryOAuthClientStore,
     InMemoryOAuthTokenService,
     InMemoryProfileRepository,
-    InMemoryStoryDraftRepository,
     InMemoryVerificationSessionStore,
 )
 from core.infrastructure.service_factory import DefaultServiceFactory
@@ -82,7 +81,6 @@ def _build_factory(config: AppConfig | None = None) -> DefaultServiceFactory:
         eid_audit_log_repository=InMemoryEIDAuditLogRepository(),
         oauth_client_store=InMemoryOAuthClientStore.from_config(resolved),
         oauth_token_service=InMemoryOAuthTokenService(config=resolved),
-        story_draft_repository=InMemoryStoryDraftRepository(),
         supabase_jwt_validator=_StubSupabaseJwtValidator(),
         bearer_token_auth=StubBearerTokenAuth(),
         eid_provider_registry=EIDProviderRegistry({}),
@@ -118,7 +116,6 @@ def test_get_methods_return_same_instances() -> None:
     assert factory.get_eid_audit_log_repository() is factory.get_eid_audit_log_repository()
     assert factory.get_oauth_client_store() is factory.get_oauth_client_store()
     assert factory.get_oauth_token_service() is factory.get_oauth_token_service()
-    assert factory.get_story_draft_repository() is factory.get_story_draft_repository()
     assert factory.get_supabase_jwt_validator() is factory.get_supabase_jwt_validator()
     assert factory.get_bearer_token_auth() is factory.get_bearer_token_auth()
     assert factory.get_eid_provider_registry() is factory.get_eid_provider_registry()

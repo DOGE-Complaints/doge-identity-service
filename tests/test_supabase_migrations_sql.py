@@ -9,7 +9,7 @@ MIGRATIONS_DIR = (
     Path(__file__).resolve().parents[1] / "supabase" / "migrations"
 )
 
-EXPECTED_MIGRATIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
+OPERATIONAL_MIGRATIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
     (
         "20260525000001_create_profiles.sql",
         ("profiles", "ENABLE ROW LEVEL SECURITY", "profiles_service_role_all", "IF NOT EXISTS"),
@@ -41,9 +41,13 @@ EXPECTED_MIGRATIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
             "ALTER COLUMN nonce DROP NOT NULL",
         ),
     ),
+)
+
+HISTORICAL_MIGRATIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
     (
         "20260527000001_create_story_drafts.sql",
         (
+            "DEPRECATED",
             "story_drafts",
             "draft_id",
             "supabase_user_id",
@@ -58,8 +62,8 @@ EXPECTED_MIGRATIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
 TIMESTAMP_PATTERN = re.compile(r"^\d{14}_[a-z0-9_]+\.sql$")
 
 
-@pytest.mark.parametrize("filename,required_snippets", EXPECTED_MIGRATIONS)
-def test_migration_file_exists_with_required_sql(
+@pytest.mark.parametrize("filename,required_snippets", OPERATIONAL_MIGRATIONS)
+def test_operational_migration_file_exists_with_required_sql(
     filename: str, required_snippets: tuple[str, ...]
 ) -> None:
     path = MIGRATIONS_DIR / filename
@@ -70,21 +74,34 @@ def test_migration_file_exists_with_required_sql(
         assert snippet in text, f"{filename} missing {snippet!r}"
 
 
+@pytest.mark.parametrize("filename,required_snippets", HISTORICAL_MIGRATIONS)
+def test_historical_migration_file_exists_with_deprecated_header(
+    filename: str, required_snippets: tuple[str, ...]
+) -> None:
+    path = MIGRATIONS_DIR / filename
+    assert path.is_file(), f"missing historical migration file: {path}"
+    text = path.read_text(encoding="utf-8")
+    for snippet in required_snippets:
+        assert snippet in text, f"{filename} missing {snippet!r}"
+
+
 def test_migration_filenames_are_chronological() -> None:
     names = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
-    assert names == [item[0] for item in EXPECTED_MIGRATIONS]
+    expected = [item[0] for item in OPERATIONAL_MIGRATIONS] + [
+        item[0] for item in HISTORICAL_MIGRATIONS
+    ]
+    assert names == expected
 
 
-def test_core_tables_covered_by_migrations() -> None:
+def test_identity_core_tables_covered_by_operational_migrations() -> None:
     sql = "\n".join(
-        path.read_text(encoding="utf-8")
-        for path in MIGRATIONS_DIR.glob("*.sql")
+        (MIGRATIONS_DIR / item[0]).read_text(encoding="utf-8")
+        for item in OPERATIONAL_MIGRATIONS
     )
     for table in (
         "profiles",
         "eid_verification_sessions",
         "eid_audit_events",
-        "story_drafts",
     ):
         assert table in sql
 

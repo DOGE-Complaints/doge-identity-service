@@ -17,7 +17,6 @@ from core.infrastructure.repositories import (
     InMemoryOAuthClientStore,
     InMemoryOAuthTokenService,
     InMemoryProfileRepository,
-    InMemoryStoryDraftRepository,
     InMemoryVerificationSessionStore,
 )
 from core.infrastructure.service_factory import DefaultServiceFactory
@@ -60,7 +59,6 @@ def test_epic_section8_imports() -> None:
         OAuthClientStore,
         OAuthTokenService,
         ProfileRepository,
-        StoryDraftRepository,
         SupabaseJwtValidator,
         VerificationSessionStore,
     )
@@ -93,7 +91,6 @@ def test_provide_service_factory_in_memory_returns_default_factory(
     assert isinstance(factory.get_eid_audit_log_repository(), InMemoryEIDAuditLogRepository)
     assert isinstance(factory.get_oauth_client_store(), InMemoryOAuthClientStore)
     assert isinstance(factory.get_oauth_token_service(), InMemoryOAuthTokenService)
-    assert isinstance(factory.get_story_draft_repository(), InMemoryStoryDraftRepository)
 
 
 def test_provide_service_factory_supabase_missing_creds_raises_value_error() -> None:

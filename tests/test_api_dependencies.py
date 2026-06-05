@@ -144,7 +144,7 @@ def test_parallel_requests_share_same_dependencies(monkeypatch: pytest.MonkeyPat
 
 def test_epic_ids_04_optional_fields_match_factory_getters() -> None:
     """Story 3 t02: dataclass slots align with epic §3 and commented provide_service_factory block."""
-    assert len(EPIC_IDS_04_OPTIONAL_FIELDS) == 8
+    assert len(EPIC_IDS_04_OPTIONAL_FIELDS) == 7
     for field_name in EPIC_IDS_04_OPTIONAL_FIELDS:
         assert field_name in ApiDependencies.__dataclass_fields__
 
@@ -159,4 +159,3 @@ def test_build_api_dependencies_uses_provide_service_factory() -> None:
     assert "connectivity" in text
     assert "policy_probe" in text
     assert "# TODO EPIC-IDS-05: run 5-level Supabase healthchecks" not in text
-    assert "get_story_draft_repository" in text

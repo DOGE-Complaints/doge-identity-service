@@ -13,7 +13,6 @@ from core.domain.contracts import (
     OAuthClientStore,
     OAuthTokenService,
     ProfileRepository,
-    StoryDraftRepository,
     VerificationSessionStore,
 )
 from core.domain.models import VerificationSession
@@ -23,7 +22,6 @@ from core.infrastructure.repositories import (
     InMemoryOAuthClientStore,
     InMemoryOAuthTokenService,
     InMemoryProfileRepository,
-    InMemoryStoryDraftRepository,
     InMemoryVerificationSessionStore,
 )
 from core.security.hashing import hash_secret
@@ -104,10 +102,6 @@ def test_inmemory_oauth_client_store_satisfies_protocol() -> None:
 def test_inmemory_oauth_token_service_satisfies_protocol() -> None:
     service = InMemoryOAuthTokenService(config=_demo_config())
     assert isinstance(service, OAuthTokenService)
-
-
-def test_inmemory_story_draft_repository_satisfies_protocol() -> None:
-    assert isinstance(InMemoryStoryDraftRepository(), StoryDraftRepository)
 
 
 def test_attach_eid_verification_enforces_unique_verified_person_hash() -> None:

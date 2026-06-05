@@ -12,7 +12,6 @@ from core.domain.contracts import (
     OAuthClientStore,
     OAuthTokenService,
     ProfileRepository,
-    StoryDraftRepository,
     SupabaseJwtValidator,
     VerificationSessionStore,
 )
@@ -41,7 +40,6 @@ def _protocol_classes() -> tuple[type, ...]:
         EIDAuditLogRepository,
         OAuthClientStore,
         OAuthTokenService,
-        StoryDraftRepository,
         SupabaseJwtValidator,
         BearerTokenAuth,
     )

@@ -51,7 +51,6 @@ def test_required_tables_ready_iterates_identity_tables() -> None:
         "/rest/v1/profiles",
         "/rest/v1/eid_verification_sessions",
         "/rest/v1/eid_audit_events",
-        "/rest/v1/story_drafts",
     ]
 
 
