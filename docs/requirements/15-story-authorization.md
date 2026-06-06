@@ -2,7 +2,7 @@
 
 > **DEPRECATED (2026-06):** Story scope removed from identity-service. Stories are owned by doge-complaints-gateway; identity does not expose story routes or store `story_drafts`. This document is retained for historical reference only.
 >
-> **Статус:** НЕ реализовано. Spec для story-related endpoints в identity-service.
+> **Статус:** DEPRECATED — historical spec only (см. banner выше). Не реализовано и не будет в identity-service.
 > **Предусловие:** Файл 09 (Supabase JWT), файл 13 (conflict logic), файл 14 (OAuth token).
 > **Связь:** Identity-service авторизует story actions; реальная pipeline историй — doge-complaints-gateway.
 

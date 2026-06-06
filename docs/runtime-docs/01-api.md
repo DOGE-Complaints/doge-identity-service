@@ -33,11 +33,9 @@
 
 **Коротко:** рабочие маршруты — `/health`, `/ready`, **`GET /me`** (профиль + `eid_verified`). Остальное — каркас с заглушками `501`, под который уже готова инфраструктура (валидация токена, DI, контракты).
 
+> Story-маршруты (`/story-drafts`, `/stories`, `/gpt/actions/submit-story`) **удалены** из identity в EPIC-IDS-08 CLEANUP-01; создание историй — домен gateway ([09-gateway-expectations](09-gateway-expectations.md)).
+
 > ⚠️ Чего здесь не хватает под целевую модель (см. [04-security](04-security.md), [09-gateway-expectations](09-gateway-expectations.md)): **нет** маршрута `/oauth/introspect` для service-token сценария; **`GET /me`** уже отдаёт профиль и `eid_verified` по user JWT (базовые права — поле `role` из токена, без permission-матрицы).
-
-## Маршруты вне scope identity (на вынос)
-
-В коде физически объявлены ещё 4 маршрута, **относящихся к историям**: `POST /story-drafts`, `POST /story-drafts/{id}/submit`, `POST /stories`, `POST /gpt/actions/submit-story` ([`asgi_app.py:258-310`](../../src/core/api/asgi_app.py)) — все они заглушки `501`. По решению от 2026-06-04 **создание историй идёт из GPT в gateway напрямую**, identity их не пересылает, поэтому эти маршруты в identity лишние и помечены на удаление ([gap SB-2](../analysis/gap-analysis-full-2026-06-04.md)). Здесь они упомянуты только ради честности (код пока есть), но к зоне ответственности identity не относятся.
 
 ## Кто пускается внутрь (аутентификация)
 
