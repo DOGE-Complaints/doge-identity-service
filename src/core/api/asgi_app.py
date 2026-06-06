@@ -12,7 +12,8 @@ from fastapi.responses import JSONResponse, Response
 from core.api.dependencies import ApiDependencies, build_api_dependencies
 from core.api.envelope import build_error_envelope, ensure_trace_id
 from core.api.handlers import (
-    handle_auth_eid_start_stub,
+    handle_auth_eid_callback,
+    handle_auth_eid_start,
     handle_bearer_stub,
     handle_health,
     handle_me,
@@ -36,18 +37,32 @@ def _trace_id_from_request(request: Request) -> str:
     return ensure_trace_id(request.headers.get("x-trace-id"))
 
 
-async def _return_url_from_request(request: Request) -> str | None:
+async def _eid_start_payload_from_request(request: Request) -> dict[str, str | None]:
+    payload: dict[str, str | None] = {
+        "return_url": None,
+        "return_context": None,
+        "requested_action": None,
+    }
     content_type = request.headers.get("content-type", "")
-    if not content_type.startswith("application/json"):
-        return None
-    try:
-        payload = await request.json()
-    except Exception:
-        return None
-    if not isinstance(payload, dict):
-        return None
-    value = payload.get("return_url")
-    return value if isinstance(value, str) else None
+    if content_type.startswith("application/json"):
+        try:
+            body = await request.json()
+        except Exception:
+            body = None
+        if isinstance(body, dict):
+            for key in payload:
+                value = body.get(key)
+                if isinstance(value, str):
+                    payload[key] = value
+    if payload["return_url"] is None:
+        query_value = request.query_params.get("return_url")
+        if isinstance(query_value, str):
+            payload["return_url"] = query_value
+    return payload
+
+
+def _query_params_as_strings(request: Request) -> dict[str, str]:
+    return {key: value for key, value in request.query_params.items()}
 
 
 def _json_envelope(body: dict, status_code: int) -> JSONResponse:
@@ -185,12 +200,14 @@ def _register_routes(app: FastAPI) -> None:
     ) -> JSONResponse:
         deps = get_api_dependencies()
         trace_id = _trace_id_from_request(request)
-        return_url = await _return_url_from_request(request)
-        body, status = handle_auth_eid_start_stub(
+        start_payload = await _eid_start_payload_from_request(request)
+        body, status = handle_auth_eid_start(
             deps,
             current_user=current_user,
             trace_id=trace_id,
-            return_url=return_url,
+            return_url=start_payload["return_url"],
+            return_context=start_payload["return_context"],
+            requested_action=start_payload["requested_action"],
         )
         return _json_envelope(body, status)
 
@@ -222,10 +239,10 @@ def _register_routes(app: FastAPI) -> None:
     async def auth_mock_callback(request: Request) -> JSONResponse:
         deps = get_api_dependencies()
         trace_id = _trace_id_from_request(request)
-        body, status = handle_public_stub(
+        body, status = handle_auth_eid_callback(
             deps,
-            path="/auth/mock/callback",
-            next_epic="EPIC-IDS-EID",
+            provider_name="mock",
+            raw_params=_query_params_as_strings(request),
             trace_id=trace_id,
         )
         return _json_envelope(body, status)

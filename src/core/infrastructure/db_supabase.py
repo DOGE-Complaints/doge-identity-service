@@ -486,6 +486,15 @@ class SupabaseVerificationSessionStore:
         row = _first_row(rows)
         return _verification_session_from_row(row) if row else None
 
+    def get_by_id(self, session_id: str) -> VerificationSession | None:
+        rows = self._db._request(
+            method="GET",
+            path="/rest/v1/eid_verification_sessions",
+            params={"id": f"eq.{session_id}", "limit": "1"},
+        )
+        row = _first_row(rows)
+        return _verification_session_from_row(row) if row else None
+
     def mark_consumed(self, session_id: str) -> None:
         self._db._request(
             method="PATCH",

@@ -16,6 +16,7 @@ from core.domain.models import (
     EIDAuditEvent,
     OAuthClient,
     OAuthTokenClaims,
+    ProfileConflictError,
     ProfileRecord,
     VerificationSession,
 )
@@ -73,7 +74,7 @@ class InMemoryProfileRepository:
         if profile.verified_person_hash:
             owner = self._by_verified_hash.get(profile.verified_person_hash)
             if owner is not None and owner != profile.supabase_user_id:
-                raise RuntimeError(
+                raise ProfileConflictError(
                     f"verified_person_hash already bound to user {owner}"
                 )
             self._by_verified_hash[profile.verified_person_hash] = profile.supabase_user_id
@@ -92,7 +93,7 @@ class InMemoryProfileRepository:
     ) -> ProfileRecord:
         existing_owner = self._by_verified_hash.get(verified_person_hash)
         if existing_owner is not None and existing_owner != user_id:
-            raise RuntimeError(
+            raise ProfileConflictError(
                 f"verified_person_hash already bound to user {existing_owner}"
             )
 
@@ -152,6 +153,9 @@ class InMemoryVerificationSessionStore:
         session_id = self._by_state.get(state)
         if session_id is None:
             return None
+        return self._by_id.get(session_id)
+
+    def get_by_id(self, session_id: str) -> VerificationSession | None:
         return self._by_id.get(session_id)
 
     def mark_consumed(self, session_id: str) -> None:
