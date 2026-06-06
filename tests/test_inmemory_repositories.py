@@ -15,7 +15,7 @@ from core.domain.contracts import (
     ProfileRepository,
     VerificationSessionStore,
 )
-from core.domain.models import VerificationSession
+from core.domain.models import ProfileConflictError, VerificationSession
 from core.infrastructure.repositories import (
     InMemoryEIDAuditLogRepository,
     InMemoryHealthRepository,
@@ -114,7 +114,7 @@ def test_attach_eid_verification_enforces_unique_verified_person_hash() -> None:
         verified_person_hash="h",
         verified_at=verified_at,
     )
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ProfileConflictError):
         repo.attach_eid_verification(
             user_id="u2",
             provider="mock",

@@ -93,7 +93,7 @@ def test_auth_eid_start_rejects_foreign_return_url(
     assert response.json()["error"]["code"] == "invalid_return_url"
 
 
-def test_auth_eid_start_allows_listed_return_url_before_stub(
+def test_auth_eid_start_allows_listed_return_url(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _clear_api_dependencies_cache()
@@ -108,8 +108,10 @@ def test_auth_eid_start_allows_listed_return_url_before_stub(
             headers={"Authorization": f"Bearer {token}"},
             json={"return_url": "https://dogestonia.ee/verify"},
         )
-    assert response.status_code == 501
-    assert response.json()["error"]["code"] == "NOT_IMPLEMENTED"
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["redirect_url"].startswith("/auth/mock/callback?session_id=")
+    assert data["expires_at"]
 
 
 def test_options_me_returns_200(test_client: TestClient) -> None:
