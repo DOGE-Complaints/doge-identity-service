@@ -4,7 +4,7 @@ import inspect
 
 import pytest
 
-from core.config.schema import AppConfig, DeploymentProfile
+from core.config.schema import AppConfig, ConfigError, DeploymentProfile
 from core.infrastructure.repositories import InMemoryVerificationSessionStore
 from core.providers.base import EIDProviderPort
 from core.providers.mock.mock_provider import MockEIDProvider
@@ -66,11 +66,12 @@ def test_registry_get_mock_provider() -> None:
     assert registry.get("mock").provider_name == "mock"
 
 
-def test_registry_get_active_missing_provider_raises_key_error() -> None:
+def test_registry_get_active_missing_provider_raises_config_error() -> None:
     registry = EIDProviderRegistry({})
     config = _demo_config(eid_provider="eideasy")
-    with pytest.raises(KeyError):
+    with pytest.raises(ConfigError) as exc_info:
         registry.get_active(config)
+    assert "доступны" in str(exc_info.value)
 
 
 def test_registry_is_not_lru_cached() -> None:

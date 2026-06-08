@@ -7,6 +7,7 @@ import pytest
 from core.config.providers import provide_app_config
 from core.infrastructure.providers import provide_service_factory
 from core.infrastructure.repositories import InMemoryVerificationSessionStore
+from core.providers.descriptor import ProviderNotRegisteredError
 from core.providers.mock.mock_provider import MockEIDProvider
 from core.providers.registry import EIDProviderRegistry
 
@@ -14,7 +15,7 @@ from core.providers.registry import EIDProviderRegistry
 def test_mock_provider_registered_by_default() -> None:
     factory = provide_service_factory()
     registry = factory.get_eid_provider_registry()
-    assert "mock" in registry._providers  # noqa: SLF001 — registry contract smoke
+    assert "mock" in registry.registered_names
     assert isinstance(registry.get("mock"), MockEIDProvider)
 
 
@@ -29,7 +30,7 @@ def test_get_active_returns_mock_when_eid_provider_mock() -> None:
 def test_get_unknown_provider_raises() -> None:
     store = InMemoryVerificationSessionStore()
     registry = EIDProviderRegistry({"mock": MockEIDProvider(store)})
-    with pytest.raises(KeyError):
+    with pytest.raises(ProviderNotRegisteredError):
         registry.get("unknown")
 
 
