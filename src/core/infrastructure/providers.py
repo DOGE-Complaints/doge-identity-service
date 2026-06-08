@@ -23,8 +23,8 @@ from core.infrastructure.repositories import (
     InMemoryVerificationSessionStore,
 )
 from core.infrastructure.service_factory import DefaultServiceFactory
-from core.providers.mock.mock_provider import MockEIDProvider
-from core.providers.registry import EIDProviderRegistry
+from core.providers.registry_builder import build_registry
+from core.providers.runtime_factory import build_provider_runtime
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +89,11 @@ def provide_service_factory(config: AppConfig | None = None) -> DefaultServiceFa
     )
     bearer_token_auth = SupabaseJwtBearerTokenAuth(validator=supabase_jwt_validator)
 
-    registry = EIDProviderRegistry({"mock": MockEIDProvider(verification_session_store)})
+    provider_runtime = build_provider_runtime(
+        config=resolved_config,
+        session_store=verification_session_store,
+    )
+    registry = build_registry(provider_runtime)
 
     return DefaultServiceFactory(
         config=resolved_config,
