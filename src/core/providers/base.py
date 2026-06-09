@@ -2,11 +2,26 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from enum import StrEnum
 from typing import Protocol, runtime_checkable
+
+
+class EidErrorCode(StrEnum):
+    USER_CANCELLED = "USER_CANCELLED"
+    STATE_MISMATCH = "STATE_MISMATCH"
+    TOKEN_EXCHANGE_FAILED = "TOKEN_EXCHANGE_FAILED"
+    IDENTITY_VALIDATION_FAILED = "IDENTITY_VALIDATION_FAILED"
+    MISSING_REQUIRED_CLAIM = "MISSING_REQUIRED_CLAIM"
+    COUNTRY_NOT_ALLOWED = "COUNTRY_NOT_ALLOWED"
+    METHOD_NOT_ALLOWED = "METHOD_NOT_ALLOWED"
+    PROVIDER_UNAVAILABLE = "PROVIDER_UNAVAILABLE"
+    UNKNOWN = "UNKNOWN"
 
 
 @dataclass(frozen=True)
 class EIDVerificationResult:
+    """Provider callback result. `provider` is provenance only."""
+
     provider: str
     country: str
     subject_hash: str
@@ -22,9 +37,12 @@ class EIDStartResult:
 
 
 class EIDProviderError(Exception):
-    code: str = "EID_PROVIDER_ERROR"
-
-    def __init__(self, message: str, *, code: str = "EID_PROVIDER_ERROR") -> None:
+    def __init__(
+        self,
+        message: str,
+        *,
+        code: EidErrorCode = EidErrorCode.UNKNOWN,
+    ) -> None:
         self.code = code
         super().__init__(message)
 

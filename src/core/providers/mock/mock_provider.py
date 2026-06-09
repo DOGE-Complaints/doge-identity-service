@@ -65,7 +65,7 @@ class MockEIDProvider:
         return EIDVerificationResult(
             provider="mock",
             country="EE",
-            subject_hash="mock-" + secrets.token_hex(8),
+            subject_hash=secrets.token_hex(16),
             login_method="mock",
             verified_at=datetime.now(timezone.utc),
         )

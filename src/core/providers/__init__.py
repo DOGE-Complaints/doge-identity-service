@@ -1,6 +1,7 @@
 """Providers layer package."""
 
 from core.providers.base import (
+    EidErrorCode,
     EIDProviderError,
     EIDProviderPort,
     EIDStartResult,
@@ -16,6 +17,7 @@ from core.providers.runtime_factory import build_provider_runtime
 __all__ = [
     "ALL_EID_PROVIDER_DESCRIPTORS",
     "EIDProviderDescriptor",
+    "EidErrorCode",
     "EIDProviderError",
     "EIDProviderPort",
     "EIDProviderRegistry",

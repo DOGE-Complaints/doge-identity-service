@@ -15,6 +15,7 @@ from core.security.return_url import (
 )
 
 from core.domain.contracts import VerificationSessionStore
+from core.providers.base import EIDProviderError, EidErrorCode
 
 if TYPE_CHECKING:
     from core.api.dependencies import ApiDependencies
@@ -262,15 +263,35 @@ def handle_auth_eid_callback(
     provider = registry.get(provider_name)
     try:
         verification = provider.handle_callback(raw_params=raw_params)
-    except Exception:
-        store.mark_failed(session.id, "provider_error")
+    except EIDProviderError as exc:
+        reason = exc.code.value
+        store.mark_failed(session.id, reason)
         _log_eid_audit(
             deps,
             supabase_user_id=session.supabase_user_id,
             event_type="eid_verification_failed",
             provider=provider_name,
             success=False,
-            failure_reason="provider_error",
+            failure_reason=reason,
+            request_id=trace_id,
+        )
+        body = build_error_envelope(
+            "eid_verification_failed",
+            "Provider callback processing failed.",
+            trace_id=trace_id,
+        )
+        body["error"]["eid_error_code"] = reason
+        return body, 400
+    except Exception:
+        reason = EidErrorCode.UNKNOWN.value
+        store.mark_failed(session.id, reason)
+        _log_eid_audit(
+            deps,
+            supabase_user_id=session.supabase_user_id,
+            event_type="eid_verification_failed",
+            provider=provider_name,
+            success=False,
+            failure_reason=reason,
             request_id=trace_id,
         )
         body = build_error_envelope(
