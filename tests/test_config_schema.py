@@ -127,6 +127,7 @@ def test_pilot_requires_oauth_access_token_secret_explicitly() -> None:
                 "SUPABASE_JWT_SECRET": "jwt",
                 "DATABASE_URL": "postgresql://postgres:pass@example:5432/postgres",
                 "DOGESTONIA_EID_SECRET": "eid-secret",
+                "EID_SESSION_ENC_KEY": "2zy6gKOpxhkaNwtmufGZqYb0T88uh-tkKHC5ygQOnIM=",
                 "GPT_OAUTH_CLIENT_SECRET": "gpt-secret",
             }
         )
@@ -145,6 +146,27 @@ def test_pilot_empty_eid_secret_rejected() -> None:
                 "SUPABASE_JWT_SECRET": "jwt",
                 "DATABASE_URL": "postgresql://postgres:pass@example:5432/postgres",
                 "DOGESTONIA_EID_SECRET": "",
+                "EID_SESSION_ENC_KEY": "2zy6gKOpxhkaNwtmufGZqYb0T88uh-tkKHC5ygQOnIM=",
+                "OAUTH_ACCESS_TOKEN_SECRET": "oauth",
+                "GPT_OAUTH_CLIENT_SECRET": "gpt-secret",
+            }
+        )
+
+
+def test_pilot_empty_eid_session_enc_key_rejected() -> None:
+    with pytest.raises(ConfigError, match="EID_SESSION_ENC_KEY"):
+        load_config_from_env(
+            {
+                "APP_PROFILE": "pilot",
+                "API_BASE_URL": "https://identity.dogestonia.ee",
+                "DB_BACKEND": "supabase",
+                "EID_PROVIDER": "mock",
+                "SUPABASE_URL": "https://example.supabase.co",
+                "SUPABASE_SERVICE_ROLE": "sr",
+                "SUPABASE_JWT_SECRET": "jwt",
+                "DATABASE_URL": "postgresql://postgres:pass@example:5432/postgres",
+                "DOGESTONIA_EID_SECRET": "eid-secret",
+                "EID_SESSION_ENC_KEY": "",
                 "OAUTH_ACCESS_TOKEN_SECRET": "oauth",
                 "GPT_OAUTH_CLIENT_SECRET": "gpt-secret",
             }

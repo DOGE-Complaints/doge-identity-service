@@ -45,6 +45,7 @@ def _demo_config(**overrides: object) -> AppConfig:
         "authentigate_redirect_uri": "",
         "authentigate_scopes": "",
         "eid_secret": "",
+        "eid_session_enc_key": "2zy6gKOpxhkaNwtmufGZqYb0T88uh-tkKHC5ygQOnIM=",
         "node_id": "test-node",
         "oauth_access_token_secret": "demo-key",
         "oauth_access_token_ttl_s": 3600,
