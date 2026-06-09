@@ -16,6 +16,10 @@ class DeploymentProfile(str, Enum):
     PILOT = "pilot"
 
 
+# Demo/in-memory only — never used when APP_PROFILE=pilot (pilot requires EID_SESSION_ENC_KEY).
+_DEMO_EID_SESSION_ENC_KEY = "2zy6gKOpxhkaNwtmufGZqYb0T88uh-tkKHC5ygQOnIM="
+
+
 @dataclass(frozen=True)
 class AppConfig:
     profile: DeploymentProfile
@@ -35,6 +39,7 @@ class AppConfig:
     authentigate_redirect_uri: str
     authentigate_scopes: str
     eid_secret: str
+    eid_session_enc_key: str
     node_id: str
     oauth_access_token_secret: str
     oauth_access_token_ttl_s: int
@@ -115,6 +120,7 @@ def load_config_from_env(source: Mapping[str, str] | None = None) -> AppConfig:
     supabase_jwt_secret = _value(env, "SUPABASE_JWT_SECRET", "")
     database_url = _value(env, "DATABASE_URL", "")
     eid_secret = str(env.get("DOGESTONIA_EID_SECRET", "")).strip()  # one-liner, no fallback
+    eid_session_enc_key = _value(env, "EID_SESSION_ENC_KEY", "")
 
     if db_backend == "supabase" and (not supabase_url or not supabase_service_role):
         raise ConfigError("DB_BACKEND=supabase requires SUPABASE_URL and SUPABASE_SERVICE_ROLE")
@@ -129,12 +135,16 @@ def load_config_from_env(source: Mapping[str, str] | None = None) -> AppConfig:
             ("SUPABASE_JWT_SECRET", supabase_jwt_secret),
             ("DATABASE_URL", database_url),
             ("DOGESTONIA_EID_SECRET", eid_secret),
+            ("EID_SESSION_ENC_KEY", eid_session_enc_key),
             ("OAUTH_ACCESS_TOKEN_SECRET", _value(env, "OAUTH_ACCESS_TOKEN_SECRET", "")),
             ("GPT_OAUTH_CLIENT_SECRET", _value(env, "GPT_OAUTH_CLIENT_SECRET", "")),
         )
         for key, value in pilot_required:
             if not value:
                 raise ConfigError(f"{key} is required for APP_PROFILE=pilot")
+
+    if profile is DeploymentProfile.DEMO and not eid_session_enc_key:
+        eid_session_enc_key = _DEMO_EID_SESSION_ENC_KEY
 
     return AppConfig(
         profile=profile,
@@ -154,6 +164,7 @@ def load_config_from_env(source: Mapping[str, str] | None = None) -> AppConfig:
         authentigate_redirect_uri=_value(env, "AUTHENTIGATE_REDIRECT_URI", ""),
         authentigate_scopes=_value(env, "AUTHENTIGATE_SCOPES", DEFAULT_AUTHENTIGATE_SCOPES),
         eid_secret=eid_secret,
+        eid_session_enc_key=eid_session_enc_key,
         node_id=_value(env, "NODE_ID", "tallinn"),
         oauth_access_token_secret=_value(env, "OAUTH_ACCESS_TOKEN_SECRET", ""),
         oauth_access_token_ttl_s=_int(env, "OAUTH_ACCESS_TOKEN_TTL_S", "3600"),
