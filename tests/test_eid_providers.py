@@ -111,4 +111,5 @@ def test_mock_flow_works_without_external_credentials() -> None:
     assert result.provider == "mock"
     assert result.country == "EE"
     assert result.login_method == "mock"
-    assert result.subject_hash.startswith("mock-")
+    assert result.subject_hash
+    assert not result.subject_hash.startswith("mock-")
