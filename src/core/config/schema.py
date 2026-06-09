@@ -5,9 +5,10 @@ from enum import Enum
 from os import environ
 from typing import Mapping
 
+from core.config.eid_provider_defaults import DEFAULT_AUTHENTIGATE_SCOPES
 
-class ConfigError(ValueError):
-    """Raised when environment configuration is invalid."""
+
+from core.config.errors import ConfigError
 
 
 class DeploymentProfile(str, Enum):
@@ -84,6 +85,14 @@ def _profile(source: Mapping[str, str]) -> DeploymentProfile:
     raise ConfigError(f"APP_PROFILE must be 'demo' or 'pilot', got {raw!r}")
 
 
+def _validate_active_eid_provider_config(env: Mapping[str, str], eid_provider: str) -> None:
+    from core.providers.registry_builder import get_provider_descriptor
+
+    descriptor = get_provider_descriptor(eid_provider)
+    if descriptor is not None:
+        descriptor.config_spec.validate(env)
+
+
 def load_config_from_env(source: Mapping[str, str] | None = None) -> AppConfig:
     env = source or environ
 
@@ -94,8 +103,12 @@ def load_config_from_env(source: Mapping[str, str] | None = None) -> AppConfig:
 
     profile = _profile(env)
     eid_provider = _value(env, "EID_PROVIDER", "mock").lower()
-    if eid_provider not in {"mock", "eideasy", "authentigate"}:
-        raise ConfigError(f"EID_PROVIDER must be mock|eideasy|authentigate, got {eid_provider!r}")
+    from core.providers.registry_builder import registered_eid_provider_names
+
+    allowed_eid_providers = registered_eid_provider_names()
+    if eid_provider not in allowed_eid_providers:
+        names = "|".join(sorted(allowed_eid_providers))
+        raise ConfigError(f"EID_PROVIDER must be {names}, got {eid_provider!r}")
 
     supabase_url = _value(env, "SUPABASE_URL", "")
     supabase_service_role = _value(env, "SUPABASE_SERVICE_ROLE", "")
@@ -106,10 +119,7 @@ def load_config_from_env(source: Mapping[str, str] | None = None) -> AppConfig:
     if db_backend == "supabase" and (not supabase_url or not supabase_service_role):
         raise ConfigError("DB_BACKEND=supabase requires SUPABASE_URL and SUPABASE_SERVICE_ROLE")
 
-    if eid_provider == "eideasy":
-        for key in ("EIDEASY_CLIENT_ID", "EIDEASY_CLIENT_SECRET", "EIDEASY_REDIRECT_URI"):
-            if not _value(env, key, ""):
-                raise ConfigError(f"{key} is required when EID_PROVIDER=eideasy")
+    _validate_active_eid_provider_config(env, eid_provider)
 
     if profile is DeploymentProfile.PILOT:
         pilot_required = (
@@ -142,7 +152,7 @@ def load_config_from_env(source: Mapping[str, str] | None = None) -> AppConfig:
         authentigate_client_id=_value(env, "AUTHENTIGATE_CLIENT_ID", ""),
         authentigate_client_secret=_value(env, "AUTHENTIGATE_CLIENT_SECRET", ""),
         authentigate_redirect_uri=_value(env, "AUTHENTIGATE_REDIRECT_URI", ""),
-        authentigate_scopes=_value(env, "AUTHENTIGATE_SCOPES", "openid personal_code personal_code_country"),
+        authentigate_scopes=_value(env, "AUTHENTIGATE_SCOPES", DEFAULT_AUTHENTIGATE_SCOPES),
         eid_secret=eid_secret,
         node_id=_value(env, "NODE_ID", "tallinn"),
         oauth_access_token_secret=_value(env, "OAUTH_ACCESS_TOKEN_SECRET", ""),
