@@ -67,7 +67,10 @@ def test_callback_eid_provider_error_records_canonical_code_in_audit(
             code=EidErrorCode.USER_CANCELLED,
         ),
     ):
-        response = test_client.get(redirect_url)
+        response = test_client.get(
+            redirect_url,
+            headers={"Accept": "application/json"},
+        )
 
     assert response.status_code == 400
     body = response.json()
@@ -93,11 +96,14 @@ def test_callback_unexpected_exception_records_unknown(
         "core.providers.mock.mock_provider.MockEIDProvider.handle_callback",
         side_effect=RuntimeError("unexpected"),
     ):
-        response = test_client.get(redirect_url)
+        response = test_client.get(
+            redirect_url,
+            headers={"Accept": "application/json"},
+        )
 
     assert response.status_code == 400
     assert response.json()["error"]["code"] == "eid_verification_failed"
-    assert "eid_error_code" not in response.json()["error"]
+    assert response.json()["error"]["eid_error_code"] == "UNKNOWN"
 
     deps = get_api_dependencies()
     assert deps.eid_audit_log_repository is not None

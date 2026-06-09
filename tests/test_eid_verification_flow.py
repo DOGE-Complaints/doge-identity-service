@@ -98,7 +98,7 @@ def test_mock_callback_verifies_profile_and_me_reflects_status(
     )
     redirect_url = start.json()["data"]["redirect_url"]
 
-    callback = test_client.get(redirect_url)
+    callback = test_client.get(redirect_url, headers={"Accept": "application/json"})
     assert callback.status_code == 200
     assert callback.json()["data"]["status"] == "verified"
 
@@ -119,13 +119,13 @@ def test_mock_callback_replay_is_idempotent(test_client: TestClient) -> None:
     )
     redirect_url = start.json()["data"]["redirect_url"]
 
-    first = test_client.get(redirect_url)
+    first = test_client.get(redirect_url, headers={"Accept": "application/json"})
     assert first.status_code == 200
     hash_after_first = test_client.get(
         "/me", headers={"Authorization": f"Bearer {token}"}
     ).json()["data"]["eid_verified_at"]
 
-    replay = test_client.get(redirect_url)
+    replay = test_client.get(redirect_url, headers={"Accept": "application/json"})
     assert replay.status_code == 200
     assert replay.json()["data"]["status"] == "already_consumed"
 
@@ -173,7 +173,10 @@ def test_mock_callback_expired_session_does_not_verify_profile(
         )
         store._by_id[session_id] = expired  # noqa: SLF001 — test fixture mutation
 
-        callback = client.get(f"/auth/mock/callback?session_id={session_id}")
+        callback = client.get(
+            f"/auth/mock/callback?session_id={session_id}",
+            headers={"Accept": "application/json"},
+        )
         assert callback.status_code == 400
         assert callback.json()["error"]["code"] == "eid_session_expired"
 
@@ -202,7 +205,10 @@ def test_mock_callback_profile_hash_conflict_returns_409(
             headers={"Authorization": f"Bearer {first_token}"},
             json=_start_payload(),
         )
-        first_callback = test_client.get(first_start.json()["data"]["redirect_url"])
+        first_callback = test_client.get(
+            first_start.json()["data"]["redirect_url"],
+            headers={"Accept": "application/json"},
+        )
         assert first_callback.status_code == 200
 
         second_token = _demo_bearer_token(sub=_OTHER_USER_ID)
@@ -211,7 +217,10 @@ def test_mock_callback_profile_hash_conflict_returns_409(
             headers={"Authorization": f"Bearer {second_token}"},
             json=_start_payload(),
         )
-        conflict = test_client.get(second_start.json()["data"]["redirect_url"])
+        conflict = test_client.get(
+            second_start.json()["data"]["redirect_url"],
+            headers={"Accept": "application/json"},
+        )
 
     assert conflict.status_code == 409
     assert conflict.json()["error"]["code"] == "profile_conflict"
