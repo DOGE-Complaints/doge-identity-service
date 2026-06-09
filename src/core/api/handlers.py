@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
+from core.api.eid_callback import EidCallbackOutcome
 from core.api.envelope import build_error_envelope, build_success_envelope
 from core.api.me_response import build_me_data
 from core.domain.models import EIDAuditEvent, ProfileConflictError
@@ -193,54 +194,69 @@ def handle_auth_eid_callback(
     provider_name: str,
     raw_params: dict[str, str],
     trace_id: str,
-) -> tuple[dict, int]:
+) -> EidCallbackOutcome:
     store = deps.verification_session_store
     profile_repo = deps.profile_repository
     registry = deps.eid_provider_registry
     if store is None or profile_repo is None or registry is None:
-        body = build_error_envelope(
-            "CONFIG_ERROR",
-            "EID verification services are not configured.",
-            trace_id=trace_id,
+        return EidCallbackOutcome(
+            outcome="failed",
+            return_url=None,
+            error_code=None,
+            json_status=500,
+            envelope_code="CONFIG_ERROR",
+            envelope_message="EID verification services are not configured.",
         )
-        return body, 500
 
     session = _resolve_verification_session(store, raw_params)
     if session is None:
-        body = build_error_envelope(
-            "invalid_or_consumed_state",
-            "Verification session not found or already consumed.",
-            trace_id=trace_id,
+        return EidCallbackOutcome(
+            outcome="failed",
+            return_url=None,
+            error_code=None,
+            json_status=400,
+            envelope_code="invalid_or_consumed_state",
+            envelope_message="Verification session not found or already consumed.",
         )
-        return body, 400
 
     if session.provider != provider_name:
-        body = build_error_envelope(
-            "invalid_or_consumed_state",
-            "Session provider mismatch.",
-            trace_id=trace_id,
+        return EidCallbackOutcome(
+            outcome="failed",
+            return_url=session.return_url,
+            error_code=None,
+            json_status=400,
+            envelope_code="invalid_or_consumed_state",
+            envelope_message="Session provider mismatch.",
         )
-        return body, 400
 
     if session.status == "consumed":
-        return build_success_envelope({"status": "already_consumed"}), 200
+        return EidCallbackOutcome(
+            outcome="already_verified",
+            return_url=session.return_url,
+            error_code=None,
+            json_status=200,
+        )
 
     if session.status in {"failed", "expired"}:
-        body = build_error_envelope(
-            "invalid_or_consumed_state",
-            "Verification session is no longer active.",
-            trace_id=trace_id,
+        return EidCallbackOutcome(
+            outcome="failed",
+            return_url=session.return_url,
+            error_code=None,
+            json_status=400,
+            envelope_code="invalid_or_consumed_state",
+            envelope_message="Verification session is no longer active.",
         )
-        return body, 400
 
     now = datetime.now(timezone.utc)
     if session.status != "started":
-        body = build_error_envelope(
-            "invalid_or_consumed_state",
-            "Verification session is not in started state.",
-            trace_id=trace_id,
+        return EidCallbackOutcome(
+            outcome="failed",
+            return_url=session.return_url,
+            error_code=None,
+            json_status=400,
+            envelope_code="invalid_or_consumed_state",
+            envelope_message="Verification session is not in started state.",
         )
-        return body, 400
 
     if session.expires_at < now:
         store.mark_failed(session.id, "session_expired")
@@ -253,12 +269,14 @@ def handle_auth_eid_callback(
             failure_reason="session_expired",
             request_id=trace_id,
         )
-        body = build_error_envelope(
-            "eid_session_expired",
-            "Verification session has expired.",
-            trace_id=trace_id,
+        return EidCallbackOutcome(
+            outcome="failed",
+            return_url=session.return_url,
+            error_code=None,
+            json_status=400,
+            envelope_code="eid_session_expired",
+            envelope_message="Verification session has expired.",
         )
-        return body, 400
 
     provider = registry.get(provider_name)
     try:
@@ -275,13 +293,14 @@ def handle_auth_eid_callback(
             failure_reason=reason,
             request_id=trace_id,
         )
-        body = build_error_envelope(
-            "eid_verification_failed",
-            "Provider callback processing failed.",
-            trace_id=trace_id,
+        return EidCallbackOutcome(
+            outcome="failed",
+            return_url=session.return_url,
+            error_code=exc.code,
+            json_status=400,
+            envelope_code="eid_verification_failed",
+            envelope_message="Provider callback processing failed.",
         )
-        body["error"]["eid_error_code"] = reason
-        return body, 400
     except Exception:
         reason = EidErrorCode.UNKNOWN.value
         store.mark_failed(session.id, reason)
@@ -294,12 +313,14 @@ def handle_auth_eid_callback(
             failure_reason=reason,
             request_id=trace_id,
         )
-        body = build_error_envelope(
-            "eid_verification_failed",
-            "Provider callback processing failed.",
-            trace_id=trace_id,
+        return EidCallbackOutcome(
+            outcome="failed",
+            return_url=session.return_url,
+            error_code=EidErrorCode.UNKNOWN,
+            json_status=400,
+            envelope_code="eid_verification_failed",
+            envelope_message="Provider callback processing failed.",
         )
-        return body, 400
 
     verified_person_hash = hash_secret(
         f"{verification.country}:{verification.subject_hash}",
@@ -327,12 +348,14 @@ def handle_auth_eid_callback(
             failure_reason="profile_conflict",
             request_id=trace_id,
         )
-        body = build_error_envelope(
-            "profile_conflict",
-            str(exc),
-            trace_id=trace_id,
+        return EidCallbackOutcome(
+            outcome="failed",
+            return_url=session.return_url,
+            error_code=None,
+            json_status=409,
+            envelope_code="profile_conflict",
+            envelope_message=str(exc),
         )
-        return body, 409
 
     store.mark_consumed(session.id)
     _log_eid_audit(
@@ -345,10 +368,12 @@ def handle_auth_eid_callback(
         request_id=trace_id,
     )
 
-    payload: dict[str, object] = {"status": "verified"}
-    if session.return_url:
-        payload["return_url"] = session.return_url
-    return build_success_envelope(payload), 200
+    return EidCallbackOutcome(
+        outcome="verified",
+        return_url=session.return_url,
+        error_code=None,
+        json_status=200,
+    )
 
 
 def handle_public_stub(

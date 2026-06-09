@@ -7,9 +7,15 @@ from typing import Any
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 
 from core.api.dependencies import ApiDependencies, build_api_dependencies
+from core.api.eid_callback import (
+    EidCallbackOutcome,
+    append_eid_redirect_query,
+    build_callback_json_envelope,
+    has_safe_redirect_target,
+)
 from core.api.envelope import build_error_envelope, ensure_trace_id
 from core.api.handlers import (
     handle_auth_eid_callback,
@@ -17,7 +23,6 @@ from core.api.handlers import (
     handle_bearer_stub,
     handle_health,
     handle_me,
-    handle_public_stub,
     handle_readiness,
 )
 from core.api.security import UnauthorizedError, UserClaims, get_current_user
@@ -67,6 +72,29 @@ def _query_params_as_strings(request: Request) -> dict[str, str]:
 
 def _json_envelope(body: dict, status_code: int) -> JSONResponse:
     return JSONResponse(content=body, status_code=status_code)
+
+
+def _wants_json_response(request: Request) -> bool:
+    accept = request.headers.get("accept", "")
+    return "application/json" in accept
+
+
+def _render_eid_callback_outcome(
+    request: Request,
+    outcome: EidCallbackOutcome,
+    *,
+    trace_id: str,
+) -> Response:
+    if _wants_json_response(request):
+        body, status = build_callback_json_envelope(outcome, trace_id=trace_id)
+        return _json_envelope(body, status)
+
+    if has_safe_redirect_target(outcome):
+        location = append_eid_redirect_query(outcome, outcome.return_url or "")
+        return RedirectResponse(url=location, status_code=303)
+
+    body, status = build_callback_json_envelope(outcome, trace_id=trace_id)
+    return _json_envelope(body, status)
 
 
 @lru_cache(maxsize=1)
@@ -211,41 +239,26 @@ def _register_routes(app: FastAPI) -> None:
         )
         return _json_envelope(body, status)
 
-    @app.get("/auth/eideasy/callback")
-    async def auth_eideasy_callback(request: Request) -> JSONResponse:
+    @app.get("/auth/{provider}/callback")
+    async def auth_eid_callback(request: Request, provider: str) -> Response:
         deps = get_api_dependencies()
         trace_id = _trace_id_from_request(request)
-        body, status = handle_public_stub(
+        registry = deps.eid_provider_registry
+        if registry is None:
+            body = build_error_envelope(
+                "CONFIG_ERROR",
+                "EID provider registry is not configured.",
+                trace_id=trace_id,
+            )
+            return _json_envelope(body, 500)
+        registry.get(provider)
+        outcome = handle_auth_eid_callback(
             deps,
-            path="/auth/eideasy/callback",
-            next_epic="EPIC-IDS-EID",
-            trace_id=trace_id,
-        )
-        return _json_envelope(body, status)
-
-    @app.get("/auth/authentigate/callback")
-    async def auth_authentigate_callback(request: Request) -> JSONResponse:
-        deps = get_api_dependencies()
-        trace_id = _trace_id_from_request(request)
-        body, status = handle_public_stub(
-            deps,
-            path="/auth/authentigate/callback",
-            next_epic="EPIC-IDS-EID",
-            trace_id=trace_id,
-        )
-        return _json_envelope(body, status)
-
-    @app.get("/auth/mock/callback")
-    async def auth_mock_callback(request: Request) -> JSONResponse:
-        deps = get_api_dependencies()
-        trace_id = _trace_id_from_request(request)
-        body, status = handle_auth_eid_callback(
-            deps,
-            provider_name="mock",
+            provider_name=provider,
             raw_params=_query_params_as_strings(request),
             trace_id=trace_id,
         )
-        return _json_envelope(body, status)
+        return _render_eid_callback_outcome(request, outcome, trace_id=trace_id)
 
     @app.get("/oauth/authorize")
     async def oauth_authorize(
