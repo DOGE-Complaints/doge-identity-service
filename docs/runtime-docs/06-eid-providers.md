@@ -65,8 +65,22 @@ verified_person_hash = hash_secret(f"{country}:{subject_hash}", key=eid_secret)
 1. Написать класс по контракту `EIDProviderPort` (4 метода выше).
 2. Добавить `EIDProviderDescriptor` в `ALL_EID_PROVIDER_DESCRIPTORS` ([`registry_builder.py:10-14`](../../src/core/providers/registry_builder.py)) с `config_spec` и `build(runtime)` — **без** правок hardcode-словаря в `providers.py`.
 3. Колонки `provider`/`provider_session_data` в таблице сессий под это уже готовы (миграция `20260526000001`).
-4. Callback-маршруты `/auth/eideasy/callback`, `/auth/authentigate/callback` уже объявлены, но 🟡 заглушки — подключаются в эпике eID-flow.
+4. Callback — **один** параметризованный маршрут `GET /auth/{provider}/callback` ([`asgi_app.py`](../../src/core/api/asgi_app.py)); новый провайдер не требует нового роута. Незарегистрированный `provider` → `ProviderNotRegisteredError` (`ConfigError`).
+
+## Браузерный callback и SPA-first redirect ✅
+
+Живой eID-флоу (full-page redirect):
+
+1. UI вызывает `POST /auth/eid/start` с `return_url` из allowlist.
+2. Пользователь уходит к провайдеру; провайдер редиректит браузер на `GET /auth/{provider}/callback?...`.
+3. Identity завершает оркестрацию (`handle_auth_eid_callback` → `EidCallbackOutcome`) и по умолчанию отвечает **`303 See Other`** на сохранённый `return_url` с маркерами:
+   - успех: `?eid_status=verified`
+   - ошибка провайдера: `?eid_status=error&eid_error=<EidErrorCode>`
+4. Если сессия/`return_url` неизвестны — **безопасный 400 JSON** без redirect (open-redirect guard).
+5. Для offline-тестов и API-клиентов: `Accept: application/json` → JSON envelope (как раньше).
+
+Рендер: [`eid_callback.py`](../../src/core/api/eid_callback.py), [`asgi_app.py`](../../src/core/api/asgi_app.py) (`_render_eid_callback_outcome`).
 
 ## Текущее состояние целиком
 
-Инфраструктура модульности готова: порт, реестр, mock, хранилище сессий, таблица с поддержкой провайдеров. А вот сами эндпоинты eID-флоу (`/auth/eid/start`, callback'и) — пока 🟡 заглушки ([01-api](01-api.md)), и реальные провайдеры (eideasy/authentigate) ещё не написаны.
+Инфраструктура и mock-флоу работают: `POST /auth/eid/start`, динамический callback, redirect в SPA, audit, профиль. Реальные runtime-провайдеры eideasy/authentigate — EID-02.
