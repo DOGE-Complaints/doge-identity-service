@@ -9,6 +9,7 @@ import httpx
 
 from core.config.schema import AppConfig
 from core.domain.contracts import VerificationSessionStore
+from core.security.oidc import OidcToolkit
 
 
 @dataclass(frozen=True)
@@ -17,5 +18,5 @@ class ProviderRuntime:
     session_store: VerificationSessionStore
     http_client: httpx.Client | None = None
     secret_box: Any | None = None
-    oidc: Any | None = None
+    oidc: OidcToolkit | None = None
     clock: Callable[[], datetime] | None = None
