@@ -21,6 +21,8 @@ _IDENTITY_ROUTE_PATHS = frozenset(
         "/ready",
         "/me",
         "/auth/eid/start",
+        "/auth/phone/request",
+        "/auth/phone/confirm",
         "/auth/{provider}/callback",
         "/oauth/authorize",
         "/oauth/authorize/complete",

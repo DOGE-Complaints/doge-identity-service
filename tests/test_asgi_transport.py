@@ -131,6 +131,8 @@ def test_route_table_contains_identity_contract_paths(test_client: TestClient) -
         "/ready",
         "/me",
         "/auth/eid/start",
+        "/auth/phone/request",
+        "/auth/phone/confirm",
         "/auth/{provider}/callback",
         "/oauth/authorize",
         "/oauth/authorize/complete",

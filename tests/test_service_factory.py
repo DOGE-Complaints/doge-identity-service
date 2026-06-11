@@ -13,10 +13,14 @@ from core.infrastructure.repositories import (
     InMemoryHealthRepository,
     InMemoryOAuthClientStore,
     InMemoryOAuthTokenService,
+    InMemoryPhoneAuditLogRepository,
+    InMemoryPhoneVerificationSessionStore,
     InMemoryProfileRepository,
     InMemoryVerificationSessionStore,
 )
 from core.infrastructure.service_factory import DefaultServiceFactory
+from core.phone.registry_builder import build_sms_registry
+from core.phone.runtime_factory import build_sms_provider_runtime
 from core.providers.registry import EIDProviderRegistry
 
 
@@ -80,6 +84,7 @@ def _demo_config(**overrides: object) -> AppConfig:
 
 def _build_factory(config: AppConfig | None = None) -> DefaultServiceFactory:
     resolved = config or _demo_config()
+    sms_runtime = build_sms_provider_runtime(config=resolved)
     return DefaultServiceFactory(
         config=resolved,
         health_repository=InMemoryHealthRepository(),
@@ -91,6 +96,9 @@ def _build_factory(config: AppConfig | None = None) -> DefaultServiceFactory:
         supabase_jwt_validator=_StubSupabaseJwtValidator(),
         bearer_token_auth=SupabaseJwtBearerTokenAuth(validator=_StubSupabaseJwtValidator()),
         eid_provider_registry=EIDProviderRegistry({}),
+        sms_sender_registry=build_sms_registry(sms_runtime),
+        phone_verification_session_store=InMemoryPhoneVerificationSessionStore(),
+        phone_audit_log_repository=InMemoryPhoneAuditLogRepository(),
     )
 
 
@@ -126,3 +134,9 @@ def test_get_methods_return_same_instances() -> None:
     assert factory.get_supabase_jwt_validator() is factory.get_supabase_jwt_validator()
     assert factory.get_bearer_token_auth() is factory.get_bearer_token_auth()
     assert factory.get_eid_provider_registry() is factory.get_eid_provider_registry()
+    assert factory.get_sms_sender_registry() is factory.get_sms_sender_registry()
+    assert (
+        factory.get_phone_verification_session_store()
+        is factory.get_phone_verification_session_store()
+    )
+    assert factory.get_phone_audit_log_repository() is factory.get_phone_audit_log_repository()
