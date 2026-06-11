@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from core.phone.descriptor import SmsProviderDescriptor
 from core.phone.mock.descriptor import MOCK_SMS_DESCRIPTOR
+from core.phone.telnyx.descriptor import TELNYX_SMS_DESCRIPTOR
 from core.phone.registry import SmsSenderRegistry
 from core.phone.runtime import SmsProviderRuntime
 
 ALL_SMS_PROVIDER_DESCRIPTORS: tuple[SmsProviderDescriptor, ...] = (
     MOCK_SMS_DESCRIPTOR,
+    TELNYX_SMS_DESCRIPTOR,
 )
 
 _DESCRIPTOR_BY_NAME = {descriptor.name: descriptor for descriptor in ALL_SMS_PROVIDER_DESCRIPTORS}

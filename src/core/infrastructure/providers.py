@@ -4,7 +4,7 @@ import logging
 
 from core.api.security import SupabaseJwtBearerTokenAuth
 from core.auth.supabase_validator import SupabaseJwtValidatorImpl
-from core.config.providers import provide_app_config
+from core.config.providers import provide_app_config, resolve_config_env
 from core.config.schema import AppConfig
 from core.infrastructure.db_supabase import (
     SupabaseDatabase,
@@ -101,7 +101,10 @@ def provide_service_factory(config: AppConfig | None = None) -> DefaultServiceFa
 
     phone_verification_session_store = InMemoryPhoneVerificationSessionStore()
     phone_audit_log_repository = InMemoryPhoneAuditLogRepository()
-    sms_sender_registry = build_sms_registry(build_sms_provider_runtime(config=resolved_config))
+    merged_env = resolve_config_env()
+    sms_sender_registry = build_sms_registry(
+        build_sms_provider_runtime(config=resolved_config, env=merged_env)
+    )
 
     return DefaultServiceFactory(
         config=resolved_config,
