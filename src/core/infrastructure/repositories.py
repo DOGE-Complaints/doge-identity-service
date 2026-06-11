@@ -16,6 +16,7 @@ from core.domain.models import (
     EIDAuditEvent,
     OAuthClient,
     OAuthTokenClaims,
+    PhoneAuditEvent,
     PhoneVerificationSession,
     ProfileConflictError,
     ProfileRecord,
@@ -303,6 +304,17 @@ class InMemoryPhoneVerificationSessionStore:
                 active = session
         return active
 
+    def get_latest_for_confirm(self, supabase_user_id: str) -> PhoneVerificationSession | None:
+        latest: PhoneVerificationSession | None = None
+        for session in self._by_id.values():
+            if session.supabase_user_id != supabase_user_id:
+                continue
+            if session.status not in {"started", "failed"}:
+                continue
+            if latest is None or session.created_at > latest.created_at:
+                latest = session
+        return latest
+
     def replace(self, session: PhoneVerificationSession) -> PhoneVerificationSession:
         self._by_id[session.id] = session
         return session
@@ -338,6 +350,28 @@ class InMemoryPhoneVerificationSessionStore:
             self._by_id[session_id] = dataclasses.replace(session, status="expired")
             expired_count += 1
         return expired_count
+
+
+class InMemoryPhoneAuditLogRepository:
+    def __init__(self) -> None:
+        self._events: list[PhoneAuditEvent] = []
+
+    def log_event(self, event: PhoneAuditEvent) -> None:
+        self._events.append(event)
+
+    def list_events(
+        self,
+        *,
+        supabase_user_id: str | None = None,
+        event_type: str | None = None,
+        limit: int = 100,
+    ) -> list[PhoneAuditEvent]:
+        results = self._events
+        if supabase_user_id is not None:
+            results = [event for event in results if event.supabase_user_id == supabase_user_id]
+        if event_type is not None:
+            results = [event for event in results if event.event_type == event_type]
+        return results[-limit:]
 
 
 class InMemoryEIDAuditLogRepository:

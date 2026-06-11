@@ -8,6 +8,7 @@ if TYPE_CHECKING:
         EIDAuditEvent,
         OAuthClient,
         OAuthTokenClaims,
+        PhoneAuditEvent,
         PhoneVerificationSession,
         ProfileRecord,
         UserClaims,
@@ -76,6 +77,8 @@ class PhoneVerificationSessionStore(Protocol):
 
     def get_active_by_user(self, supabase_user_id: str, *, now: datetime) -> PhoneVerificationSession | None: ...
 
+    def get_latest_for_confirm(self, supabase_user_id: str) -> PhoneVerificationSession | None: ...
+
     def replace(self, session: PhoneVerificationSession) -> PhoneVerificationSession: ...
 
     def mark_consumed(self, session_id: str) -> None: ...
@@ -85,6 +88,19 @@ class PhoneVerificationSessionStore(Protocol):
     def mark_expired(self, session_id: str) -> None: ...
 
     def expire_pending(self, now: datetime) -> int: ...
+
+
+@runtime_checkable
+class PhoneAuditLogRepository(Protocol):
+    def log_event(self, event: PhoneAuditEvent) -> None: ...
+
+    def list_events(
+        self,
+        *,
+        supabase_user_id: str | None = None,
+        event_type: str | None = None,
+        limit: int = 100,
+    ) -> list[PhoneAuditEvent]: ...
 
 
 @runtime_checkable

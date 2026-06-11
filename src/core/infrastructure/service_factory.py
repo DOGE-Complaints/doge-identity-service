@@ -9,10 +9,13 @@ from core.domain.contracts import (
     HealthRepository,
     OAuthClientStore,
     OAuthTokenService,
+    PhoneAuditLogRepository,
+    PhoneVerificationSessionStore,
     ProfileRepository,
     SupabaseJwtValidator,
     VerificationSessionStore,
 )
+from core.phone.registry import SmsSenderRegistry
 from core.providers.registry import EIDProviderRegistry
 
 
@@ -28,6 +31,9 @@ class DefaultServiceFactory:
     supabase_jwt_validator: SupabaseJwtValidator
     bearer_token_auth: BearerTokenAuth
     eid_provider_registry: EIDProviderRegistry
+    sms_sender_registry: SmsSenderRegistry
+    phone_verification_session_store: PhoneVerificationSessionStore
+    phone_audit_log_repository: PhoneAuditLogRepository
 
     def get_health_repository(self) -> HealthRepository:
         return self.health_repository
@@ -55,3 +61,12 @@ class DefaultServiceFactory:
 
     def get_oauth_token_service(self) -> OAuthTokenService:
         return self.oauth_token_service
+
+    def get_sms_sender_registry(self) -> SmsSenderRegistry:
+        return self.sms_sender_registry
+
+    def get_phone_verification_session_store(self) -> PhoneVerificationSessionStore:
+        return self.phone_verification_session_store
+
+    def get_phone_audit_log_repository(self) -> PhoneAuditLogRepository:
+        return self.phone_audit_log_repository

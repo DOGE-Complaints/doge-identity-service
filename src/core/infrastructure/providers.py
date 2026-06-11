@@ -19,10 +19,14 @@ from core.infrastructure.repositories import (
     InMemoryHealthRepository,
     InMemoryOAuthClientStore,
     InMemoryOAuthTokenService,
+    InMemoryPhoneAuditLogRepository,
+    InMemoryPhoneVerificationSessionStore,
     InMemoryProfileRepository,
     InMemoryVerificationSessionStore,
 )
 from core.infrastructure.service_factory import DefaultServiceFactory
+from core.phone.registry_builder import build_sms_registry
+from core.phone.runtime_factory import build_sms_provider_runtime
 from core.providers.registry_builder import build_registry
 from core.providers.runtime_factory import build_provider_runtime
 
@@ -95,6 +99,10 @@ def provide_service_factory(config: AppConfig | None = None) -> DefaultServiceFa
     )
     registry = build_registry(provider_runtime)
 
+    phone_verification_session_store = InMemoryPhoneVerificationSessionStore()
+    phone_audit_log_repository = InMemoryPhoneAuditLogRepository()
+    sms_sender_registry = build_sms_registry(build_sms_provider_runtime(config=resolved_config))
+
     return DefaultServiceFactory(
         config=resolved_config,
         health_repository=health_repository,
@@ -106,4 +114,7 @@ def provide_service_factory(config: AppConfig | None = None) -> DefaultServiceFa
         supabase_jwt_validator=supabase_jwt_validator,
         bearer_token_auth=bearer_token_auth,
         eid_provider_registry=registry,
+        sms_sender_registry=sms_sender_registry,
+        phone_verification_session_store=phone_verification_session_store,
+        phone_audit_log_repository=phone_audit_log_repository,
     )

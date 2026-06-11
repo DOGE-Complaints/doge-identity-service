@@ -30,13 +30,17 @@ def normalize_to_e164(raw: str) -> str:
     )
 
 
-def assert_allowed_dial_prefix(e164: str, allowed_prefixes: tuple[str, ...]) -> None:
+def resolve_dial_prefix(e164: str, allowed_prefixes: tuple[str, ...]) -> str:
     if not allowed_prefixes:
-        return
-    for prefix in allowed_prefixes:
-        if e164.startswith(prefix):
-            return
-    raise SmsSenderError(
-        f"dial prefix not allowed for {e164!r}",
-        code=SmsErrorCode.COUNTRY_NOT_ALLOWED,
-    )
+        return e164[:4] if len(e164) >= 4 else e164
+    matches = [prefix for prefix in allowed_prefixes if e164.startswith(prefix)]
+    if not matches:
+        raise SmsSenderError(
+            f"dial prefix not allowed for {e164!r}",
+            code=SmsErrorCode.COUNTRY_NOT_ALLOWED,
+        )
+    return max(matches, key=len)
+
+
+def assert_allowed_dial_prefix(e164: str, allowed_prefixes: tuple[str, ...]) -> None:
+    resolve_dial_prefix(e164, allowed_prefixes)

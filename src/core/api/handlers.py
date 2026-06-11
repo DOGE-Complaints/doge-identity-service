@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
 from core.api.eid_callback import EidCallbackOutcome
 from core.api.envelope import build_error_envelope, build_success_envelope
 from core.api.me_response import build_me_data
-from core.domain.models import EIDAuditEvent, ProfileConflictError
+from core.domain.models import EIDAuditEvent, PhoneAuditEvent, ProfileConflictError
+from core.phone.base import SmsErrorCode, SmsSenderError
+from core.phone.e164 import normalize_to_e164, resolve_dial_prefix
+from core.phone.otp_engine import create_phone_verification_session, verify_phone_code
+from core.phone.sms_text import build_verification_sms_text
 from core.security.hashing import hash_secret
 from core.security.return_url import (
     InvalidReturnUrlError,
@@ -79,6 +83,48 @@ def handle_me(
 def _format_utc_iso(dt: datetime) -> str:
     return dt.astimezone(timezone.utc).replace(microsecond=0).isoformat().replace(
         "+00:00", "Z"
+    )
+
+
+def _sms_error_http_status(code: SmsErrorCode) -> int:
+    if code in {SmsErrorCode.PROVIDER_UNAVAILABLE, SmsErrorCode.SEND_FAILED}:
+        return 503
+    return 400
+
+
+def _phone_error_response(
+    exc: SmsSenderError,
+    *,
+    trace_id: str,
+) -> tuple[dict, int]:
+    body = build_error_envelope(exc.code.value, str(exc), trace_id=trace_id)
+    return body, _sms_error_http_status(exc.code)
+
+
+def _log_phone_audit(
+    deps: ApiDependencies,
+    *,
+    supabase_user_id: str | None,
+    event_type: str,
+    provider: str | None = None,
+    success: bool,
+    failure_reason: str | None = None,
+    request_id: str | None = None,
+) -> None:
+    audit = deps.phone_audit_log_repository
+    if audit is None:
+        return
+    audit.log_event(
+        PhoneAuditEvent(
+            id=str(uuid.uuid4()),
+            supabase_user_id=supabase_user_id,
+            event_type=event_type,
+            provider=provider,
+            success=success,
+            failure_reason=failure_reason,
+            request_id=request_id,
+            created_at=datetime.now(timezone.utc),
+        )
     )
 
 
@@ -374,6 +420,184 @@ def handle_auth_eid_callback(
         error_code=None,
         json_status=200,
     )
+
+
+def handle_phone_request(
+    deps: ApiDependencies,
+    *,
+    current_user: UserClaims,
+    phone: str,
+    trace_id: str,
+) -> tuple[dict, int]:
+    registry = deps.sms_sender_registry
+    session_store = deps.phone_verification_session_store
+    if registry is None or session_store is None:
+        body = build_error_envelope(
+            "CONFIG_ERROR",
+            "Phone verification services are not configured.",
+            trace_id=trace_id,
+        )
+        return body, 500
+
+    user_id = current_user.supabase_user_id
+    now = datetime.now(timezone.utc)
+
+    try:
+        e164 = normalize_to_e164(phone)
+        dial_prefix = resolve_dial_prefix(e164, deps.config.phone_allowed_dial_prefixes)
+
+        active = session_store.get_active_by_user(user_id, now=now)
+        if active is not None:
+            cooldown_end = active.created_at + timedelta(
+                seconds=deps.config.phone_resend_cooldown_s
+            )
+            if now < cooldown_end:
+                _log_phone_audit(
+                    deps,
+                    supabase_user_id=user_id,
+                    event_type="phone_verification_request_failed",
+                    success=False,
+                    failure_reason=SmsErrorCode.RATE_LIMITED.value,
+                    request_id=trace_id,
+                )
+                raise SmsSenderError(
+                    "phone verification resend is rate limited",
+                    code=SmsErrorCode.RATE_LIMITED,
+                )
+
+        sender = registry.get_active(deps.config)
+        session, plaintext_code = create_phone_verification_session(
+            store=session_store,
+            config=deps.config,
+            supabase_user_id=user_id,
+            e164=e164,
+            dial_prefix=dial_prefix,
+            provider=sender.provider_name,
+            now=now,
+        )
+        sender.send(to_e164=e164, text=build_verification_sms_text(plaintext_code))
+    except SmsSenderError as exc:
+        if exc.code is not SmsErrorCode.RATE_LIMITED:
+            _log_phone_audit(
+                deps,
+                supabase_user_id=user_id,
+                event_type="phone_verification_request_failed",
+                success=False,
+                failure_reason=exc.code.value,
+                request_id=trace_id,
+            )
+        return _phone_error_response(exc, trace_id=trace_id)
+
+    _log_phone_audit(
+        deps,
+        supabase_user_id=user_id,
+        event_type="phone_verification_requested",
+        provider=sender.provider_name,
+        success=True,
+        request_id=trace_id,
+    )
+    payload = {
+        "sent": True,
+        "expires_at": _format_utc_iso(session.expires_at),
+    }
+    return build_success_envelope(payload), 200
+
+
+def handle_phone_confirm(
+    deps: ApiDependencies,
+    *,
+    current_user: UserClaims,
+    phone: str,
+    code: str,
+    trace_id: str,
+) -> tuple[dict, int]:
+    session_store = deps.phone_verification_session_store
+    profile_repo = deps.profile_repository
+    if session_store is None or profile_repo is None:
+        body = build_error_envelope(
+            "CONFIG_ERROR",
+            "Phone verification services are not configured.",
+            trace_id=trace_id,
+        )
+        return body, 500
+
+    user_id = current_user.supabase_user_id
+    now = datetime.now(timezone.utc)
+    audit_provider: str | None = None
+
+    try:
+        e164 = normalize_to_e164(phone)
+        session = session_store.get_latest_for_confirm(user_id)
+        if session is None:
+            raise SmsSenderError(
+                "no active phone verification session",
+                code=SmsErrorCode.UNKNOWN,
+            )
+        if session.status == "failed":
+            raise SmsSenderError(
+                "too many verification attempts",
+                code=SmsErrorCode.TOO_MANY_ATTEMPTS,
+            )
+
+        audit_provider = session.provider
+        expected_phone_hash = hash_secret(e164, key=deps.config.eid_secret or "")
+        if session.phone_hash != expected_phone_hash:
+            raise SmsSenderError(
+                "phone number does not match verification session",
+                code=SmsErrorCode.UNKNOWN,
+            )
+
+        verification = verify_phone_code(
+            store=session_store,
+            config=deps.config,
+            session_id=session.id,
+            submitted_code=code,
+            e164=e164,
+            now=now,
+        )
+    except SmsSenderError as exc:
+        _log_phone_audit(
+            deps,
+            supabase_user_id=user_id,
+            event_type="phone_verification_confirm_failed",
+            provider=audit_provider,
+            success=False,
+            failure_reason=exc.code.value,
+            request_id=trace_id,
+        )
+        return _phone_error_response(exc, trace_id=trace_id)
+
+    try:
+        profile_repo.attach_phone_verification(
+            user_id,
+            provider=verification.provider,
+            dial_prefix=verification.dial_prefix,
+            verified_phone_hash=verification.subject_hash,
+            verified_at=verification.verified_at,
+            one_account_per_number=deps.config.phone_one_account_per_number,
+        )
+    except ProfileConflictError as exc:
+        _log_phone_audit(
+            deps,
+            supabase_user_id=user_id,
+            event_type="phone_verification_confirm_failed",
+            provider=verification.provider,
+            success=False,
+            failure_reason="profile_conflict",
+            request_id=trace_id,
+        )
+        body = build_error_envelope("profile_conflict", str(exc), trace_id=trace_id)
+        return body, 409
+
+    _log_phone_audit(
+        deps,
+        supabase_user_id=user_id,
+        event_type="phone_verification_confirmed",
+        provider=verification.provider,
+        success=True,
+        request_id=trace_id,
+    )
+    return build_success_envelope({"status": "verified"}), 200
 
 
 def handle_public_stub(

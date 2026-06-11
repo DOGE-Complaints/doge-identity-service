@@ -23,6 +23,8 @@ from core.api.handlers import (
     handle_bearer_stub,
     handle_health,
     handle_me,
+    handle_phone_confirm,
+    handle_phone_request,
     handle_readiness,
 )
 from core.api.security import UnauthorizedError, UserClaims, get_current_user
@@ -32,6 +34,8 @@ from core.logging_setup import configure_logging, log_runtime_exception
 PROTECTED_OPTIONS_PATHS: tuple[str, ...] = (
     "/me",
     "/auth/eid/start",
+    "/auth/phone/request",
+    "/auth/phone/confirm",
     "/oauth/authorize",
     "/oauth/authorize/complete",
     "/oauth/token",
@@ -40,6 +44,24 @@ PROTECTED_OPTIONS_PATHS: tuple[str, ...] = (
 
 def _trace_id_from_request(request: Request) -> str:
     return ensure_trace_id(request.headers.get("x-trace-id"))
+
+
+async def _phone_payload_from_request(request: Request) -> dict[str, str]:
+    payload: dict[str, str] = {"phone": "", "code": ""}
+    content_type = request.headers.get("content-type", "")
+    if content_type.startswith("application/json"):
+        try:
+            body = await request.json()
+        except Exception:
+            body = None
+        if isinstance(body, dict):
+            phone = body.get("phone")
+            if isinstance(phone, str):
+                payload["phone"] = phone
+            code = body.get("code")
+            if isinstance(code, str):
+                payload["code"] = code
+    return payload
 
 
 async def _eid_start_payload_from_request(request: Request) -> dict[str, str | None]:
@@ -259,6 +281,39 @@ def _register_routes(app: FastAPI) -> None:
             trace_id=trace_id,
         )
         return _render_eid_callback_outcome(request, outcome, trace_id=trace_id)
+
+    @app.post("/auth/phone/request")
+    async def auth_phone_request(
+        request: Request,
+        current_user: UserClaims = Depends(get_current_user),
+    ) -> JSONResponse:
+        deps = get_api_dependencies()
+        trace_id = _trace_id_from_request(request)
+        phone_payload = await _phone_payload_from_request(request)
+        body, status = handle_phone_request(
+            deps,
+            current_user=current_user,
+            phone=phone_payload["phone"],
+            trace_id=trace_id,
+        )
+        return _json_envelope(body, status)
+
+    @app.post("/auth/phone/confirm")
+    async def auth_phone_confirm(
+        request: Request,
+        current_user: UserClaims = Depends(get_current_user),
+    ) -> JSONResponse:
+        deps = get_api_dependencies()
+        trace_id = _trace_id_from_request(request)
+        phone_payload = await _phone_payload_from_request(request)
+        body, status = handle_phone_confirm(
+            deps,
+            current_user=current_user,
+            phone=phone_payload["phone"],
+            code=phone_payload["code"],
+            trace_id=trace_id,
+        )
+        return _json_envelope(body, status)
 
     @app.get("/oauth/authorize")
     async def oauth_authorize(

@@ -88,6 +88,18 @@ class PhoneVerificationResult:
 
 
 @dataclass(frozen=True)
+class PhoneAuditEvent:
+    id: str
+    supabase_user_id: str | None
+    event_type: str
+    provider: str | None
+    success: bool
+    failure_reason: str | None
+    request_id: str | None
+    created_at: datetime
+
+
+@dataclass(frozen=True)
 class EIDAuditEvent:
     id: str
     supabase_user_id: str | None
