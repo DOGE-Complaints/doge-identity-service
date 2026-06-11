@@ -18,9 +18,31 @@ def _minimal_env(**overrides: str) -> dict[str, str]:
     return base
 
 
-def test_unknown_sms_provider_rejected() -> None:
-    with pytest.raises(ConfigError, match="SMS_PROVIDER must be mock"):
+def test_telnyx_sms_provider_requires_api_key() -> None:
+    with pytest.raises(ConfigError, match="TELNYX_API_KEY"):
         load_config_from_env(_minimal_env(SMS_PROVIDER="telnyx"))
+
+
+def test_telnyx_sms_provider_requires_profile_for_alphanumeric_from() -> None:
+    with pytest.raises(ConfigError, match="TELNYX_MESSAGING_PROFILE_ID"):
+        load_config_from_env(
+            _minimal_env(
+                SMS_PROVIDER="telnyx",
+                TELNYX_API_KEY="KEY_test",
+                TELNYX_FROM="DOGEstonia",
+            )
+        )
+
+
+def test_telnyx_sms_provider_loads_with_required_env() -> None:
+    cfg = load_config_from_env(
+        _minimal_env(
+            SMS_PROVIDER="telnyx",
+            TELNYX_API_KEY="KEY_test",
+            TELNYX_MESSAGING_PROFILE_ID="profile-uuid",
+        )
+    )
+    assert cfg.sms_provider == "telnyx"
 
 
 def test_phone_allowed_dial_prefixes_parsed_to_tuple() -> None:
