@@ -111,6 +111,69 @@ def test_inmemory_oauth_token_service_satisfies_protocol() -> None:
     assert isinstance(service, OAuthTokenService)
 
 
+def test_attach_phone_verification_sets_profile_fields() -> None:
+    repo = InMemoryProfileRepository()
+    verified_at = datetime.now(timezone.utc)
+    updated = repo.attach_phone_verification(
+        user_id="u1",
+        provider="mock",
+        dial_prefix="+372",
+        verified_phone_hash="phone-h",
+        verified_at=verified_at,
+        one_account_per_number=True,
+    )
+    assert updated.phone_verified is True
+    assert updated.verified_phone_hash == "phone-h"
+    assert updated.phone_provider == "mock"
+    assert updated.phone_dial_prefix == "+372"
+    assert updated.phone_verified_at == verified_at
+
+
+def test_attach_phone_verification_enforces_unique_hash_when_one_account() -> None:
+    repo = InMemoryProfileRepository()
+    verified_at = datetime.now(timezone.utc)
+    repo.attach_phone_verification(
+        user_id="u1",
+        provider="mock",
+        dial_prefix="+372",
+        verified_phone_hash="phone-h",
+        verified_at=verified_at,
+        one_account_per_number=True,
+    )
+    with pytest.raises(ProfileConflictError):
+        repo.attach_phone_verification(
+            user_id="u2",
+            provider="mock",
+            dial_prefix="+372",
+            verified_phone_hash="phone-h",
+            verified_at=verified_at,
+            one_account_per_number=True,
+        )
+
+
+def test_attach_phone_verification_allows_duplicate_when_not_one_account() -> None:
+    repo = InMemoryProfileRepository()
+    verified_at = datetime.now(timezone.utc)
+    repo.attach_phone_verification(
+        user_id="u1",
+        provider="mock",
+        dial_prefix="+372",
+        verified_phone_hash="phone-h",
+        verified_at=verified_at,
+        one_account_per_number=False,
+    )
+    updated = repo.attach_phone_verification(
+        user_id="u2",
+        provider="mock",
+        dial_prefix="+372",
+        verified_phone_hash="phone-h",
+        verified_at=verified_at,
+        one_account_per_number=False,
+    )
+    assert updated.phone_verified is True
+    assert updated.verified_phone_hash == "phone-h"
+
+
 def test_attach_eid_verification_enforces_unique_verified_person_hash() -> None:
     repo = InMemoryProfileRepository()
     verified_at = datetime.now(timezone.utc)

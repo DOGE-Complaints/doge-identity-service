@@ -43,6 +43,18 @@ OPERATIONAL_MIGRATIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ),
 )
 
+POST_HISTORICAL_MIGRATIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    (
+        "20260611000001_profiles_phone_verification.sql",
+        (
+            "phone_verified",
+            "verified_phone_hash",
+            "unique_verified_phone_hash",
+            "ADD COLUMN IF NOT EXISTS",
+        ),
+    ),
+)
+
 HISTORICAL_MIGRATIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
     (
         "20260527000001_create_story_drafts.sql",
@@ -74,6 +86,17 @@ def test_operational_migration_file_exists_with_required_sql(
         assert snippet in text, f"{filename} missing {snippet!r}"
 
 
+@pytest.mark.parametrize("filename,required_snippets", POST_HISTORICAL_MIGRATIONS)
+def test_post_historical_migration_file_exists_with_required_sql(
+    filename: str, required_snippets: tuple[str, ...]
+) -> None:
+    path = MIGRATIONS_DIR / filename
+    assert path.is_file(), f"missing migration file: {path}"
+    text = path.read_text(encoding="utf-8")
+    for snippet in required_snippets:
+        assert snippet in text, f"{filename} missing {snippet!r}"
+
+
 @pytest.mark.parametrize("filename,required_snippets", HISTORICAL_MIGRATIONS)
 def test_historical_migration_file_exists_with_deprecated_header(
     filename: str, required_snippets: tuple[str, ...]
@@ -89,7 +112,7 @@ def test_migration_filenames_are_chronological() -> None:
     names = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
     expected = [item[0] for item in OPERATIONAL_MIGRATIONS] + [
         item[0] for item in HISTORICAL_MIGRATIONS
-    ]
+    ] + [item[0] for item in POST_HISTORICAL_MIGRATIONS]
     assert names == expected
 
 
@@ -125,3 +148,18 @@ def test_profiles_critical_columns_for_healthcheck() -> None:
         "eid_verified_at",
     ):
         assert column in profiles_sql
+
+
+def test_profiles_phone_verification_columns_and_index() -> None:
+    phone_sql = (
+        MIGRATIONS_DIR / "20260611000001_profiles_phone_verification.sql"
+    ).read_text(encoding="utf-8")
+    for column in (
+        "phone_verified",
+        "verified_phone_hash",
+        "phone_provider",
+        "phone_dial_prefix",
+        "phone_verified_at",
+    ):
+        assert column in phone_sql
+    assert "unique_verified_phone_hash" in phone_sql

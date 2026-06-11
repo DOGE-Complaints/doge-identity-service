@@ -46,6 +46,11 @@ def _demo_profile(**overrides: object) -> ProfileRecord:
         "eid_method": None,
         "eid_country": None,
         "eid_verified_at": None,
+        "phone_verified": False,
+        "verified_phone_hash": None,
+        "phone_provider": None,
+        "phone_dial_prefix": None,
+        "phone_verified_at": None,
         "wallet_address": None,
         "wallet_linked_at": None,
         "wallet_signature_verified_at": None,
@@ -91,6 +96,42 @@ def test_profile_get_by_supabase_user_id_uses_eq_filter_and_empty_is_none() -> N
         path="/rest/v1/profiles",
         params={"supabase_user_id": "eq.u1", "limit": "1"},
     )
+
+
+def test_profile_get_by_verified_phone_hash_uses_eq_filter() -> None:
+    db = SupabaseDatabase.from_http(SUPABASE_URL, SERVICE_ROLE_KEY)
+    repo = SupabaseProfileRepository(db)
+    with patch.object(SupabaseDatabase, "_request", return_value=[]) as mock_request:
+        result = repo.get_by_verified_phone_hash("phone-hash-1")
+    assert result is None
+    mock_request.assert_called_once_with(
+        method="GET",
+        path="/rest/v1/profiles",
+        params={"verified_phone_hash": "eq.phone-hash-1", "limit": "1"},
+    )
+
+
+def test_profile_attach_phone_verification_maps_409_to_profile_conflict_error() -> None:
+    db = SupabaseDatabase.from_http(SUPABASE_URL, SERVICE_ROLE_KEY)
+    repo = SupabaseProfileRepository(db)
+    response = MagicMock()
+    response.status_code = 409
+    error = httpx.HTTPStatusError(
+        "409 Conflict",
+        request=httpx.Request("PATCH", f"{SUPABASE_URL}/rest/v1/profiles"),
+        response=response,
+    )
+    with patch.object(repo, "get_by_verified_phone_hash", return_value=None):
+        with patch.object(SupabaseDatabase, "_request", side_effect=error):
+            with pytest.raises(ProfileConflictError):
+                repo.attach_phone_verification(
+                    "u1",
+                    provider="mock",
+                    dial_prefix="+372",
+                    verified_phone_hash="phone-hash-1",
+                    verified_at=datetime.now(timezone.utc),
+                    one_account_per_number=True,
+                )
 
 
 def test_profile_attach_eid_verification_maps_409_to_profile_conflict_error() -> None:
