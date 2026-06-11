@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from core.config.schema import AppConfig
 from core.phone.base import SmsSenderPort
 from core.phone.descriptor import SmsProviderNotRegisteredError
 
@@ -20,6 +21,5 @@ class SmsSenderRegistry:
             )
         return self._providers[name]
 
-    def get_active(self, config: object) -> SmsSenderPort:
-        sms_provider = getattr(config, "sms_provider", "mock")
-        return self.get(str(sms_provider))
+    def get_active(self, config: AppConfig) -> SmsSenderPort:
+        return self.get(config.sms_provider)

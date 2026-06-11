@@ -21,7 +21,7 @@ def get_sms_provider_descriptor(name: str) -> SmsProviderDescriptor | None:
 
 
 def build_sms_registry(runtime: SmsProviderRuntime) -> SmsSenderRegistry:
-    active_name = str(getattr(runtime.config, "sms_provider", "mock"))
+    active_name = runtime.config.sms_provider
     names_to_register = {"mock"}
     if active_name != "mock":
         names_to_register.add(active_name)

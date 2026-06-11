@@ -60,6 +60,13 @@ class AppConfig:
     db_enabled: bool
     cors_allowed_origins: str
     allowed_return_urls: str
+    sms_provider: str
+    phone_allowed_dial_prefixes: tuple[str, ...]
+    phone_code_length: int
+    phone_code_ttl_s: int
+    phone_max_attempts: int
+    phone_resend_cooldown_s: int
+    phone_one_account_per_number: bool
 
 
 def _value(source: Mapping[str, str], key: str, default: str = "") -> str:
@@ -98,6 +105,31 @@ def _validate_active_eid_provider_config(env: Mapping[str, str], eid_provider: s
         descriptor.config_spec.validate(env)
 
 
+def _validate_active_sms_provider_config(env: Mapping[str, str], sms_provider: str) -> None:
+    from core.phone.registry_builder import get_sms_provider_descriptor
+
+    descriptor = get_sms_provider_descriptor(sms_provider)
+    if descriptor is not None:
+        descriptor.config_spec.validate(env)
+
+
+def _bool(source: Mapping[str, str], key: str, default: str) -> bool:
+    raw = _value(source, key, default).lower()
+    if raw in {"true", "1", "yes"}:
+        return True
+    if raw in {"false", "0", "no"}:
+        return False
+    raise ConfigError(f"{key} must be true|false, got {raw!r}")
+
+
+def _dial_prefixes(source: Mapping[str, str], key: str, default: str) -> tuple[str, ...]:
+    raw = _value(source, key, default)
+    parts = tuple(part.strip() for part in raw.split(",") if part.strip())
+    if not parts:
+        raise ConfigError(f"{key} must list at least one dial prefix, got {raw!r}")
+    return parts
+
+
 def load_config_from_env(source: Mapping[str, str] | None = None) -> AppConfig:
     env = source or environ
 
@@ -126,6 +158,16 @@ def load_config_from_env(source: Mapping[str, str] | None = None) -> AppConfig:
         raise ConfigError("DB_BACKEND=supabase requires SUPABASE_URL and SUPABASE_SERVICE_ROLE")
 
     _validate_active_eid_provider_config(env, eid_provider)
+
+    sms_provider = _value(env, "SMS_PROVIDER", "mock").lower()
+    from core.phone.registry_builder import registered_sms_provider_names
+
+    allowed_sms_providers = registered_sms_provider_names()
+    if sms_provider not in allowed_sms_providers:
+        names = "|".join(sorted(allowed_sms_providers))
+        raise ConfigError(f"SMS_PROVIDER must be {names}, got {sms_provider!r}")
+
+    _validate_active_sms_provider_config(env, sms_provider)
 
     if profile is DeploymentProfile.PILOT:
         pilot_required = (
@@ -185,4 +227,11 @@ def load_config_from_env(source: Mapping[str, str] | None = None) -> AppConfig:
         db_enabled=(db_backend == "supabase"),
         cors_allowed_origins=_value(env, "CORS_ALLOWED_ORIGINS", "*"),
         allowed_return_urls=_value(env, "ALLOWED_RETURN_URLS", ""),
+        sms_provider=sms_provider,
+        phone_allowed_dial_prefixes=_dial_prefixes(env, "PHONE_ALLOWED_DIAL_PREFIXES", "+372"),
+        phone_code_length=_int(env, "PHONE_CODE_LENGTH", "6"),
+        phone_code_ttl_s=_int(env, "PHONE_CODE_TTL_S", "300"),
+        phone_max_attempts=_int(env, "PHONE_MAX_ATTEMPTS", "5"),
+        phone_resend_cooldown_s=_int(env, "PHONE_RESEND_COOLDOWN_S", "60"),
+        phone_one_account_per_number=_bool(env, "PHONE_ONE_ACCOUNT_PER_NUMBER", "true"),
     )

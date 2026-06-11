@@ -4,9 +4,9 @@ from core.phone.base import SmsSenderPort
 from core.phone.descriptor import SmsProviderDescriptor
 from core.phone.mock.mock_sender import MockSmsSender
 from core.phone.runtime import SmsProviderRuntime
-from core.providers.config_spec import ProviderConfigSpec, noop_provider_settings_loader
+from core.phone.config_spec import SmsProviderConfigSpec, noop_provider_settings_loader
 
-MOCK_SMS_CONFIG_SPEC = ProviderConfigSpec(
+MOCK_SMS_CONFIG_SPEC = SmsProviderConfigSpec(
     required=(),
     optional_defaults={},
     loader=noop_provider_settings_loader,

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from core.config.errors import ConfigError
 from core.phone.base import SmsSenderPort
 from core.phone.runtime import SmsProviderRuntime
-from core.providers.config_spec import ProviderConfigSpec
+from core.phone.config_spec import SmsProviderConfigSpec
 
 
 class SmsProviderNotRegisteredError(ConfigError):
@@ -16,7 +16,7 @@ class SmsProviderNotRegisteredError(ConfigError):
 @dataclass(frozen=True)
 class SmsProviderDescriptor:
     name: str
-    config_spec: ProviderConfigSpec
+    config_spec: SmsProviderConfigSpec
     build: Callable[[SmsProviderRuntime], SmsSenderPort]
 
     def __post_init__(self) -> None:
