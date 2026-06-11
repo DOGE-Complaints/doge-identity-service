@@ -1,6 +1,7 @@
 from core.phone.base import SmsErrorCode, SmsSenderError, SmsSenderPort, SmsSendResult
 from core.phone.config_spec import SmsProviderConfigSpec
 from core.phone.e164 import assert_allowed_dial_prefix, normalize_to_e164
+from core.phone.otp_engine import create_phone_verification_session, verify_phone_code
 from core.phone.descriptor import SmsProviderDescriptor, SmsProviderNotRegisteredError
 from core.phone.registry import SmsSenderRegistry
 from core.phone.registry_builder import (
@@ -24,5 +25,7 @@ __all__ = [
     "SmsSenderPort",
     "SmsSenderRegistry",
     "build_sms_registry",
+    "create_phone_verification_session",
     "registered_sms_provider_names",
+    "verify_phone_code",
 ]

@@ -60,6 +60,29 @@ class VerificationSession:
 
 
 @dataclass(frozen=True)
+class PhoneVerificationSession:
+    id: str
+    supabase_user_id: str
+    phone_hash: str
+    dial_prefix: str
+    code_hash: str
+    status: str
+    attempts: int
+    created_at: datetime
+    expires_at: datetime
+    provider: str
+    provider_message_id: str | None
+
+
+@dataclass(frozen=True)
+class PhoneVerificationResult:
+    provider: str
+    dial_prefix: str
+    subject_hash: str
+    verified_at: datetime
+
+
+@dataclass(frozen=True)
 class EIDAuditEvent:
     id: str
     supabase_user_id: str | None

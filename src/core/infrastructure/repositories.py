@@ -16,6 +16,7 @@ from core.domain.models import (
     EIDAuditEvent,
     OAuthClient,
     OAuthTokenClaims,
+    PhoneVerificationSession,
     ProfileConflictError,
     ProfileRecord,
     VerificationSession,
@@ -187,6 +188,67 @@ class InMemoryVerificationSessionStore:
             updated = dataclasses.replace(session, status="expired")
             self._by_id[session_id] = updated
             self._by_state.pop(session.state, None)
+            expired_count += 1
+        return expired_count
+
+
+class InMemoryPhoneVerificationSessionStore:
+    def __init__(self) -> None:
+        self._by_id: dict[str, PhoneVerificationSession] = {}
+
+    def create(self, session: PhoneVerificationSession) -> PhoneVerificationSession:
+        self._by_id[session.id] = session
+        return session
+
+    def get_by_id(self, session_id: str) -> PhoneVerificationSession | None:
+        return self._by_id.get(session_id)
+
+    def get_active_by_user(self, supabase_user_id: str, *, now: datetime) -> PhoneVerificationSession | None:
+        active: PhoneVerificationSession | None = None
+        for session in self._by_id.values():
+            if session.supabase_user_id != supabase_user_id:
+                continue
+            if session.status != "started":
+                continue
+            if session.expires_at < now:
+                continue
+            if active is None or session.created_at > active.created_at:
+                active = session
+        return active
+
+    def replace(self, session: PhoneVerificationSession) -> PhoneVerificationSession:
+        self._by_id[session.id] = session
+        return session
+
+    def mark_consumed(self, session_id: str) -> None:
+        session = self._by_id.get(session_id)
+        if session is None:
+            return
+        if session.status == "consumed":
+            return
+        self._by_id[session_id] = dataclasses.replace(session, status="consumed")
+
+    def mark_failed(self, session_id: str, reason: str) -> None:
+        del reason
+        session = self._by_id.get(session_id)
+        if session is None:
+            return
+        self._by_id[session_id] = dataclasses.replace(session, status="failed")
+
+    def mark_expired(self, session_id: str) -> None:
+        session = self._by_id.get(session_id)
+        if session is None:
+            return
+        self._by_id[session_id] = dataclasses.replace(session, status="expired")
+
+    def expire_pending(self, now: datetime) -> int:
+        expired_count = 0
+        for session_id, session in list(self._by_id.items()):
+            if session.status != "started":
+                continue
+            if session.expires_at >= now:
+                continue
+            self._by_id[session_id] = dataclasses.replace(session, status="expired")
             expired_count += 1
         return expired_count
 
