@@ -98,6 +98,11 @@ def _profile_to_row(profile: ProfileRecord) -> dict[str, Any]:
         "eid_method": profile.eid_method,
         "eid_country": profile.eid_country,
         "eid_verified_at": _format_datetime(profile.eid_verified_at),
+        "phone_verified": profile.phone_verified,
+        "verified_phone_hash": profile.verified_phone_hash,
+        "phone_provider": profile.phone_provider,
+        "phone_dial_prefix": profile.phone_dial_prefix,
+        "phone_verified_at": _format_datetime(profile.phone_verified_at),
         "wallet_address": profile.wallet_address,
         "wallet_linked_at": _format_datetime(profile.wallet_linked_at),
         "wallet_signature_verified_at": _format_datetime(profile.wallet_signature_verified_at),
@@ -120,6 +125,11 @@ def _profile_from_row(row: dict[str, Any]) -> ProfileRecord:
         eid_method=row.get("eid_method"),
         eid_country=row.get("eid_country"),
         eid_verified_at=_parse_datetime(row.get("eid_verified_at")),
+        phone_verified=bool(row.get("phone_verified", False)),
+        verified_phone_hash=row.get("verified_phone_hash"),
+        phone_provider=row.get("phone_provider"),
+        phone_dial_prefix=row.get("phone_dial_prefix"),
+        phone_verified_at=_parse_datetime(row.get("phone_verified_at")),
         wallet_address=row.get("wallet_address"),
         wallet_linked_at=_parse_datetime(row.get("wallet_linked_at")),
         wallet_signature_verified_at=_parse_datetime(
@@ -372,6 +382,15 @@ class SupabaseProfileRepository:
         row = _first_row(rows)
         return _profile_from_row(row) if row else None
 
+    def get_by_verified_phone_hash(self, hash_: str) -> ProfileRecord | None:
+        rows = self._db._request(
+            method="GET",
+            path="/rest/v1/profiles",
+            params={"verified_phone_hash": f"eq.{hash_}", "limit": "1"},
+        )
+        row = _first_row(rows)
+        return _profile_from_row(row) if row else None
+
     def upsert(self, profile: ProfileRecord) -> ProfileRecord:
         rows = self._db._request(
             method="POST",
@@ -436,6 +455,11 @@ class SupabaseProfileRepository:
                 eid_method=method,
                 eid_country=country,
                 eid_verified_at=verified_at,
+                phone_verified=False,
+                verified_phone_hash=None,
+                phone_provider=None,
+                phone_dial_prefix=None,
+                phone_verified_at=None,
                 wallet_address=None,
                 wallet_linked_at=None,
                 wallet_signature_verified_at=None,
@@ -454,6 +478,90 @@ class SupabaseProfileRepository:
             eid_method=method,
             eid_country=country,
             eid_verified_at=verified_at,
+            updated_at=_utcnow(),
+        )
+        return self.upsert(updated)
+
+    def attach_phone_verification(
+        self,
+        user_id: str,
+        *,
+        provider: str,
+        dial_prefix: str,
+        verified_phone_hash: str,
+        verified_at: datetime,
+        one_account_per_number: bool,
+    ) -> ProfileRecord:
+        if one_account_per_number:
+            existing = self.get_by_verified_phone_hash(verified_phone_hash)
+            if existing is not None and existing.supabase_user_id != user_id:
+                raise ProfileConflictError(
+                    f"verified_phone_hash already bound: {verified_phone_hash}"
+                )
+
+        body = {
+            "phone_verified": True,
+            "verified_phone_hash": verified_phone_hash,
+            "phone_provider": provider,
+            "phone_dial_prefix": dial_prefix,
+            "phone_verified_at": _format_datetime(verified_at),
+            "updated_at": _format_datetime(_utcnow()),
+        }
+        try:
+            rows = self._db._request(
+                method="PATCH",
+                path="/rest/v1/profiles",
+                params={"supabase_user_id": f"eq.{user_id}"},
+                json_body=body,
+                prefer="return=representation",
+            )
+        except httpx.HTTPStatusError as exc:
+            if exc.response is not None and exc.response.status_code == 409:
+                raise ProfileConflictError(
+                    f"verified_phone_hash already bound: {verified_phone_hash}"
+                ) from exc
+            raise
+
+        row = _first_row(rows)
+        if row:
+            return _profile_from_row(row)
+
+        existing = self.get_by_supabase_user_id(user_id)
+        if existing is None:
+            now = _utcnow()
+            created = ProfileRecord(
+                id=str(uuid.uuid4()),
+                supabase_user_id=user_id,
+                display_name=None,
+                avatar_url=None,
+                eid_verified=False,
+                verified_person_hash=None,
+                eid_provider=None,
+                eid_method=None,
+                eid_country=None,
+                eid_verified_at=None,
+                phone_verified=True,
+                verified_phone_hash=verified_phone_hash,
+                phone_provider=provider,
+                phone_dial_prefix=dial_prefix,
+                phone_verified_at=verified_at,
+                wallet_address=None,
+                wallet_linked_at=None,
+                wallet_signature_verified_at=None,
+                wallet_signature_scheme=None,
+                wallet_chain_id=None,
+                created_at=now,
+                updated_at=now,
+            )
+            return self.upsert(created)
+
+        updated = dataclasses.replace(
+            existing,
+            phone_verified=True,
+            verified_phone_hash=verified_phone_hash,
+            phone_provider=provider,
+            phone_dial_prefix=dial_prefix,
+            phone_verified_at=verified_at,
             updated_at=_utcnow(),
         )
         return self.upsert(updated)

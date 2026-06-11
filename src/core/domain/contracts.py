@@ -26,6 +26,8 @@ class ProfileRepository(Protocol):
 
     def get_by_verified_person_hash(self, hash_: str) -> ProfileRecord | None: ...
 
+    def get_by_verified_phone_hash(self, hash_: str) -> ProfileRecord | None: ...
+
     def upsert(self, profile: ProfileRecord) -> ProfileRecord: ...
 
     def attach_eid_verification(
@@ -37,6 +39,17 @@ class ProfileRepository(Protocol):
         method: str,
         verified_person_hash: str,
         verified_at: datetime,
+    ) -> ProfileRecord: ...
+
+    def attach_phone_verification(
+        self,
+        user_id: str,
+        *,
+        provider: str,
+        dial_prefix: str,
+        verified_phone_hash: str,
+        verified_at: datetime,
+        one_account_per_number: bool,
     ) -> ProfileRecord: ...
 
 

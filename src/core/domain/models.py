@@ -9,7 +9,7 @@ class JwtValidationError(Exception):
 
 
 class ProfileConflictError(Exception):
-    """Raised when verified_person_hash unique constraint conflicts (req-08 partial index)."""
+    """Raised when verified_person_hash or verified_phone_hash unique constraint conflicts."""
 
 
 @dataclass(frozen=True)
@@ -31,6 +31,11 @@ class ProfileRecord:
     eid_method: str | None
     eid_country: str | None
     eid_verified_at: datetime | None
+    phone_verified: bool
+    verified_phone_hash: str | None
+    phone_provider: str | None
+    phone_dial_prefix: str | None
+    phone_verified_at: datetime | None
     wallet_address: str | None
     wallet_linked_at: datetime | None
     wallet_signature_verified_at: datetime | None

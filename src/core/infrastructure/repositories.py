@@ -58,6 +58,7 @@ class InMemoryProfileRepository:
     def __init__(self) -> None:
         self._by_user_id: dict[str, ProfileRecord] = {}
         self._by_verified_hash: dict[str, str] = {}
+        self._by_verified_phone_hash: dict[str, str] = {}
 
     def get_by_supabase_user_id(self, user_id: str) -> ProfileRecord | None:
         return self._by_user_id.get(user_id)
@@ -68,10 +69,18 @@ class InMemoryProfileRepository:
             return None
         return self._by_user_id.get(user_id)
 
+    def get_by_verified_phone_hash(self, hash_: str) -> ProfileRecord | None:
+        user_id = self._by_verified_phone_hash.get(hash_)
+        if user_id is None:
+            return None
+        return self._by_user_id.get(user_id)
+
     def upsert(self, profile: ProfileRecord) -> ProfileRecord:
         existing = self._by_user_id.get(profile.supabase_user_id)
         if existing is not None and existing.verified_person_hash:
             self._by_verified_hash.pop(existing.verified_person_hash, None)
+        if existing is not None and existing.verified_phone_hash:
+            self._by_verified_phone_hash.pop(existing.verified_phone_hash, None)
         if profile.verified_person_hash:
             owner = self._by_verified_hash.get(profile.verified_person_hash)
             if owner is not None and owner != profile.supabase_user_id:
@@ -79,6 +88,15 @@ class InMemoryProfileRepository:
                     f"verified_person_hash already bound to user {owner}"
                 )
             self._by_verified_hash[profile.verified_person_hash] = profile.supabase_user_id
+        if profile.verified_phone_hash:
+            owner = self._by_verified_phone_hash.get(profile.verified_phone_hash)
+            if owner is not None and owner != profile.supabase_user_id:
+                raise ProfileConflictError(
+                    f"verified_phone_hash already bound to user {owner}"
+                )
+            self._by_verified_phone_hash[profile.verified_phone_hash] = (
+                profile.supabase_user_id
+            )
         self._by_user_id[profile.supabase_user_id] = profile
         return profile
 
@@ -112,6 +130,11 @@ class InMemoryProfileRepository:
                 eid_method=None,
                 eid_country=None,
                 eid_verified_at=None,
+                phone_verified=False,
+                verified_phone_hash=None,
+                phone_provider=None,
+                phone_dial_prefix=None,
+                phone_verified_at=None,
                 wallet_address=None,
                 wallet_linked_at=None,
                 wallet_signature_verified_at=None,
@@ -135,6 +158,70 @@ class InMemoryProfileRepository:
             updated_at=_utcnow(),
         )
         self._by_verified_hash[verified_person_hash] = user_id
+        self._by_user_id[user_id] = updated
+        return updated
+
+    def attach_phone_verification(
+        self,
+        user_id: str,
+        *,
+        provider: str,
+        dial_prefix: str,
+        verified_phone_hash: str,
+        verified_at: datetime,
+        one_account_per_number: bool,
+    ) -> ProfileRecord:
+        if one_account_per_number:
+            existing_owner = self._by_verified_phone_hash.get(verified_phone_hash)
+            if existing_owner is not None and existing_owner != user_id:
+                raise ProfileConflictError(
+                    f"verified_phone_hash already bound to user {existing_owner}"
+                )
+
+        profile = self._by_user_id.get(user_id)
+        if profile is None:
+            now = _utcnow()
+            profile = ProfileRecord(
+                id=str(uuid.uuid4()),
+                supabase_user_id=user_id,
+                display_name=None,
+                avatar_url=None,
+                eid_verified=False,
+                verified_person_hash=None,
+                eid_provider=None,
+                eid_method=None,
+                eid_country=None,
+                eid_verified_at=None,
+                phone_verified=False,
+                verified_phone_hash=None,
+                phone_provider=None,
+                phone_dial_prefix=None,
+                phone_verified_at=None,
+                wallet_address=None,
+                wallet_linked_at=None,
+                wallet_signature_verified_at=None,
+                wallet_signature_scheme=None,
+                wallet_chain_id=None,
+                created_at=now,
+                updated_at=now,
+            )
+
+        if (
+            profile.verified_phone_hash
+            and profile.verified_phone_hash != verified_phone_hash
+        ):
+            self._by_verified_phone_hash.pop(profile.verified_phone_hash, None)
+
+        updated = dataclasses.replace(
+            profile,
+            phone_verified=True,
+            verified_phone_hash=verified_phone_hash,
+            phone_provider=provider,
+            phone_dial_prefix=dial_prefix,
+            phone_verified_at=verified_at,
+            updated_at=_utcnow(),
+        )
+        self._by_verified_phone_hash[verified_phone_hash] = user_id
         self._by_user_id[user_id] = updated
         return updated
 

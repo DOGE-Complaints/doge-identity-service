@@ -26,6 +26,10 @@ def build_me_data(profile: ProfileRecord | None, current_user: UserClaims) -> di
         "eid_method": None,
         "eid_country": None,
         "eid_verified_at": None,
+        "phone_verified": False,
+        "phone_provider": None,
+        "phone_dial_prefix": None,
+        "phone_verified_at": None,
     }
     if profile is not None:
         data["eid_verified"] = profile.eid_verified
@@ -35,4 +39,8 @@ def build_me_data(profile: ProfileRecord | None, current_user: UserClaims) -> di
         data["eid_method"] = profile.eid_method
         data["eid_country"] = profile.eid_country
         data["eid_verified_at"] = _format_datetime(profile.eid_verified_at)
+        data["phone_verified"] = profile.phone_verified
+        data["phone_provider"] = profile.phone_provider
+        data["phone_dial_prefix"] = profile.phone_dial_prefix
+        data["phone_verified_at"] = _format_datetime(profile.phone_verified_at)
     return data
