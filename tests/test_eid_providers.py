@@ -51,6 +51,13 @@ def _demo_config(**overrides: object) -> AppConfig:
         "db_enabled": False,
         "cors_allowed_origins": "*",
         "allowed_return_urls": "",
+        "sms_provider": "mock",
+        "phone_allowed_dial_prefixes": ("+372",),
+        "phone_code_length": 6,
+        "phone_code_ttl_s": 300,
+        "phone_max_attempts": 5,
+        "phone_resend_cooldown_s": 60,
+        "phone_one_account_per_number": True,
     }
     base.update(overrides)
     return AppConfig(**base)
