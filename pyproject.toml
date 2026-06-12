@@ -39,8 +39,12 @@ markers = [
 include = ["src", "tests"]
 extraPaths = ["src", "tests"]
 pythonVersion = "3.11"
+venvPath = "."
+venv = ".venv"
 
 [tool.basedpyright]
 include = ["src", "tests"]
 extraPaths = ["src", "tests"]
 pythonVersion = "3.11"
+venvPath = "."
+venv = ".venv"

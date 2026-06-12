@@ -1,4 +1,4 @@
-.PHONY: serve dev check-env test test-live
+.PHONY: serve dev check-env test test-live smoke
 
 serve:
 	@if [ -f ./.env ]; then set -a && . ./.env && set +a; fi; \
@@ -24,3 +24,9 @@ test:
 
 test-live:
 	.venv/bin/python -m pytest tests/ -m live_integration -v
+
+# HTTP smoke against a RUNNING server (default http://localhost:8100).
+# Override target: `make smoke IDENTITY_URL=https://<app>.up.railway.app`
+smoke:
+	@IDENTITY_URL=$${IDENTITY_URL:-http://localhost:8100} \
+	  .venv/bin/python -m pytest tests/smoke/ -q
