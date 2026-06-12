@@ -45,7 +45,8 @@ def test_mock_send_accepts_and_captures_message() -> None:
     sender = MockSmsSender()
     result = sender.send(to_e164="+37255555555", text="123456")
     assert result.accepted is True
-    assert result.provider_message_id is None
+    assert result.provider_message_id is not None
+    assert result.provider_message_id.startswith("mock-")
     assert sender.sent_messages == [("+37255555555", "123456")]
 
 

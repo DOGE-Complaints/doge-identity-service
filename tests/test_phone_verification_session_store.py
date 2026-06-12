@@ -31,6 +31,8 @@ def _session(
         expires_at=expires,
         provider="mock",
         provider_message_id=None,
+        delivery_status=None,
+        delivery_updated_at=None,
     )
 
 
@@ -88,3 +90,26 @@ def test_replace_updates_attempts() -> None:
     store.replace(updated)
     assert store.get_by_id("sess-1") is not None
     assert store.get_by_id("sess-1").attempts == 3
+
+
+def test_get_by_provider_message_id() -> None:
+    store = InMemoryPhoneVerificationSessionStore()
+    session = _session(session_id="sess-msg")
+    with_message = PhoneVerificationSession(
+        id=session.id,
+        supabase_user_id=session.supabase_user_id,
+        phone_hash=session.phone_hash,
+        dial_prefix=session.dial_prefix,
+        code_hash=session.code_hash,
+        status=session.status,
+        attempts=session.attempts,
+        created_at=session.created_at,
+        expires_at=session.expires_at,
+        provider=session.provider,
+        provider_message_id="msg-abc-123",
+        delivery_status=None,
+        delivery_updated_at=None,
+    )
+    store.create(with_message)
+    assert store.get_by_provider_message_id("msg-abc-123") == with_message
+    assert store.get_by_provider_message_id("missing") is None

@@ -89,6 +89,8 @@ def test_phone_request_creates_session_sends_sms_and_returns_expires_at(
     )
     assert session is not None
     assert session.status == "started"
+    assert session.provider_message_id is not None
+    assert session.provider_message_id.startswith("mock-")
 
     sender = _mock_sender()
     assert len(sender.sent_messages) == 1
