@@ -26,6 +26,7 @@ from core.api.handlers import (
     handle_phone_confirm,
     handle_phone_request,
     handle_readiness,
+    handle_telnyx_messaging_webhook,
 )
 from core.api.security import UnauthorizedError, UserClaims, get_current_user
 from core.config import AppConfig, ConfigError, provide_app_config
@@ -313,6 +314,21 @@ def _register_routes(app: FastAPI) -> None:
             code=phone_payload["code"],
             trace_id=trace_id,
         )
+        return _json_envelope(body, status)
+
+    @app.post("/webhooks/telnyx/messaging")
+    async def telnyx_messaging_webhook(request: Request) -> Response:
+        deps = get_api_dependencies()
+        trace_id = _trace_id_from_request(request)
+        raw_body = await request.body()
+        body, status = handle_telnyx_messaging_webhook(
+            deps,
+            raw_body=raw_body,
+            headers=dict(request.headers),
+            trace_id=trace_id,
+        )
+        if body is None:
+            return Response(status_code=status)
         return _json_envelope(body, status)
 
     @app.get("/oauth/authorize")

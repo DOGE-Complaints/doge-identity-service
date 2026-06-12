@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import dataclasses
+import json
 import uuid
+from collections.abc import Mapping
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
@@ -10,8 +13,12 @@ from core.api.me_response import build_me_data
 from core.domain.models import EIDAuditEvent, PhoneAuditEvent, ProfileConflictError
 from core.phone.base import SmsErrorCode, SmsSenderError
 from core.phone.e164 import normalize_to_e164, resolve_dial_prefix
+from core.config.providers import resolve_config_env
 from core.phone.otp_engine import create_phone_verification_session, verify_phone_code
 from core.phone.sms_text import build_verification_sms_text
+from core.phone.telnyx.delivery_ingest import apply_delivery_update, parse_telnyx_messaging_webhook
+from core.phone.telnyx.webhook_signature import verify_telnyx_webhook_signature
+from core.providers.config_spec import _env_value
 from core.security.hashing import hash_secret
 from core.security.return_url import (
     InvalidReturnUrlError,
@@ -475,7 +482,10 @@ def handle_phone_request(
             provider=sender.provider_name,
             now=now,
         )
-        sender.send(to_e164=e164, text=build_verification_sms_text(plaintext_code))
+        send_result = sender.send(to_e164=e164, text=build_verification_sms_text(plaintext_code))
+        if send_result.provider_message_id:
+            session = dataclasses.replace(session, provider_message_id=send_result.provider_message_id)
+            session_store.replace(session)
     except SmsSenderError as exc:
         if exc.code is not SmsErrorCode.RATE_LIMITED:
             _log_phone_audit(
@@ -613,6 +623,110 @@ def handle_public_stub(
         trace_id=trace_id,
         next_epic=next_epic,
     )
+
+
+def handle_telnyx_messaging_webhook(
+    deps: ApiDependencies,
+    *,
+    raw_body: bytes,
+    headers: Mapping[str, str],
+    trace_id: str,
+) -> tuple[dict | None, int]:
+    webhook_public_key = _env_value(resolve_config_env(), "TELNYX_WEBHOOK_PUBLIC_KEY")
+    if not webhook_public_key:
+        body = build_error_envelope(
+            "CONFIG_ERROR",
+            "TELNYX_WEBHOOK_PUBLIC_KEY is not configured.",
+            trace_id=trace_id,
+        )
+        return body, 503
+
+    if not verify_telnyx_webhook_signature(
+        raw_body=raw_body,
+        headers=headers,
+        public_key=webhook_public_key,
+    ):
+        _log_phone_audit(
+            deps,
+            supabase_user_id=None,
+            event_type="telnyx_delivery_status_updated",
+            provider="telnyx",
+            success=False,
+            failure_reason="invalid_signature",
+            request_id=trace_id,
+        )
+        body = build_error_envelope(
+            "UNAUTHORIZED",
+            "invalid telnyx webhook signature",
+            trace_id=trace_id,
+        )
+        return body, 401
+
+    session_store = deps.phone_verification_session_store
+    if session_store is None:
+        body = build_error_envelope(
+            "CONFIG_ERROR",
+            "phone verification session store is not configured.",
+            trace_id=trace_id,
+        )
+        return body, 500
+
+    try:
+        payload = json.loads(raw_body.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        _log_phone_audit(
+            deps,
+            supabase_user_id=None,
+            event_type="telnyx_delivery_status_updated",
+            provider="telnyx",
+            success=False,
+            failure_reason="invalid_json",
+            request_id=trace_id,
+        )
+        body = build_error_envelope(
+            "BAD_REQUEST",
+            "invalid telnyx webhook json",
+            trace_id=trace_id,
+        )
+        return body, 400
+
+    try:
+        event = parse_telnyx_messaging_webhook(payload)
+    except ValueError as exc:
+        _log_phone_audit(
+            deps,
+            supabase_user_id=None,
+            event_type="telnyx_delivery_status_updated",
+            provider="telnyx",
+            success=False,
+            failure_reason="invalid_payload",
+            request_id=trace_id,
+        )
+        body = build_error_envelope(
+            "BAD_REQUEST",
+            str(exc),
+            trace_id=trace_id,
+        )
+        return body, 400
+
+    result = apply_delivery_update(
+        session_store,
+        provider_message_id=event.provider_message_id,
+        new_status=event.delivery_status,
+        occurred_at=event.occurred_at,
+    )
+
+    user_id = result.session.supabase_user_id if result.session is not None else None
+    _log_phone_audit(
+        deps,
+        supabase_user_id=user_id,
+        event_type="telnyx_delivery_status_updated",
+        provider="telnyx",
+        success=result.outcome in {"updated", "noop", "not_found"},
+        failure_reason=None if result.outcome != "not_found" else "session_not_found",
+        request_id=trace_id,
+    )
+    return None, 204
 
 
 def handle_bearer_stub(

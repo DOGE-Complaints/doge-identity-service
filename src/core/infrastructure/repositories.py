@@ -315,6 +315,12 @@ class InMemoryPhoneVerificationSessionStore:
                 latest = session
         return latest
 
+    def get_by_provider_message_id(self, provider_message_id: str) -> PhoneVerificationSession | None:
+        for session in self._by_id.values():
+            if session.provider_message_id == provider_message_id:
+                return session
+        return None
+
     def replace(self, session: PhoneVerificationSession) -> PhoneVerificationSession:
         self._by_id[session.id] = session
         return session

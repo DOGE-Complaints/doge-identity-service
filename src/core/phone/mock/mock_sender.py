@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass, field
 
 from core.phone.base import SmsSendResult
@@ -21,4 +22,4 @@ class MockSmsSender:
 
     def send(self, *, to_e164: str, text: str) -> SmsSendResult:
         self._sent.append((to_e164, text))
-        return SmsSendResult(provider_message_id=None, accepted=True)
+        return SmsSendResult(provider_message_id=f"mock-{uuid.uuid4()}", accepted=True)

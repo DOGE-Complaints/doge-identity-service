@@ -77,6 +77,8 @@ class PhoneVerificationSession:
     expires_at: datetime
     provider: str
     provider_message_id: str | None
+    delivery_status: str | None = None
+    delivery_updated_at: datetime | None = None
 
 
 @dataclass(frozen=True)

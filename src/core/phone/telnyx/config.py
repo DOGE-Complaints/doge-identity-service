@@ -43,6 +43,7 @@ class TelnyxSettings:
     messaging_profile_id: str
     message_type: str
     encoding: str
+    webhook_public_key: str
 
     @classmethod
     def load(cls, env: Mapping[str, str]) -> TelnyxSettings:
@@ -53,6 +54,7 @@ class TelnyxSettings:
             messaging_profile_id=_env_value(env, "TELNYX_MESSAGING_PROFILE_ID"),
             message_type=_env_value(env, "TELNYX_MESSAGE_TYPE", DEFAULT_TELNYX_MESSAGE_TYPE),
             encoding=_env_value(env, "TELNYX_ENCODING", DEFAULT_TELNYX_ENCODING),
+            webhook_public_key=_env_value(env, "TELNYX_WEBHOOK_PUBLIC_KEY"),
         )
 
 
