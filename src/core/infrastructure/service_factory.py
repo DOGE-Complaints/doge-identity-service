@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from core.api.security import ServiceTokenAuth
 from core.config.schema import AppConfig
 from core.domain.contracts import (
     BearerTokenAuth,
@@ -32,6 +33,7 @@ class DefaultServiceFactory:
     oauth_authorization_request_store: AuthorizationRequestStore
     supabase_jwt_validator: SupabaseJwtValidator
     bearer_token_auth: BearerTokenAuth
+    service_token_auth: ServiceTokenAuth
     eid_provider_registry: EIDProviderRegistry
     sms_sender_registry: SmsSenderRegistry
     phone_verification_session_store: PhoneVerificationSessionStore
@@ -45,6 +47,9 @@ class DefaultServiceFactory:
 
     def get_bearer_token_auth(self) -> BearerTokenAuth:
         return self.bearer_token_auth
+
+    def get_service_token_auth(self) -> ServiceTokenAuth:
+        return self.service_token_auth
 
     def get_profile_repository(self) -> ProfileRepository:
         return self.profile_repository

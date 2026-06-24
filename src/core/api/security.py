@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import secrets
+from dataclasses import dataclass
 from typing import Mapping
 
 from fastapi import Depends, Request
@@ -65,6 +67,55 @@ class CompositeBearerTokenAuth:
         raise UnauthorizedError("AUTHENTICATION_REQUIRED")
 
 
+def _lower_headers(headers: Mapping[str, str]) -> dict[str, str]:
+    return {str(k).lower(): str(v) for k, v in headers.items()}
+
+
+def extract_service_token(headers: Mapping[str, str]) -> str | None:
+    """Read token from Authorization: Bearer … or X-Service-Token."""
+    h = _lower_headers(headers)
+    auth = h.get("authorization")
+    if auth and auth.lower().startswith("bearer "):
+        token = auth[7:].strip()
+        return token if token else None
+    xst = h.get("x-service-token")
+    if xst:
+        t = xst.strip()
+        return t if t else None
+    return None
+
+
+@dataclass(frozen=True)
+class ServiceTokenAuth:
+    """Service-to-service gate: optional; when disabled, require() is a no-op."""
+
+    _expected: str | None
+
+    @classmethod
+    def disabled(cls) -> ServiceTokenAuth:
+        return cls(_expected=None)
+
+    @classmethod
+    def from_secret(cls, secret: str) -> ServiceTokenAuth:
+        s = secret.strip()
+        if not s:
+            return cls.disabled()
+        return cls(_expected=s)
+
+    def is_enabled(self) -> bool:
+        return self._expected is not None
+
+    def require(self, headers: Mapping[str, str]) -> None:
+        if not self.is_enabled():
+            return
+        assert self._expected is not None
+        got = extract_service_token(headers)
+        if got is None:
+            raise UnauthorizedError("Missing service API token.")
+        if not secrets.compare_digest(got, self._expected):
+            raise UnauthorizedError("Invalid service API token.")
+
+
 def _extract_bearer_token(headers: Mapping[str, str]) -> str | None:
     for key, value in headers.items():
         if key.lower() != "authorization":
@@ -88,3 +139,11 @@ def get_current_user(
 ) -> UserClaims:
     headers = {name: value for name, value in request.headers.items()}
     return deps.bearer_token_auth.validate(headers)
+
+
+def require_service_token(
+    request: Request,
+    deps: ApiDependencies = Depends(_get_api_dependencies),
+) -> None:
+    headers = {name: value for name, value in request.headers.items()}
+    deps.service_token_auth.require(headers)

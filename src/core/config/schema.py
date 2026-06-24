@@ -67,6 +67,7 @@ class AppConfig:
     phone_max_attempts: int
     phone_resend_cooldown_s: int
     phone_one_account_per_number: bool
+    service_api_token: str
 
 
 def _value(source: Mapping[str, str], key: str, default: str = "") -> str:
@@ -180,6 +181,7 @@ def load_config_from_env(source: Mapping[str, str] | None = None) -> AppConfig:
             ("EID_SESSION_ENC_KEY", eid_session_enc_key),
             ("OAUTH_ACCESS_TOKEN_SECRET", _value(env, "OAUTH_ACCESS_TOKEN_SECRET", "")),
             ("GPT_OAUTH_CLIENT_SECRET", _value(env, "GPT_OAUTH_CLIENT_SECRET", "")),
+            ("SERVICE_API_TOKEN", _value(env, "SERVICE_API_TOKEN", "")),
         )
         for key, value in pilot_required:
             if not value:
@@ -234,4 +236,5 @@ def load_config_from_env(source: Mapping[str, str] | None = None) -> AppConfig:
         phone_max_attempts=_int(env, "PHONE_MAX_ATTEMPTS", "5"),
         phone_resend_cooldown_s=_int(env, "PHONE_RESEND_COOLDOWN_S", "60"),
         phone_one_account_per_number=_bool(env, "PHONE_ONE_ACCOUNT_PER_NUMBER", "true"),
+        service_api_token=_value(env, "SERVICE_API_TOKEN", ""),
     )

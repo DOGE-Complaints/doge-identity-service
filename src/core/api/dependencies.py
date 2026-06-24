@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from core.config import provide_app_config
 from core.config.schema import AppConfig
@@ -18,6 +19,9 @@ from core.domain.contracts import (
 )
 from core.phone.registry import SmsSenderRegistry
 from core.providers.registry import EIDProviderRegistry
+
+if TYPE_CHECKING:
+    from core.api.security import ServiceTokenAuth
 
 # EPIC-IDS-04 optional identity service slots (see epic §3 field table).
 EPIC_IDS_04_OPTIONAL_FIELDS: tuple[str, ...] = (
@@ -40,6 +44,7 @@ class ApiDependencies:
     # ── Always present ──────────────────────────────────────────────
     config: AppConfig
     bearer_token_auth: BearerTokenAuth
+    service_token_auth: ServiceTokenAuth
 
     # ── DB state ───────────────────────────────────────────────────
     db_backend: str
@@ -99,6 +104,7 @@ def build_api_dependencies() -> ApiDependencies:
     return ApiDependencies(
         config=config,
         bearer_token_auth=service_factory.get_bearer_token_auth(),
+        service_token_auth=service_factory.get_service_token_auth(),
         db_backend=db_backend,
         db_ready=db_ready,
         db_checks=db_checks,

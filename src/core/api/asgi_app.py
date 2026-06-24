@@ -32,7 +32,8 @@ from core.oauth.handlers import (
     handle_oauth_authorize_complete,
     handle_oauth_token,
 )
-from core.api.security import UnauthorizedError, UserClaims, get_current_user
+from core.oauth.introspection import handle_oauth_introspect
+from core.api.security import UnauthorizedError, UserClaims, get_current_user, require_service_token
 from core.config import AppConfig, ConfigError, provide_app_config
 from core.logging_setup import configure_logging, log_runtime_exception
 
@@ -44,6 +45,7 @@ PROTECTED_OPTIONS_PATHS: tuple[str, ...] = (
     "/oauth/authorize",
     "/oauth/authorize/complete",
     "/oauth/token",
+    "/oauth/introspect",
 )
 
 
@@ -400,6 +402,17 @@ def _register_routes(app: FastAPI) -> None:
         form = await _oauth_token_form_from_request(request)
         body, status = handle_oauth_token(deps, form=form)
         assert body is not None
+        return JSONResponse(content=body, status_code=status)
+
+    @app.post("/oauth/introspect")
+    async def oauth_introspect(
+        request: Request,
+        _: None = Depends(require_service_token),
+    ) -> JSONResponse:
+        deps = get_api_dependencies()
+        form = await _oauth_token_form_from_request(request)
+        token = form.get("token", "")
+        body, status = handle_oauth_introspect(deps, token=token)
         return JSONResponse(content=body, status_code=status)
 
     for options_path in PROTECTED_OPTIONS_PATHS:

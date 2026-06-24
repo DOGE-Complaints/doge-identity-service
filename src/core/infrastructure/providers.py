@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from core.api.security import CompositeBearerTokenAuth, SupabaseJwtBearerTokenAuth
+from core.api.security import CompositeBearerTokenAuth, ServiceTokenAuth, SupabaseJwtBearerTokenAuth
 from core.auth.supabase_validator import SupabaseJwtValidatorImpl
 from core.config.providers import provide_app_config, resolve_config_env
 from core.config.schema import AppConfig
@@ -100,6 +100,7 @@ def provide_service_factory(config: AppConfig | None = None) -> DefaultServiceFa
         supabase_auth=SupabaseJwtBearerTokenAuth(validator=supabase_jwt_validator),
         oauth_token_service=oauth_token_service,
     )
+    service_token_auth = ServiceTokenAuth.from_secret(resolved_config.service_api_token)
 
     provider_runtime = build_provider_runtime(
         config=resolved_config,
@@ -125,6 +126,7 @@ def provide_service_factory(config: AppConfig | None = None) -> DefaultServiceFa
         oauth_authorization_request_store=oauth_authorization_request_store,
         supabase_jwt_validator=supabase_jwt_validator,
         bearer_token_auth=bearer_token_auth,
+        service_token_auth=service_token_auth,
         eid_provider_registry=registry,
         sms_sender_registry=sms_sender_registry,
         phone_verification_session_store=phone_verification_session_store,
