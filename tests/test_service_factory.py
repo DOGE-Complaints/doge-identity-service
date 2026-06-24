@@ -4,7 +4,7 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from core.api.security import SupabaseJwtBearerTokenAuth
+from core.api.security import ServiceTokenAuth, SupabaseJwtBearerTokenAuth
 from core.application.factory import ServiceFactory
 from core.config.schema import AppConfig, DeploymentProfile
 from core.domain.models import UserClaims
@@ -78,6 +78,7 @@ def _demo_config(**overrides: object) -> AppConfig:
         "phone_max_attempts": 5,
         "phone_resend_cooldown_s": 60,
         "phone_one_account_per_number": True,
+        "service_api_token": "",
     }
     base.update(overrides)
     return AppConfig(**base)
@@ -101,6 +102,7 @@ def _build_factory(config: AppConfig | None = None) -> DefaultServiceFactory:
         oauth_authorization_request_store=InMemoryAuthorizationRequestStore(),
         supabase_jwt_validator=_StubSupabaseJwtValidator(),
         bearer_token_auth=SupabaseJwtBearerTokenAuth(validator=_StubSupabaseJwtValidator()),
+        service_token_auth=ServiceTokenAuth.disabled(),
         eid_provider_registry=EIDProviderRegistry({}),
         sms_sender_registry=build_sms_registry(sms_runtime),
         phone_verification_session_store=InMemoryPhoneVerificationSessionStore(),

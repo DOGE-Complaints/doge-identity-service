@@ -14,7 +14,7 @@ from core.api.dependencies import (
     HandlerDependencies,
     build_api_dependencies,
 )
-from core.api.security import SupabaseJwtBearerTokenAuth
+from core.api.security import ServiceTokenAuth, SupabaseJwtBearerTokenAuth
 from core.config.providers import provide_app_config
 from core.domain.models import UserClaims
 
@@ -62,6 +62,7 @@ def test_api_dependencies_identity_slots_default_none() -> None:
     deps = ApiDependencies(
         config=config,
         bearer_token_auth=_stub_bearer_auth(),
+        service_token_auth=ServiceTokenAuth.disabled(),
         db_backend="in_memory",
         db_ready=True,
     )
@@ -74,6 +75,7 @@ def test_api_dependencies_is_frozen() -> None:
     deps = ApiDependencies(
         config=config,
         bearer_token_auth=_stub_bearer_auth(),
+        service_token_auth=ServiceTokenAuth.disabled(),
         db_backend="in_memory",
         db_ready=True,
     )

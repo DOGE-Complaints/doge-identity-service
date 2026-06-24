@@ -58,6 +58,7 @@ def _demo_config(**overrides: object) -> AppConfig:
         "phone_max_attempts": 5,
         "phone_resend_cooldown_s": 60,
         "phone_one_account_per_number": True,
+        "service_api_token": "",
     }
     base.update(overrides)
     return AppConfig(**base)

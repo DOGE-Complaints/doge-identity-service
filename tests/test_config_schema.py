@@ -133,6 +133,26 @@ def test_pilot_requires_oauth_access_token_secret_explicitly() -> None:
         )
 
 
+def test_pilot_requires_service_api_token() -> None:
+    with pytest.raises(ConfigError, match="SERVICE_API_TOKEN"):
+        load_config_from_env(
+            {
+                "APP_PROFILE": "pilot",
+                "API_BASE_URL": "https://identity.dogestonia.ee",
+                "DB_BACKEND": "supabase",
+                "EID_PROVIDER": "mock",
+                "SUPABASE_URL": "https://example.supabase.co",
+                "SUPABASE_SERVICE_ROLE": "sr",
+                "SUPABASE_JWT_SECRET": "jwt",
+                "DATABASE_URL": "postgresql://postgres:pass@example:5432/postgres",
+                "DOGESTONIA_EID_SECRET": "eid-secret",
+                "EID_SESSION_ENC_KEY": "2zy6gKOpxhkaNwtmufGZqYb0T88uh-tkKHC5ygQOnIM=",
+                "OAUTH_ACCESS_TOKEN_SECRET": "oauth",
+                "GPT_OAUTH_CLIENT_SECRET": "gpt-secret",
+            }
+        )
+
+
 def test_pilot_empty_eid_secret_rejected() -> None:
     with pytest.raises(ConfigError):
         load_config_from_env(
@@ -149,6 +169,7 @@ def test_pilot_empty_eid_secret_rejected() -> None:
                 "EID_SESSION_ENC_KEY": "2zy6gKOpxhkaNwtmufGZqYb0T88uh-tkKHC5ygQOnIM=",
                 "OAUTH_ACCESS_TOKEN_SECRET": "oauth",
                 "GPT_OAUTH_CLIENT_SECRET": "gpt-secret",
+                "SERVICE_API_TOKEN": "service-api-token",
             }
         )
 
@@ -169,8 +190,34 @@ def test_pilot_empty_eid_session_enc_key_rejected() -> None:
                 "EID_SESSION_ENC_KEY": "",
                 "OAUTH_ACCESS_TOKEN_SECRET": "oauth",
                 "GPT_OAUTH_CLIENT_SECRET": "gpt-secret",
+                "SERVICE_API_TOKEN": "service-api-token",
             }
         )
+
+
+def test_service_api_token_defaults_empty() -> None:
+    cfg = load_config_from_env(
+        {
+            "APP_PROFILE": "demo",
+            "API_BASE_URL": "http://localhost:8100",
+            "DB_BACKEND": "in_memory",
+            "EID_PROVIDER": "mock",
+        }
+    )
+    assert cfg.service_api_token == ""
+
+
+def test_service_api_token_from_env() -> None:
+    cfg = load_config_from_env(
+        {
+            "APP_PROFILE": "demo",
+            "API_BASE_URL": "http://localhost:8100",
+            "DB_BACKEND": "in_memory",
+            "EID_PROVIDER": "mock",
+            "SERVICE_API_TOKEN": "svc-secret-token",
+        }
+    )
+    assert cfg.service_api_token == "svc-secret-token"
 
 
 def test_config_is_frozen() -> None:

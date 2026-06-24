@@ -28,6 +28,7 @@ _PILOT_BASE = {
     "EID_SESSION_ENC_KEY": "2zy6gKOpxhkaNwtmufGZqYb0T88uh-tkKHC5ygQOnIM=",
     "OAUTH_ACCESS_TOKEN_SECRET": "oauth",
     "GPT_OAUTH_CLIENT_SECRET": "gpt-secret",
+    "SERVICE_API_TOKEN": "service-api-token",
 }
 
 
