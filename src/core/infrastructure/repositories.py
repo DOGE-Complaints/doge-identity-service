@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 
 from core.config.schema import AppConfig
 from core.domain.models import (
+    AuthorizationRequest,
     EIDAuditEvent,
     OAuthClient,
     OAuthTokenClaims,
@@ -427,9 +428,36 @@ class InMemoryOAuthClientStore:
         return list(self._clients.values())
 
 
+class InMemoryAuthorizationRequestStore:
+    def __init__(self) -> None:
+        self._requests: dict[str, AuthorizationRequest] = {}
+
+    def save(self, request: AuthorizationRequest) -> None:
+        self._requests[request.oauth_request_id] = request
+
+    def get(self, oauth_request_id: str) -> AuthorizationRequest | None:
+        return self._requests.get(oauth_request_id)
+
+    def consume(self, oauth_request_id: str, *, now: datetime) -> AuthorizationRequest | None:
+        request = self._requests.get(oauth_request_id)
+        if request is None:
+            return None
+        if now >= request.expires_at:
+            del self._requests[oauth_request_id]
+            return None
+        del self._requests[oauth_request_id]
+        return request
+
+
 class InMemoryOAuthTokenService:
-    def __init__(self, *, config: AppConfig) -> None:
+    def __init__(
+        self,
+        *,
+        config: AppConfig,
+        client_store: InMemoryOAuthClientStore | None = None,
+    ) -> None:
         self._config = config
+        self._client_store = client_store
         self._codes: dict[str, _StoredAuthCode] = {}
 
     def issue_authorization_code(
@@ -463,22 +491,33 @@ class InMemoryOAuthTokenService:
         redirect_uri: str,
         code_verifier: str | None = None,
     ) -> str:
-        # InMemory intentionally skips client_secret validation; Supabase impl (EPIC-IDS-05) must enforce it.
-        del client_secret
+        from core.oauth.errors import OAuthClientError, OAuthGrantError
+        from core.oauth.client_secret import verify_client_secret
+
+        if self._client_store is not None:
+            client = self._client_store.get_client(client_id)
+            if client is None:
+                raise OAuthClientError("invalid_client", "Unknown OAuth client.")
+            if not verify_client_secret(
+                client_secret,
+                expected_hash=client.client_secret_hash,
+                key=self._config.oauth_access_token_secret or "demo-key",
+            ):
+                raise OAuthClientError("invalid_client", "Client authentication failed.")
         stored = self._codes.get(code)
         if stored is None or stored.consumed:
-            raise ValueError("invalid_grant")
+            raise OAuthGrantError("invalid_grant", "Authorization code expired or already used.")
         if stored.client_id != client_id or stored.redirect_uri != redirect_uri:
-            raise ValueError("invalid_grant")
+            raise OAuthGrantError("invalid_grant", "Authorization code mismatch.")
         if time.time() > stored.expires_at:
-            raise ValueError("invalid_grant")
+            raise OAuthGrantError("invalid_grant", "Authorization code expired or already used.")
         if stored.code_challenge is not None:
             if code_verifier is None:
-                raise ValueError("invalid_grant")
+                raise OAuthGrantError("invalid_grant", "PKCE code_verifier required.")
             digest = hashlib.sha256(code_verifier.encode("utf-8")).digest()
             challenge = _b64url_encode(digest)
             if challenge != stored.code_challenge:
-                raise ValueError("invalid_grant")
+                raise OAuthGrantError("invalid_grant", "PKCE verification failed.")
         stored.consumed = True
         now = int(time.time())
         payload = {

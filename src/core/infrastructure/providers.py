@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from core.api.security import SupabaseJwtBearerTokenAuth
+from core.api.security import CompositeBearerTokenAuth, SupabaseJwtBearerTokenAuth
 from core.auth.supabase_validator import SupabaseJwtValidatorImpl
 from core.config.providers import provide_app_config, resolve_config_env
 from core.config.schema import AppConfig
@@ -15,6 +15,7 @@ from core.infrastructure.db_supabase import (
     SupabaseVerificationSessionStore,
 )
 from core.infrastructure.repositories import (
+    InMemoryAuthorizationRequestStore,
     InMemoryEIDAuditLogRepository,
     InMemoryHealthRepository,
     InMemoryOAuthClientStore,
@@ -85,13 +86,20 @@ def provide_service_factory(config: AppConfig | None = None) -> DefaultServiceFa
     else:
         raise ValueError(f"Unsupported db_backend: {resolved_config.db_backend}")
 
-    oauth_token_service = InMemoryOAuthTokenService(config=resolved_config)
+    oauth_token_service = InMemoryOAuthTokenService(
+        config=resolved_config,
+        client_store=oauth_client_store,
+    )
+    oauth_authorization_request_store = InMemoryAuthorizationRequestStore()
 
     supabase_jwt_validator = SupabaseJwtValidatorImpl(
         jwt_secret=resolved_config.supabase_jwt_secret or "test-secret-for-demo",
         supabase_url=resolved_config.supabase_url or "https://demo.local",
     )
-    bearer_token_auth = SupabaseJwtBearerTokenAuth(validator=supabase_jwt_validator)
+    bearer_token_auth = CompositeBearerTokenAuth(
+        supabase_auth=SupabaseJwtBearerTokenAuth(validator=supabase_jwt_validator),
+        oauth_token_service=oauth_token_service,
+    )
 
     provider_runtime = build_provider_runtime(
         config=resolved_config,
@@ -114,6 +122,7 @@ def provide_service_factory(config: AppConfig | None = None) -> DefaultServiceFa
         eid_audit_log_repository=eid_audit_log_repository,
         oauth_client_store=oauth_client_store,
         oauth_token_service=oauth_token_service,
+        oauth_authorization_request_store=oauth_authorization_request_store,
         supabase_jwt_validator=supabase_jwt_validator,
         bearer_token_auth=bearer_token_auth,
         eid_provider_registry=registry,

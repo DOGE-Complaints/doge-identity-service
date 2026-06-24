@@ -31,6 +31,40 @@ class SupabaseJwtBearerTokenAuth:
             raise UnauthorizedError("AUTHENTICATION_REQUIRED") from exc
 
 
+class CompositeBearerTokenAuth:
+    """Accept Supabase JWT or OAuth access tokens issued by this service."""
+
+    def __init__(
+        self,
+        *,
+        supabase_auth: SupabaseJwtBearerTokenAuth,
+        oauth_token_service: object | None,
+    ) -> None:
+        self._supabase_auth = supabase_auth
+        self._oauth_token_service = oauth_token_service
+
+    def validate(self, headers: Mapping[str, str]) -> UserClaims:
+        token = _extract_bearer_token(headers)
+        if token is None:
+            raise UnauthorizedError("Bearer token required")
+        try:
+            return self._supabase_auth._validator.validate(token)
+        except JwtValidationError:
+            pass
+        oauth_service = self._oauth_token_service
+        if oauth_service is not None:
+            try:
+                claims = oauth_service.validate_access_token(token)
+            except ValueError as exc:
+                raise UnauthorizedError("AUTHENTICATION_REQUIRED") from exc
+            return UserClaims(
+                supabase_user_id=claims.sub,
+                email=None,
+                role="authenticated",
+            )
+        raise UnauthorizedError("AUTHENTICATION_REQUIRED")
+
+
 def _extract_bearer_token(headers: Mapping[str, str]) -> str | None:
     for key, value in headers.items():
         if key.lower() != "authorization":

@@ -133,3 +133,16 @@ class OAuthTokenClaims:
     exp: int
     client_id: str
 
+
+@dataclass(frozen=True)
+class AuthorizationRequest:
+    oauth_request_id: str
+    client_id: str
+    redirect_uri: str
+    scopes: list[str]
+    state: str
+    code_challenge: str | None
+    code_challenge_method: str | None
+    created_at: datetime
+    expires_at: datetime
+

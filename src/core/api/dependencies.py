@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from core.config import provide_app_config
 from core.config.schema import AppConfig
 from core.domain.contracts import (
+    AuthorizationRequestStore,
     BearerTokenAuth,
     EIDAuditLogRepository,
     OAuthClientStore,
@@ -27,6 +28,7 @@ EPIC_IDS_04_OPTIONAL_FIELDS: tuple[str, ...] = (
     "eid_provider_registry",
     "oauth_client_store",
     "oauth_token_service",
+    "oauth_authorization_request_store",
     "sms_sender_registry",
     "phone_verification_session_store",
     "phone_audit_log_repository",
@@ -52,6 +54,7 @@ class ApiDependencies:
     eid_provider_registry: EIDProviderRegistry | None = None
     oauth_client_store: OAuthClientStore | None = None
     oauth_token_service: OAuthTokenService | None = None
+    oauth_authorization_request_store: AuthorizationRequestStore | None = None
     sms_sender_registry: SmsSenderRegistry | None = None
     phone_verification_session_store: PhoneVerificationSessionStore | None = None
     phone_audit_log_repository: PhoneAuditLogRepository | None = None
@@ -106,6 +109,7 @@ def build_api_dependencies() -> ApiDependencies:
         eid_provider_registry=service_factory.get_eid_provider_registry(),
         oauth_client_store=service_factory.get_oauth_client_store(),
         oauth_token_service=service_factory.get_oauth_token_service(),
+        oauth_authorization_request_store=service_factory.get_oauth_authorization_request_store(),
         sms_sender_registry=service_factory.get_sms_sender_registry(),
         phone_verification_session_store=service_factory.get_phone_verification_session_store(),
         phone_audit_log_repository=service_factory.get_phone_audit_log_repository(),

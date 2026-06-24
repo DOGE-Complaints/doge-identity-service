@@ -20,13 +20,17 @@ from core.api.envelope import build_error_envelope, ensure_trace_id
 from core.api.handlers import (
     handle_auth_eid_callback,
     handle_auth_eid_start,
-    handle_bearer_stub,
     handle_health,
     handle_me,
     handle_phone_confirm,
     handle_phone_request,
     handle_readiness,
     handle_telnyx_messaging_webhook,
+)
+from core.oauth.handlers import (
+    handle_oauth_authorize,
+    handle_oauth_authorize_complete,
+    handle_oauth_token,
 )
 from core.api.security import UnauthorizedError, UserClaims, get_current_user
 from core.config import AppConfig, ConfigError, provide_app_config
@@ -87,6 +91,36 @@ async def _eid_start_payload_from_request(request: Request) -> dict[str, str | N
         if isinstance(query_value, str):
             payload["return_url"] = query_value
     return payload
+
+
+async def _oauth_complete_payload_from_request(request: Request) -> dict[str, str]:
+    payload: dict[str, str] = {"oauth_request_id": ""}
+    content_type = request.headers.get("content-type", "")
+    if content_type.startswith("application/json"):
+        try:
+            body = await request.json()
+        except Exception:
+            body = None
+        if isinstance(body, dict):
+            oauth_request_id = body.get("oauth_request_id")
+            if isinstance(oauth_request_id, str):
+                payload["oauth_request_id"] = oauth_request_id
+    return payload
+
+
+async def _oauth_token_form_from_request(request: Request) -> dict[str, str]:
+    content_type = request.headers.get("content-type", "")
+    if content_type.startswith("application/x-www-form-urlencoded"):
+        form = await request.form()
+        return {str(key): str(value) for key, value in form.items()}
+    if content_type.startswith("application/json"):
+        try:
+            body = await request.json()
+        except Exception:
+            body = None
+        if isinstance(body, dict):
+            return {str(key): str(value) for key, value in body.items() if value is not None}
+    return {}
 
 
 def _query_params_as_strings(request: Request) -> dict[str, str]:
@@ -332,43 +366,41 @@ def _register_routes(app: FastAPI) -> None:
         return _json_envelope(body, status)
 
     @app.get("/oauth/authorize")
-    async def oauth_authorize(
-        request: Request,
-        current_user: UserClaims = Depends(get_current_user),
-    ) -> JSONResponse:
-        return _bearer_route(
-            request,
-            current_user,
-            path="/oauth/authorize",
-            method="GET",
-            next_epic="EPIC-IDS-OAUTH",
+    async def oauth_authorize(request: Request) -> Response:
+        deps = get_api_dependencies()
+        redirect_url, body, status = handle_oauth_authorize(
+            deps,
+            query=_query_params_as_strings(request),
         )
+        if redirect_url is not None:
+            return RedirectResponse(url=redirect_url, status_code=status)
+        assert body is not None
+        return JSONResponse(content=body, status_code=status)
 
     @app.post("/oauth/authorize/complete")
     async def oauth_authorize_complete(
         request: Request,
         current_user: UserClaims = Depends(get_current_user),
-    ) -> JSONResponse:
-        return _bearer_route(
-            request,
-            current_user,
-            path="/oauth/authorize/complete",
-            method="POST",
-            next_epic="EPIC-IDS-OAUTH",
+    ) -> Response:
+        deps = get_api_dependencies()
+        complete_payload = await _oauth_complete_payload_from_request(request)
+        redirect_url, body, status = handle_oauth_authorize_complete(
+            deps,
+            current_user=current_user,
+            oauth_request_id=complete_payload["oauth_request_id"],
         )
+        if redirect_url is not None:
+            return RedirectResponse(url=redirect_url, status_code=status)
+        assert body is not None
+        return JSONResponse(content=body, status_code=status)
 
     @app.post("/oauth/token")
-    async def oauth_token(
-        request: Request,
-        current_user: UserClaims = Depends(get_current_user),
-    ) -> JSONResponse:
-        return _bearer_route(
-            request,
-            current_user,
-            path="/oauth/token",
-            method="POST",
-            next_epic="EPIC-IDS-OAUTH",
-        )
+    async def oauth_token(request: Request) -> JSONResponse:
+        deps = get_api_dependencies()
+        form = await _oauth_token_form_from_request(request)
+        body, status = handle_oauth_token(deps, form=form)
+        assert body is not None
+        return JSONResponse(content=body, status_code=status)
 
     for options_path in PROTECTED_OPTIONS_PATHS:
         app.add_api_route(
@@ -381,27 +413,6 @@ def _register_routes(app: FastAPI) -> None:
 
 async def _options_handler() -> Response:
     return Response(status_code=200)
-
-
-def _bearer_route(
-    request: Request,
-    current_user: UserClaims,
-    *,
-    path: str,
-    method: str,
-    next_epic: str,
-) -> JSONResponse:
-    deps = get_api_dependencies()
-    trace_id = _trace_id_from_request(request)
-    body, status = handle_bearer_stub(
-        deps,
-        path=path,
-        method=method,
-        current_user=current_user,
-        trace_id=trace_id,
-        next_epic=next_epic,
-    )
-    return _json_envelope(body, status)
 
 
 @lru_cache(maxsize=1)

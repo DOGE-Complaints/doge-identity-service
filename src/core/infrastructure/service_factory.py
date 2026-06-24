@@ -15,6 +15,7 @@ from core.domain.contracts import (
     SupabaseJwtValidator,
     VerificationSessionStore,
 )
+from core.domain.contracts import AuthorizationRequestStore
 from core.phone.registry import SmsSenderRegistry
 from core.providers.registry import EIDProviderRegistry
 
@@ -28,6 +29,7 @@ class DefaultServiceFactory:
     eid_audit_log_repository: EIDAuditLogRepository
     oauth_client_store: OAuthClientStore
     oauth_token_service: OAuthTokenService
+    oauth_authorization_request_store: AuthorizationRequestStore
     supabase_jwt_validator: SupabaseJwtValidator
     bearer_token_auth: BearerTokenAuth
     eid_provider_registry: EIDProviderRegistry
@@ -61,6 +63,9 @@ class DefaultServiceFactory:
 
     def get_oauth_token_service(self) -> OAuthTokenService:
         return self.oauth_token_service
+
+    def get_oauth_authorization_request_store(self) -> AuthorizationRequestStore:
+        return self.oauth_authorization_request_store
 
     def get_sms_sender_registry(self) -> SmsSenderRegistry:
         return self.sms_sender_registry

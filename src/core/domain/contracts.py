@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Mapping, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
     from core.domain.models import (
+        AuthorizationRequest,
         EIDAuditEvent,
         OAuthClient,
         OAuthTokenClaims,
@@ -116,6 +117,15 @@ class EIDAuditLogRepository(Protocol):
         event_type: str | None = None,
         limit: int = 100,
     ) -> list[EIDAuditEvent]: ...
+
+
+@runtime_checkable
+class AuthorizationRequestStore(Protocol):
+    def save(self, request: AuthorizationRequest) -> None: ...
+
+    def get(self, oauth_request_id: str) -> AuthorizationRequest | None: ...
+
+    def consume(self, oauth_request_id: str, *, now: datetime) -> AuthorizationRequest | None: ...
 
 
 @runtime_checkable
