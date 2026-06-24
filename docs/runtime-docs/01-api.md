@@ -33,7 +33,7 @@
 
 > Story-маршруты (`/story-drafts`, `/stories`, `/gpt/actions/submit-story`) **удалены** из identity в EPIC-IDS-08 CLEANUP-01; создание историй — домен gateway ([09-gateway-expectations](09-gateway-expectations.md)).
 
-> ⚠️ Чего здесь не хватает под целевую модель (см. [04-security](04-security.md), [09-gateway-expectations](09-gateway-expectations.md)): **нет** маршрута `/oauth/introspect` для service-token сценария; **`GET /me`** уже отдаёт профиль и `eid_verified` по user JWT (базовые права — поле `role` из токена, без permission-матрицы).
+> **`POST /oauth/introspect`** — ✅ построен (OAUTH-02, service-token gate + `{active, sub, phone_verified}`); **`GET /me`** отдаёт профиль и `phone_verified` по user JWT (базовые права — поле `role` из токена, без permission-матрицы).
 
 ## Кто пускается внутрь (аутентификация)
 

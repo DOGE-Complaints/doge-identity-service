@@ -25,13 +25,13 @@ identity и gateway — два разных сервиса, и важно, чт�
 
 Почему так (best practice): сервисный токен доказывает «зовёт доверенный сервис», но НЕ доказывает, какой человек и пройдена ли верификация. Для платформы, где проверенная личность — суть подотчётности, gateway обязан проверить пользователя (иначе «confused deputy» — подача за кого угодно). Подробный разбор — в gap-отчёте.
 
-## Что для этого нужно от identity (по факту — пока нет)
+## Что для этого нужно от identity (по факту)
 
 | Нужно (по парадигме) | Факт в коде identity | Статус |
 |----------------------|----------------------|--------|
-| Introspection-endpoint (или рабочий `/me`), отдающий `active/sub/phone_verified` для токена пользователя | `/me` — ✅ **построен** (AUTHCORE-01, phone-поля в [`me_response.py`](../../src/core/api/me_response.py)); `/oauth/introspect` — **отсутствует** ([OAUTH-02](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-02-introspection-and-service-token.md)) | 🟡 (`/me` ✅, introspect ❌) |
+| Introspection-endpoint (или рабочий `/me`), отдающий `active/sub/phone_verified` для токена пользователя | `/me` — ✅ **построен** (AUTHCORE-01); `/oauth/introspect` — ✅ **построен** ([`introspection.py`](../../src/core/oauth/introspection.py), [OAUTH-02](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-02-introspection-and-service-token.md)) | ✅ |
 | Выдача OAuth-токена | [`core/oauth/handlers.py`](../../src/core/oauth/handlers.py), маршруты [`asgi_app.py:368-403`](../../src/core/api/asgi_app.py) | ✅ ([OAUTH-01](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-01-oauth-server-endpoints.md)) |
-| Проверка сервисного токена на входе identity | в identity-конфиге **нет** `SERVICE_API_TOKEN` ([`schema.py`](../../src/core/config/schema.py)) | ❌ |
+| Проверка сервисного токена на входе identity | `AppConfig.service_api_token` + `ServiceTokenAuth` ([`schema.py`](../../src/core/config/schema.py), [`security.py`](../../src/core/api/security.py)); обязателен в `APP_PROFILE=pilot` | ✅ |
 
 ## Чего identity НЕ должен делать (следствие парадигмы)
 
@@ -44,4 +44,4 @@ identity и gateway — два разных сервиса, и важно, чт�
 gateway хранит `stories.submitter_identity_issuer` (строка, NOT NULL — [gateway миграция `20260515_1200`](../../../doge-complaints-gateway/supabase/migrations/20260515_1200_submitter_identity_issuer_not_null.sql)) — слабая связанность, корректна при раздельных сервисах/Supabase-проектах ([../analysis/supabase-project-separation-audit-2026-06-03.md](../analysis/supabase-project-separation-audit-2026-06-03.md)).
 
 ## Итог
-В коде identity OAuth-выдача **построена** (OAUTH-01); стык с gateway под целевую парадигму **ещё не реализован**: нет introspection-endpoint, нет проверки сервисного токена. Story-маршруты и `story_drafts` уже убраны (CLEANUP-01). Оставшиеся задачи — OAUTH-02/03/04 и gap-отчёт.
+В коде identity OAuth-выдача и **introspection+сервисный gate** **построены** (OAUTH-01, OAUTH-02); gateway intake (вызов introspection при создании истории) — **ещё не подключён**. Story-маршруты и `story_drafts` уже убраны (CLEANUP-01). Оставшиеся задачи — OAUTH-03/04 (durable store, verify-gate) и подключение gateway.

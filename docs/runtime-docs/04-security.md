@@ -65,7 +65,7 @@ sequenceDiagram
     Note over GW: если phone_verified=false → 403, GPT ведёт юзера на verify
 ```
 
-> **as-is vs target:** диаграмма — **целевая**. Сейчас (as-is): OAuth-маршруты `/oauth/*` — **✅ построены** ([OAUTH-01](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-01-oauth-server-endpoints.md)); introspection-endpoint **отсутствует** ([OAUTH-02](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-02-introspection-and-service-token.md)); gateway пока **не зовёт** identity (intake открыт). Телефонная верификация (`/auth/phone/*`, `/me`) — **построена**. Оставшийся разрыв: introspection+сервисный токен ([OAUTH-02](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-02-introspection-and-service-token.md)), verify-gate ([OAUTH-04](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-04-verify-gate-and-verification-required.md)).
+> **as-is vs target:** диаграмма — **целевая**. Сейчас (as-is): OAuth-маршруты `/oauth/*` — **✅ построены** ([OAUTH-01](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-01-oauth-server-endpoints.md)); introspection-endpoint **`POST /oauth/introspect`** — **✅ построен** ([OAUTH-02](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-02-introspection-and-service-token.md)); сервисный gate — `SERVICE_API_TOKEN` / `ServiceTokenAuth` (обязателен в `APP_PROFILE=pilot`). Gateway пока **не зовёт** identity (intake открыт). Телефонная верификация (`/auth/phone/*`, `/me`) — **построена**. Оставшийся разрыв: verify-gate ([OAUTH-04](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-04-verify-gate-and-verification-required.md)), durable handshake/codes ([OAUTH-03](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-03-persistent-token-store-supabase.md)).
 
 ## Тот же процесс словами (по шагам)
 
@@ -89,10 +89,10 @@ sequenceDiagram
 | OAuth-маршруты `/oauth/authorize`, `/oauth/authorize/complete`, `/oauth/token` | [`asgi_app.py:368-403`](../../src/core/api/asgi_app.py), [`core/oauth/handlers.py`](../../src/core/oauth/handlers.py) | ✅ построен ([OAUTH-01](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-01-oauth-server-endpoints.md)) |
 | eID-старт/callback (`/auth/eid/start`, `/auth/{provider}/callback`) | [`asgi_app.py:247,265`](../../src/core/api/asgi_app.py) | ✅ mock; реальный провайдер 🟦 DEFERRED |
 | Флаг «нужна верификация» в сессии | поля `return_context`/`requested_action` в [`models.py`](../../src/core/domain/models.py) | ⚪ поля есть; relay через OAuth = [OAUTH-04](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-04-verify-gate-and-verification-required.md) |
-| **introspection-endpoint** для gateway (`{active, sub, phone_verified}`) | — | ❌ отсутствует ([OAUTH-02](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-02-introspection-and-service-token.md); [gap API-1](../analysis/gap-analysis-full-2026-06-04.md)) |
-| Проверка сервисного токена на входе identity | — | ❌ нет `SERVICE_API_TOKEN` в конфиге (OAUTH-02) |
+| **introspection-endpoint** для gateway (`{active, sub, phone_verified}`) | [`introspection.py`](../../src/core/oauth/introspection.py), [`asgi_app.py:407-416`](../../src/core/api/asgi_app.py) | ✅ построен ([OAUTH-02](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-02-introspection-and-service-token.md)) |
+| Проверка сервисного токена на входе identity | `AppConfig.service_api_token` ([`schema.py:70,238`](../../src/core/config/schema.py)), `ServiceTokenAuth` ([`security.py:89-116`](../../src/core/api/security.py)); **обязателен в pilot** | ✅ (gate disabled в demo при пустом токене) |
 
-То есть телефонная верификация, `/me` и OAuth-маршруты **построены**; под целевую кросс-сервисную модель пока нет **introspection-endpoint** и **проверки сервисного токена**. Handshake/codes — in-memory ([OAUTH-03](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-03-persistent-token-store-supabase.md)). eID — отложен (mock остаётся как provider-каркас).
+То есть телефонная верификация, `/me`, OAuth-маршруты и **introspection+сервисный gate** **построены**; gateway intake ещё не подключён. Handshake/codes — in-memory ([OAUTH-03](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-03-persistent-token-store-supabase.md)). eID — отложен (mock остаётся как provider-каркас).
 
 ---
 
@@ -124,4 +124,4 @@ sequenceDiagram
 
 ## 7. Секреты
 
-`SUPABASE_JWT_SECRET`, `SUPABASE_SERVICE_ROLE`, `OAUTH_ACCESS_TOKEN_SECRET`, `DOGESTONIA_EID_SECRET` (единый HMAC-секрет), `CODE_VERIFIER_ENCRYPTION_KEY` (AES-256 — ⚪ заявлен, но шифрование verifier в коде пока не используется). В режиме **pilot** отсутствие критичных секретов → сервис не стартует ([`schema.py:115-129`](../../src/core/config/schema.py)).
+`SUPABASE_JWT_SECRET`, `SUPABASE_SERVICE_ROLE`, `OAUTH_ACCESS_TOKEN_SECRET`, `SERVICE_API_TOKEN`, `DOGESTONIA_EID_SECRET` (единый HMAC-секрет), `CODE_VERIFIER_ENCRYPTION_KEY` (AES-256 — ⚪ заявлен, но шифрование verifier в коде пока не используется). В режиме **pilot** отсутствие критичных секретов → сервис не стартует ([`schema.py:173-188`](../../src/core/config/schema.py)).
