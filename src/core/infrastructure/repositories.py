@@ -531,49 +531,13 @@ class InMemoryOAuthTokenService:
             "token_type": "oauth_access",
             "client_id": client_id,
         }
-        return self._encode_jwt(payload)
+        from core.oauth.access_token_jwt import encode_access_token_jwt
+
+        return encode_access_token_jwt(self._config, payload)
 
     def validate_access_token(self, token: str) -> OAuthTokenClaims:
-        payload = self._decode_jwt(token)
-        scope_raw = payload.get("scope", "")
-        scopes = scope_raw.split() if scope_raw else []
-        return OAuthTokenClaims(
-            sub=str(payload["sub"]),
-            scopes=scopes,
-            exp=int(payload["exp"]),
-            client_id=str(payload.get("client_id", "")),
-        )
+        from core.oauth.access_token_jwt import claims_from_access_token_jwt
 
-    def _encode_jwt(self, payload: dict[str, object]) -> str:
-        secret = self._config.oauth_access_token_secret or "demo-key"
-        header = {"alg": "HS256", "typ": "JWT"}
-        header_segment = _b64url_encode(
-            json.dumps(header, separators=(",", ":")).encode("utf-8")
-        )
-        payload_segment = _b64url_encode(
-            json.dumps(payload, separators=(",", ":")).encode("utf-8")
-        )
-        signing_input = f"{header_segment}.{payload_segment}".encode("utf-8")
-        signature = hmac.new(
-            secret.encode("utf-8"), signing_input, hashlib.sha256
-        ).digest()
-        return f"{header_segment}.{payload_segment}.{_b64url_encode(signature)}"
-
-    def _decode_jwt(self, token: str) -> dict[str, object]:
-        secret = self._config.oauth_access_token_secret or "demo-key"
-        try:
-            header_segment, payload_segment, signature_segment = token.split(".")
-        except ValueError as exc:
-            raise ValueError("invalid_token") from exc
-        signing_input = f"{header_segment}.{payload_segment}".encode("utf-8")
-        expected_sig = hmac.new(
-            secret.encode("utf-8"), signing_input, hashlib.sha256
-        ).digest()
-        if not hmac.compare_digest(_b64url_encode(expected_sig), signature_segment):
-            raise ValueError("invalid_token")
-        payload = json.loads(_b64url_decode(payload_segment))
-        if int(payload["exp"]) < int(time.time()):
-            raise ValueError("invalid_token")
-        return payload
+        return claims_from_access_token_jwt(self._config, token)
 
 

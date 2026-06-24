@@ -7,10 +7,12 @@ from core.auth.supabase_validator import SupabaseJwtValidatorImpl
 from core.config.providers import provide_app_config, resolve_config_env
 from core.config.schema import AppConfig
 from core.infrastructure.db_supabase import (
+    SupabaseAuthorizationRequestStore,
     SupabaseDatabase,
     SupabaseEIDAuditLogRepository,
     SupabaseHealthRepository,
     SupabaseOAuthClientStore,
+    SupabaseOAuthTokenService,
     SupabaseProfileRepository,
     SupabaseVerificationSessionStore,
 )
@@ -86,11 +88,19 @@ def provide_service_factory(config: AppConfig | None = None) -> DefaultServiceFa
     else:
         raise ValueError(f"Unsupported db_backend: {resolved_config.db_backend}")
 
-    oauth_token_service = InMemoryOAuthTokenService(
-        config=resolved_config,
-        client_store=oauth_client_store,
-    )
-    oauth_authorization_request_store = InMemoryAuthorizationRequestStore()
+    if resolved_config.db_backend == "supabase":
+        oauth_token_service = SupabaseOAuthTokenService(
+            supabase_db,
+            config=resolved_config,
+            client_store=oauth_client_store,
+        )
+        oauth_authorization_request_store = SupabaseAuthorizationRequestStore(supabase_db)
+    else:
+        oauth_token_service = InMemoryOAuthTokenService(
+            config=resolved_config,
+            client_store=oauth_client_store,
+        )
+        oauth_authorization_request_store = InMemoryAuthorizationRequestStore()
 
     supabase_jwt_validator = SupabaseJwtValidatorImpl(
         jwt_secret=resolved_config.supabase_jwt_secret or "test-secret-for-demo",

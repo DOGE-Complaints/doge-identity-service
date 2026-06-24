@@ -11,17 +11,20 @@ PostgREST filter cheat sheet (use in query ``params``):
 from __future__ import annotations
 
 import dataclasses
+import hashlib
 import json
 import logging
+import secrets
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import httpx
 
 from core.config.schema import AppConfig
 from core.domain.models import (
+    AuthorizationRequest,
     EIDAuditEvent,
     OAuthClient,
     ProfileConflictError,
@@ -38,6 +41,8 @@ __all__ = [
     "SupabaseVerificationSessionStore",
     "SupabaseEIDAuditLogRepository",
     "SupabaseOAuthClientStore",
+    "SupabaseAuthorizationRequestStore",
+    "SupabaseOAuthTokenService",
     "SupabaseHealthRepository",
 ]
 
@@ -667,6 +672,193 @@ class SupabaseEIDAuditLogRepository:
             params=params,
         ) or []
         return [_audit_event_from_row(row) for row in rows]
+
+
+def _authorization_request_to_row(request: AuthorizationRequest) -> dict[str, Any]:
+    return {
+        "oauth_request_id": request.oauth_request_id,
+        "client_id": request.client_id,
+        "redirect_uri": request.redirect_uri,
+        "scopes": list(request.scopes),
+        "code_challenge": request.code_challenge,
+        "code_challenge_method": request.code_challenge_method,
+        "state": request.state,
+        "created_at": _format_datetime(request.created_at),
+        "expires_at": _format_datetime(request.expires_at),
+    }
+
+
+def _authorization_request_from_row(row: dict[str, Any]) -> AuthorizationRequest:
+    scopes_raw = row.get("scopes") or []
+    if isinstance(scopes_raw, str):
+        scopes_raw = json.loads(scopes_raw)
+    return AuthorizationRequest(
+        oauth_request_id=str(row["oauth_request_id"]),
+        client_id=str(row["client_id"]),
+        redirect_uri=str(row["redirect_uri"]),
+        scopes=list(scopes_raw),
+        state=str(row["state"]),
+        code_challenge=row.get("code_challenge"),
+        code_challenge_method=row.get("code_challenge_method"),
+        created_at=_parse_datetime(row["created_at"]) or _utcnow(),
+        expires_at=_parse_datetime(row["expires_at"]) or _utcnow(),
+    )
+
+
+class SupabaseAuthorizationRequestStore:
+    def __init__(self, db: SupabaseDatabase) -> None:
+        self._db = db
+
+    def save(self, request: AuthorizationRequest) -> None:
+        self._db._request(
+            method="POST",
+            path="/rest/v1/oauth_authorization_requests",
+            json_body=_authorization_request_to_row(request),
+            prefer="resolution=merge-duplicates",
+        )
+
+    def get(self, oauth_request_id: str) -> AuthorizationRequest | None:
+        rows = self._db._request(
+            method="GET",
+            path="/rest/v1/oauth_authorization_requests",
+            params={"oauth_request_id": f"eq.{oauth_request_id}", "limit": "1"},
+        )
+        row = _first_row(rows)
+        return _authorization_request_from_row(row) if row else None
+
+    def consume(self, oauth_request_id: str, *, now: datetime) -> AuthorizationRequest | None:
+        request = self.get(oauth_request_id)
+        if request is None:
+            return None
+        self._db._request(
+            method="DELETE",
+            path="/rest/v1/oauth_authorization_requests",
+            params={"oauth_request_id": f"eq.{oauth_request_id}"},
+        )
+        if now >= request.expires_at:
+            return None
+        return request
+
+
+class SupabaseOAuthTokenService:
+    def __init__(
+        self,
+        db: SupabaseDatabase,
+        *,
+        config: AppConfig,
+        client_store: SupabaseOAuthClientStore | None = None,
+    ) -> None:
+        self._db = db
+        self._config = config
+        self._client_store = client_store
+
+    def issue_authorization_code(
+        self,
+        *,
+        supabase_user_id: str,
+        client_id: str,
+        scopes: list[str],
+        redirect_uri: str,
+        code_challenge: str | None = None,
+        code_challenge_method: str | None = None,
+    ) -> str:
+        code = secrets.token_urlsafe(32)
+        now = _utcnow()
+        expires_at = now + timedelta(seconds=self._config.oauth_authorization_code_ttl_s)
+        self._db._request(
+            method="POST",
+            path="/rest/v1/oauth_authorization_codes",
+            json_body={
+                "code": code,
+                "supabase_user_id": supabase_user_id,
+                "client_id": client_id,
+                "redirect_uri": redirect_uri,
+                "scopes": list(scopes),
+                "code_challenge": code_challenge,
+                "code_challenge_method": code_challenge_method,
+                "expires_at": _format_datetime(expires_at),
+                "consumed": False,
+                "created_at": _format_datetime(now),
+            },
+        )
+        return code
+
+    def issue_access_token(
+        self,
+        *,
+        code: str,
+        client_id: str,
+        client_secret: str,
+        redirect_uri: str,
+        code_verifier: str | None = None,
+    ) -> str:
+        from core.oauth.access_token_jwt import b64url_encode, encode_access_token_jwt
+        from core.oauth.client_secret import verify_client_secret
+        from core.oauth.errors import OAuthClientError, OAuthGrantError
+
+        if self._client_store is not None:
+            client = self._client_store.get_client(client_id)
+            if client is None:
+                raise OAuthClientError("invalid_client", "Unknown OAuth client.")
+            if not verify_client_secret(
+                client_secret,
+                expected_hash=client.client_secret_hash,
+                key=self._config.oauth_access_token_secret or "demo-key",
+            ):
+                raise OAuthClientError("invalid_client", "Client authentication failed.")
+
+        now = _utcnow()
+        rows = self._db._request(
+            method="PATCH",
+            path="/rest/v1/oauth_authorization_codes",
+            params={
+                "code": f"eq.{code}",
+                "consumed": "eq.false",
+                "expires_at": f"gt.{_format_datetime(now)}",
+            },
+            json_body={"consumed": True},
+            prefer="return=representation",
+        )
+        row = _first_row(rows)
+        if row is None:
+            raise OAuthGrantError("invalid_grant", "Authorization code expired or already used.")
+
+        stored_client_id = str(row["client_id"])
+        stored_redirect_uri = str(row["redirect_uri"])
+        if stored_client_id != client_id or stored_redirect_uri != redirect_uri:
+            raise OAuthGrantError("invalid_grant", "Authorization code mismatch.")
+
+        stored_challenge = row.get("code_challenge")
+        if stored_challenge is not None:
+            if code_verifier is None:
+                raise OAuthGrantError("invalid_grant", "PKCE code_verifier required.")
+            digest = hashlib.sha256(code_verifier.encode("utf-8")).digest()
+            challenge = b64url_encode(digest)
+            if challenge != stored_challenge:
+                raise OAuthGrantError("invalid_grant", "PKCE verification failed.")
+
+        scopes_raw = row.get("scopes") or []
+        if isinstance(scopes_raw, str):
+            scopes_raw = json.loads(scopes_raw)
+        issued_at = int(now.timestamp())
+        payload = {
+            "iss": self._config.api_base_url or "https://identity.dogestonia.ee",
+            "sub": str(row["supabase_user_id"]),
+            "aud": "doge-identity-service",
+            "exp": issued_at + self._config.oauth_access_token_ttl_s,
+            "iat": issued_at,
+            "jti": str(uuid.uuid4()),
+            "scope": " ".join(scopes_raw),
+            "token_type": "oauth_access",
+            "client_id": client_id,
+        }
+        return encode_access_token_jwt(self._config, payload)
+
+    def validate_access_token(self, token: str):
+        from core.domain.models import OAuthTokenClaims
+        from core.oauth.access_token_jwt import claims_from_access_token_jwt
+
+        return claims_from_access_token_jwt(self._config, token)
 
 
 class SupabaseOAuthClientStore:
