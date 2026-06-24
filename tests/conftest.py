@@ -66,6 +66,14 @@ def _block_dotenv_leakage(monkeypatch: pytest.MonkeyPatch) -> None:
         "EIDEASY_REDIRECT_URI",
         "http://localhost:8100/auth/eideasy/callback",
     )
+    # Phone verification defaults (override polluted shell/.env values in tests)
+    monkeypatch.setenv("SMS_PROVIDER", "mock")
+    monkeypatch.setenv("PHONE_ALLOWED_DIAL_PREFIXES", "+372")
+    monkeypatch.setenv("PHONE_CODE_LENGTH", "6")
+    monkeypatch.setenv("PHONE_CODE_TTL_S", "300")
+    monkeypatch.setenv("PHONE_MAX_ATTEMPTS", "5")
+    monkeypatch.setenv("PHONE_RESEND_COOLDOWN_S", "60")
+    monkeypatch.setenv("PHONE_ONE_ACCOUNT_PER_NUMBER", "true")
     # CORS default for most tests (test_client may override)
     monkeypatch.setenv("CORS_ALLOWED_ORIGINS", "*")
 

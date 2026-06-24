@@ -212,23 +212,29 @@ def test_oauth_client_store_from_config_uses_demo_fallbacks() -> None:
     assert client.client_secret_hash == hash_secret("demo", key="demo-key")
 
 
-def test_inmemory_oauth_token_service_skips_client_secret_validation() -> None:
-    config = _demo_config()
-    service = InMemoryOAuthTokenService(config=config)
+def test_inmemory_oauth_token_service_rejects_invalid_client_secret() -> None:
+    config = _demo_config(
+        gpt_oauth_client_id="gpt-client",
+        gpt_oauth_client_secret="correct-secret",
+        gpt_oauth_redirect_uri="http://localhost/callback",
+    )
+    client_store = InMemoryOAuthClientStore.from_config(config)
+    service = InMemoryOAuthTokenService(config=config, client_store=client_store)
     code = service.issue_authorization_code(
         supabase_user_id="user-1",
         client_id="gpt-client",
         scopes=["profile:read"],
         redirect_uri="http://localhost/callback",
     )
-    token = service.issue_access_token(
-        code=code,
-        client_id="gpt-client",
-        client_secret="wrong-secret",
-        redirect_uri="http://localhost/callback",
-    )
-    assert isinstance(token, str)
-    assert token
+    from core.oauth.errors import OAuthClientError
+
+    with pytest.raises(OAuthClientError):
+        service.issue_access_token(
+            code=code,
+            client_id="gpt-client",
+            client_secret="wrong-secret",
+            redirect_uri="http://localhost/callback",
+        )
 
 
 def test_verification_session_mark_consumed_is_idempotent() -> None:

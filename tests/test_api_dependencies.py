@@ -96,7 +96,7 @@ def test_build_api_dependencies_zero_arg(monkeypatch: pytest.MonkeyPatch) -> Non
     assert deps.db_backend == "in_memory"
     assert deps.db_ready is True
     assert deps.profile_repository is not None
-    assert type(deps.bearer_token_auth).__name__ == "SupabaseJwtBearerTokenAuth"
+    assert type(deps.bearer_token_auth).__name__ == "CompositeBearerTokenAuth"
 
 
 def test_get_api_dependencies_is_singleton(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -155,7 +155,7 @@ def test_parallel_requests_share_same_dependencies(monkeypatch: pytest.MonkeyPat
 
 def test_epic_ids_04_optional_fields_match_factory_getters() -> None:
     """Story 3 t02: dataclass slots align with epic §3 and commented provide_service_factory block."""
-    assert len(EPIC_IDS_04_OPTIONAL_FIELDS) == 10
+    assert len(EPIC_IDS_04_OPTIONAL_FIELDS) == 11
     for field_name in EPIC_IDS_04_OPTIONAL_FIELDS:
         assert field_name in ApiDependencies.__dataclass_fields__
 

@@ -9,6 +9,7 @@ from core.application.factory import ServiceFactory
 from core.config.schema import AppConfig, DeploymentProfile
 from core.domain.models import UserClaims
 from core.infrastructure.repositories import (
+    InMemoryAuthorizationRequestStore,
     InMemoryEIDAuditLogRepository,
     InMemoryHealthRepository,
     InMemoryOAuthClientStore,
@@ -85,14 +86,19 @@ def _demo_config(**overrides: object) -> AppConfig:
 def _build_factory(config: AppConfig | None = None) -> DefaultServiceFactory:
     resolved = config or _demo_config()
     sms_runtime = build_sms_provider_runtime(config=resolved)
+    oauth_client_store = InMemoryOAuthClientStore.from_config(resolved)
     return DefaultServiceFactory(
         config=resolved,
         health_repository=InMemoryHealthRepository(),
         profile_repository=InMemoryProfileRepository(),
         verification_session_store=InMemoryVerificationSessionStore(),
         eid_audit_log_repository=InMemoryEIDAuditLogRepository(),
-        oauth_client_store=InMemoryOAuthClientStore.from_config(resolved),
-        oauth_token_service=InMemoryOAuthTokenService(config=resolved),
+        oauth_client_store=oauth_client_store,
+        oauth_token_service=InMemoryOAuthTokenService(
+            config=resolved,
+            client_store=oauth_client_store,
+        ),
+        oauth_authorization_request_store=InMemoryAuthorizationRequestStore(),
         supabase_jwt_validator=_StubSupabaseJwtValidator(),
         bearer_token_auth=SupabaseJwtBearerTokenAuth(validator=_StubSupabaseJwtValidator()),
         eid_provider_registry=EIDProviderRegistry({}),

@@ -7,7 +7,7 @@ from joserfc import jwt
 from joserfc.jwk import OctKey
 
 from core.api.dependencies import build_api_dependencies
-from core.api.security import SupabaseJwtBearerTokenAuth
+from core.api.security import CompositeBearerTokenAuth, SupabaseJwtBearerTokenAuth
 from core.config.providers import provide_app_config
 from core.config.schema import AppConfig
 from core.domain.contracts import ProfileRepository
@@ -115,8 +115,8 @@ def test_build_api_dependencies_integration(monkeypatch: pytest.MonkeyPatch) -> 
     assert deps.profile_repository is not None
     assert deps.eid_provider_registry is not None
     assert deps.eid_provider_registry.get("mock").provider_name == "mock"
-    assert type(deps.bearer_token_auth).__name__ == "SupabaseJwtBearerTokenAuth"
-    assert isinstance(deps.bearer_token_auth, SupabaseJwtBearerTokenAuth)
+    assert type(deps.bearer_token_auth).__name__ == "CompositeBearerTokenAuth"
+    assert isinstance(deps.bearer_token_auth, CompositeBearerTokenAuth)
 
 
 def test_build_api_dependencies_bearer_accepts_valid_demo_jwt(
