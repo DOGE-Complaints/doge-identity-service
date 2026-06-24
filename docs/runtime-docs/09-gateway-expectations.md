@@ -32,6 +32,21 @@ identity и gateway — два разных сервиса, и важно, чт�
 | Introspection-endpoint (или рабочий `/me`), отдающий `active/sub/phone_verified` для токена пользователя | `/me` — ✅ **построен** (AUTHCORE-01); `/oauth/introspect` — ✅ **построен** ([`introspection.py`](../../src/core/oauth/introspection.py), [OAUTH-02](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-02-introspection-and-service-token.md)) | ✅ |
 | Выдача OAuth-токена | [`core/oauth/handlers.py`](../../src/core/oauth/handlers.py), маршруты [`asgi_app.py:368-403`](../../src/core/api/asgi_app.py) | ✅ ([OAUTH-01](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-01-oauth-server-endpoints.md)) |
 | Проверка сервисного токена на входе identity | `AppConfig.service_api_token` + `ServiceTokenAuth` ([`schema.py`](../../src/core/config/schema.py), [`security.py`](../../src/core/api/security.py)); обязателен в `APP_PROFILE=pilot` | ✅ |
+| OAuth verify-gate relay + `verification_required` (403) при `phone_verified=false` | [`handlers.py`](../../src/core/oauth/handlers.py), [`verification_required.py`](../../src/core/oauth/verification_required.py) — `POST /oauth/authorize/complete` с `requested_action=stories:submit` → `{error, reason, verify_url}` | ✅ ([OAUTH-04](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-04-verify-gate-and-verification-required.md)) |
+
+### Контракт `verification_required` (identity, OAUTH-04)
+
+Когда OAuth complete-path требует phone verify (`requested_action=stories:submit`, `phone_verified=false`), identity отвечает **HTTP 403** (не 400 OTP):
+
+```json
+{
+  "error": "verification_required",
+  "reason": "Phone verification is required before this action can proceed.",
+  "verify_url": "https://<spa>/verify?context=<return_context>"
+}
+```
+
+Gateway при submit может отдавать тот же shape, опираясь на introspection `{active, sub, phone_verified:false}`. Enforcement на стороне gateway — в его репо.
 
 ## Чего identity НЕ должен делать (следствие парадигмы)
 
@@ -44,4 +59,4 @@ identity и gateway — два разных сервиса, и важно, чт�
 gateway хранит `stories.submitter_identity_issuer` (строка, NOT NULL — [gateway миграция `20260515_1200`](../../../doge-complaints-gateway/supabase/migrations/20260515_1200_submitter_identity_issuer_not_null.sql)) — слабая связанность, корректна при раздельных сервисах/Supabase-проектах ([../analysis/supabase-project-separation-audit-2026-06-03.md](../analysis/supabase-project-separation-audit-2026-06-03.md)).
 
 ## Итог
-В коде identity OAuth-выдача, **introspection+сервисный gate** и **durable handshake/codes при `DB_BACKEND=supabase`** **построены** (OAUTH-01, OAUTH-02, OAUTH-03); gateway intake (вызов introspection при создании истории) — **ещё не подключён**. Story-маршруты и `story_drafts` уже убраны (CLEANUP-01). Оставшиеся задачи — OAUTH-04 (verify-gate) и подключение gateway. Demo/offline (`DB_BACKEND=in_memory`) по-прежнему использует in-memory OAuth-стор.
+В коде identity OAuth-выдача, **introspection+сервисный gate**, **durable handshake/codes при `DB_BACKEND=supabase`**, **verify-gate relay + `verification_required`** **построены** (OAUTH-01, OAUTH-02, OAUTH-03, OAUTH-04); gateway intake (вызов introspection при создании истории) — **ещё не подключён**. Story-маршруты и `story_drafts` уже убраны (CLEANUP-01). Оставшаяся задача — подключение gateway.
