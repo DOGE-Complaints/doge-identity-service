@@ -65,7 +65,7 @@ sequenceDiagram
     Note over GW: если phone_verified=false → 403, GPT ведёт юзера на verify
 ```
 
-> **as-is vs target:** диаграмма — **целевая**. Сейчас (as-is): OAuth-маршруты `/oauth/*` — **✅ построены** ([OAUTH-01](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-01-oauth-server-endpoints.md)); introspection-endpoint **`POST /oauth/introspect`** — **✅ построен** ([OAUTH-02](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-02-introspection-and-service-token.md)); сервисный gate — `SERVICE_API_TOKEN` / `ServiceTokenAuth` (обязателен в `APP_PROFILE=pilot`). Gateway пока **не зовёт** identity (intake открыт). Телефонная верификация (`/auth/phone/*`, `/me`) — **построена**. Оставшийся разрыв: verify-gate ([OAUTH-04](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-04-verify-gate-and-verification-required.md)), durable handshake/codes ([OAUTH-03](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-03-persistent-token-store-supabase.md)).
+> **as-is vs target:** диаграмма — **целевая**. Сейчас (as-is): OAuth-маршруты `/oauth/*` — **✅ построены** ([OAUTH-01](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-01-oauth-server-endpoints.md)); introspection-endpoint **`POST /oauth/introspect`** — **✅ построен** ([OAUTH-02](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-02-introspection-and-service-token.md)); сервисный gate — `SERVICE_API_TOKEN` / `ServiceTokenAuth` (обязателен в `APP_PROFILE=pilot`). Durable handshake/codes в Supabase — **✅ построен** при `DB_BACKEND=supabase` ([OAUTH-03](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-03-persistent-token-store-supabase.md)); demo/offline-тесты — `in_memory`. Gateway пока **не зовёт** identity (intake открыт). Телефонная верификация (`/auth/phone/*`, `/me`) — **построена**. Оставшийся разрыв: verify-gate ([OAUTH-04](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-04-verify-gate-and-verification-required.md)).
 
 ## Тот же процесс словами (по шагам)
 
@@ -85,14 +85,15 @@ sequenceDiagram
 | Проверка Supabase JWT пользователя | [`auth/supabase_validator.py`](../../src/core/auth/supabase_validator.py) | ✅ |
 | **`/me`** (профиль + `phone_verified`) | [`me_response.py`](../../src/core/api/me_response.py), [`asgi_app.py:235`](../../src/core/api/asgi_app.py) | ✅ построен (AUTHCORE-01) |
 | **Телефонная верификация** `/auth/phone/request|confirm` | [`asgi_app.py:286,302`](../../src/core/api/asgi_app.py), `core/phone/` | ✅ (PV-01…07) |
-| OAuth-движок (код/токен/PKCE) | [`repositories.py:430`](../../src/core/infrastructure/repositories.py) | ✅ логика есть (in-memory) |
+| OAuth-движок (код/токен/PKCE) | [`repositories.py:430`](../../src/core/infrastructure/repositories.py) (in-memory), [`db_supabase.py`](../../src/core/infrastructure/db_supabase.py) (Supabase при `DB_BACKEND=supabase`) | ✅ |
 | OAuth-маршруты `/oauth/authorize`, `/oauth/authorize/complete`, `/oauth/token` | [`asgi_app.py:368-403`](../../src/core/api/asgi_app.py), [`core/oauth/handlers.py`](../../src/core/oauth/handlers.py) | ✅ построен ([OAUTH-01](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-01-oauth-server-endpoints.md)) |
+| Durable handshake/codes (Supabase Postgres) | [`SupabaseAuthorizationRequestStore`](../../src/core/infrastructure/db_supabase.py), [`SupabaseOAuthTokenService`](../../src/core/infrastructure/db_supabase.py), миграция [`20260624000001_oauth_authorization_tables.sql`](../../supabase/migrations/20260624000001_oauth_authorization_tables.sql) | ✅ при `DB_BACKEND=supabase` ([OAUTH-03](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-03-persistent-token-store-supabase.md)); demo — in-memory |
 | eID-старт/callback (`/auth/eid/start`, `/auth/{provider}/callback`) | [`asgi_app.py:247,265`](../../src/core/api/asgi_app.py) | ✅ mock; реальный провайдер 🟦 DEFERRED |
 | Флаг «нужна верификация» в сессии | поля `return_context`/`requested_action` в [`models.py`](../../src/core/domain/models.py) | ⚪ поля есть; relay через OAuth = [OAUTH-04](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-04-verify-gate-and-verification-required.md) |
 | **introspection-endpoint** для gateway (`{active, sub, phone_verified}`) | [`introspection.py`](../../src/core/oauth/introspection.py), [`asgi_app.py:407-416`](../../src/core/api/asgi_app.py) | ✅ построен ([OAUTH-02](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-02-introspection-and-service-token.md)) |
 | Проверка сервисного токена на входе identity | `AppConfig.service_api_token` ([`schema.py:70,238`](../../src/core/config/schema.py)), `ServiceTokenAuth` ([`security.py:89-116`](../../src/core/api/security.py)); **обязателен в pilot** | ✅ (gate disabled в demo при пустом токене) |
 
-То есть телефонная верификация, `/me`, OAuth-маршруты и **introspection+сервисный gate** **построены**; gateway intake ещё не подключён. Handshake/codes — in-memory ([OAUTH-03](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-03-persistent-token-store-supabase.md)). eID — отложен (mock остаётся как provider-каркас).
+То есть телефонная верификация, `/me`, OAuth-маршруты, **introspection+сервисный gate** и **durable handshake/codes при `DB_BACKEND=supabase`** **построены**; gateway intake ещё не подключён. При `DB_BACKEND=in_memory` (demo/offline-тесты) handshake/codes остаются in-memory. eID — отложен (mock остаётся как provider-каркас).
 
 ---
 
@@ -108,7 +109,7 @@ sequenceDiagram
 
 ## 3. OAuth-движок ✅ (логика + наружу)
 
-`InMemoryOAuthTokenService` ([`repositories.py:430+`](../../src/core/infrastructure/repositories.py)) умеет: выдать authorization code с TTL, обменять его на access-токен, проверить **PKCE S256**, подписать self-signed JWT (HS256). **`client_secret` проверяется** через [`verify_client_secret`](../../src/core/oauth/client_secret.py) ([`repositories.py:495-501`](../../src/core/infrastructure/repositories.py)) — SEC-1 закрыт. Наружу подключён через [`core/oauth/handlers.py`](../../src/core/oauth/handlers.py) и маршруты [`asgi_app.py:368-403`](../../src/core/api/asgi_app.py). ⚠️ Handshake/codes — **in-memory** (редеплой) → [OAUTH-03](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-03-persistent-token-store-supabase.md).
+`InMemoryOAuthTokenService` ([`repositories.py:430+`](../../src/core/infrastructure/repositories.py)) и `SupabaseOAuthTokenService` ([`db_supabase.py`](../../src/core/infrastructure/db_supabase.py)) умеют: выдать authorization code с TTL, обменять его на access-токен, проверить **PKCE S256**, подписать self-signed JWT (HS256) через [`access_token_jwt.py`](../../src/core/oauth/access_token_jwt.py). **`client_secret` проверяется** через [`verify_client_secret`](../../src/core/oauth/client_secret.py). Наружу подключён через [`core/oauth/handlers.py`](../../src/core/oauth/handlers.py) и маршруты [`asgi_app.py:368-403`](../../src/core/api/asgi_app.py). **Handshake/codes:** durable в Supabase при `DB_BACKEND=supabase` ([OAUTH-03](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-03-persistent-token-store-supabase.md) ✅); demo/offline — in-memory.
 
 ## 4. Защита персональных данных — HMAC ✅
 
