@@ -66,6 +66,16 @@ POST_HISTORICAL_MIGRATIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
             "oauth_authorization_codes_service_role_all",
         ),
     ),
+    (
+        "20260624000002_oauth_authorization_request_context.sql",
+        (
+            "requested_action",
+            "return_context",
+            "oauth_authorization_requests_requested_action_check",
+            "ADD COLUMN IF NOT EXISTS",
+            "stories:submit",
+        ),
+    ),
 )
 
 HISTORICAL_MIGRATIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
