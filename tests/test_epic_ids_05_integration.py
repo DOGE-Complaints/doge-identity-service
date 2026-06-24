@@ -7,14 +7,20 @@ from core.api.dependencies import build_api_dependencies
 from core.config.providers import provide_app_config
 from core.config.schema import AppConfig
 from core.infrastructure.db_supabase import (
+    SupabaseAuthorizationRequestStore,
     SupabaseEIDAuditLogRepository,
     SupabaseHealthRepository,
     SupabaseOAuthClientStore,
+    SupabaseOAuthTokenService,
     SupabaseProfileRepository,
     SupabaseVerificationSessionStore,
 )
 from core.infrastructure.providers import provide_service_factory
-from core.infrastructure.repositories import InMemoryProfileRepository
+from core.infrastructure.repositories import (
+    InMemoryAuthorizationRequestStore,
+    InMemoryOAuthTokenService,
+    InMemoryProfileRepository,
+)
 from core.infrastructure.service_factory import DefaultServiceFactory
 
 _BASE_ENV = {
@@ -50,6 +56,11 @@ def test_provide_service_factory_supabase_returns_supabase_repositories(
     )
     assert isinstance(factory.get_health_repository(), SupabaseHealthRepository)
     assert isinstance(factory.get_oauth_client_store(), SupabaseOAuthClientStore)
+    assert isinstance(factory.get_oauth_token_service(), SupabaseOAuthTokenService)
+    assert isinstance(
+        factory.get_oauth_authorization_request_store(),
+        SupabaseAuthorizationRequestStore,
+    )
 
 
 def test_backend_switch_is_env_only(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -58,12 +69,22 @@ def test_backend_switch_is_env_only(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv(key, value)
     in_memory_factory = provide_service_factory()
     assert isinstance(in_memory_factory.get_profile_repository(), InMemoryProfileRepository)
+    assert isinstance(in_memory_factory.get_oauth_token_service(), InMemoryOAuthTokenService)
+    assert isinstance(
+        in_memory_factory.get_oauth_authorization_request_store(),
+        InMemoryAuthorizationRequestStore,
+    )
 
     for key, value in _SUPABASE_ENV.items():
         monkeypatch.setenv(key, value)
     supabase_factory = provide_service_factory(provide_app_config())
     assert isinstance(
         supabase_factory.get_profile_repository(), SupabaseProfileRepository
+    )
+    assert isinstance(supabase_factory.get_oauth_token_service(), SupabaseOAuthTokenService)
+    assert isinstance(
+        supabase_factory.get_oauth_authorization_request_store(),
+        SupabaseAuthorizationRequestStore,
     )
 
 

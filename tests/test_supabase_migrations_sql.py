@@ -53,6 +53,19 @@ POST_HISTORICAL_MIGRATIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
             "ADD COLUMN IF NOT EXISTS",
         ),
     ),
+    (
+        "20260624000001_oauth_authorization_tables.sql",
+        (
+            "oauth_authorization_requests",
+            "oauth_authorization_codes",
+            "oauth_authorization_requests_expires_idx",
+            "oauth_authorization_codes_expires_idx",
+            "code TEXT PRIMARY KEY",
+            "ENABLE ROW LEVEL SECURITY",
+            "oauth_authorization_requests_service_role_all",
+            "oauth_authorization_codes_service_role_all",
+        ),
+    ),
 )
 
 HISTORICAL_MIGRATIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
