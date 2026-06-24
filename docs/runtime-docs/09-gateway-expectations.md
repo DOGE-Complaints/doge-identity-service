@@ -8,10 +8,12 @@ identity и gateway — два разных сервиса, и важно, чт�
 
 ## Целевая парадигма (решено 2026-06-04) — «не смешиваем сервисы»
 
+> **Phone-pivot (2026-06):** активный гейт — `phone_verified` (SMS-OTP); eID **отложен**. Везде ниже, где «eID», читать как «верификация (телефон)»; introspection отдаёт `phone_verified`.
+
 Подача истории из GPT:
-1. GPT нужен OAuth-токен. Нет токена → редирект на **страницу авторизации в общем UI**, с флагом «нужна eID-верификация» (т.к. действие = подача истории).
-2. Пользователь логинится/регистрируется; **identity** выдаёт OAuth access-токен и знает eID-статус.
-3. eID не пройден → редирект на активный eID-провайдер → callback → identity ставит eID=verified.
+1. GPT нужен OAuth-токен. Нет токена → редирект на **страницу авторизации в общем UI**, с флагом «нужна верификация» (т.к. действие = подача истории).
+2. Пользователь логинится/регистрируется; **identity** выдаёт OAuth access-токен и знает статус `phone_verified`.
+3. Телефон не подтверждён → inline-экран verify (ввод номера +372 → SMS-код, `/auth/phone/request` → `/auth/phone/confirm`) → identity ставит `phone_verified=true`. (Внешнего redirect нет — это наши же API; eID-redirect — DEFERRED.)
 4. GPT получает токен и **сам шлёт запрос создания истории напрямую в gateway**. Контент в identity не заходит.
 5. **gateway** принимает историю, проверяет доступ (см. модель ниже) и создаёт её.
 
@@ -19,16 +21,16 @@ identity и gateway — два разных сервиса, и важно, чт�
 
 Два независимых слоя:
 - **Слой доверия сервисов:** сервисный токен (gateway уже умеет — `SERVICE_API_TOKEN` / `X-Service-Token`, [`gateway security.py:17-20,69`](../../../doge-complaints-gateway/src/core/api/security.py)) или mTLS. Отсекает левых клиентов.
-- **Слой пользователя (introspection):** gateway берёт **пользовательский** OAuth-токен и **спрашивает identity** (introspection / `/me`): `{active, sub, eid_verified}`. eID-статус в самом токене НЕ кодируется (решение оператора) — gateway всегда получает свежий статус у identity.
+- **Слой пользователя (introspection):** gateway берёт **пользовательский** OAuth-токен и **спрашивает identity** (introspection / `/me`): `{active, sub, phone_verified}`. Статус верификации в самом токене НЕ кодируется (решение оператора) — gateway всегда получает свежий статус у identity.
 
-Почему так (best practice): сервисный токен доказывает «зовёт доверенный сервис», но НЕ доказывает, какой человек и пройден ли eID. Для платформы, где eID — суть подотчётности, gateway обязан проверить пользователя (иначе «confused deputy» — подача за кого угодно). Подробный разбор — в gap-отчёте.
+Почему так (best practice): сервисный токен доказывает «зовёт доверенный сервис», но НЕ доказывает, какой человек и пройдена ли верификация. Для платформы, где проверенная личность — суть подотчётности, gateway обязан проверить пользователя (иначе «confused deputy» — подача за кого угодно). Подробный разбор — в gap-отчёте.
 
 ## Что для этого нужно от identity (по факту — пока нет)
 
 | Нужно (по парадигме) | Факт в коде identity | Статус |
 |----------------------|----------------------|--------|
-| Introspection-endpoint (или рабочий `/me`), отдающий `active/sub/eid_verified` для токена пользователя | `/me` — 🟡 заглушка 501 ([`asgi_app.py:159-169`](../../src/core/api/asgi_app.py)); `/oauth/introspect` — **отсутствует** | ❌/🟡 |
-| Выдача OAuth-токена | `InMemoryOAuthTokenService` ([`repositories.py:238-346`](../../src/core/infrastructure/repositories.py)) — логика есть, но роуты `/oauth/*` — 🟡 501 | 🟡 |
+| Introspection-endpoint (или рабочий `/me`), отдающий `active/sub/phone_verified` для токена пользователя | `/me` — ✅ **построен** (AUTHCORE-01, phone-поля в [`me_response.py`](../../src/core/api/me_response.py)); `/oauth/introspect` — **отсутствует** ([OAUTH-02](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-02-introspection-and-service-token.md)) | 🟡 (`/me` ✅, introspect ❌) |
+| Выдача OAuth-токена | [`core/oauth/handlers.py`](../../src/core/oauth/handlers.py), маршруты [`asgi_app.py:368-403`](../../src/core/api/asgi_app.py) | ✅ ([OAUTH-01](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-01-oauth-server-endpoints.md)) |
 | Проверка сервисного токена на входе identity | в identity-конфиге **нет** `SERVICE_API_TOKEN` ([`schema.py`](../../src/core/config/schema.py)) | ❌ |
 
 ## Чего identity НЕ должен делать (следствие парадигмы)
@@ -42,4 +44,4 @@ identity и gateway — два разных сервиса, и важно, чт�
 gateway хранит `stories.submitter_identity_issuer` (строка, NOT NULL — [gateway миграция `20260515_1200`](../../../doge-complaints-gateway/supabase/migrations/20260515_1200_submitter_identity_issuer_not_null.sql)) — слабая связанность, корректна при раздельных сервисах/Supabase-проектах ([../analysis/supabase-project-separation-audit-2026-06-03.md](../analysis/supabase-project-separation-audit-2026-06-03.md)).
 
 ## Итог
-В коде identity стык с gateway **ещё не реализован** под решённую парадигму: нет introspection-endpoint, нет проверки сервисного токена, OAuth-роуты — заглушки. Story-маршруты и `story_drafts` уже убраны (CLEANUP-01). Оставшиеся задачи — в gap-отчёте как будущие эпики.
+В коде identity OAuth-выдача **построена** (OAUTH-01); стык с gateway под целевую парадигму **ещё не реализован**: нет introspection-endpoint, нет проверки сервисного токена. Story-маршруты и `story_drafts` уже убраны (CLEANUP-01). Оставшиеся задачи — OAUTH-02/03/04 и gap-отчёт.
