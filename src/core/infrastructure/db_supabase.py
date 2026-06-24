@@ -683,6 +683,8 @@ def _authorization_request_to_row(request: AuthorizationRequest) -> dict[str, An
         "code_challenge": request.code_challenge,
         "code_challenge_method": request.code_challenge_method,
         "state": request.state,
+        "requested_action": request.requested_action,
+        "return_context": request.return_context,
         "created_at": _format_datetime(request.created_at),
         "expires_at": _format_datetime(request.expires_at),
     }
@@ -702,6 +704,8 @@ def _authorization_request_from_row(row: dict[str, Any]) -> AuthorizationRequest
         code_challenge_method=row.get("code_challenge_method"),
         created_at=_parse_datetime(row["created_at"]) or _utcnow(),
         expires_at=_parse_datetime(row["expires_at"]) or _utcnow(),
+        requested_action=row.get("requested_action"),
+        return_context=row.get("return_context"),
     )
 
 

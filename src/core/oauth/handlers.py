@@ -7,8 +7,14 @@ from urllib.parse import urlencode
 
 from core.domain.models import AuthorizationRequest
 from core.oauth.errors import OAuthClientError, OAuthError, OAuthGrantError, oauth_error_body
+from core.oauth.request_context import (
+    action_requires_phone_verification,
+    normalize_requested_action,
+    normalize_return_context,
+)
 from core.oauth.scope import parse_scope_param, validate_requested_scopes
 from core.oauth.spa_login import build_spa_oauth_login_url
+from core.oauth.verification_required import build_verification_required_response
 
 if TYPE_CHECKING:
     from core.api.dependencies import ApiDependencies
@@ -37,6 +43,8 @@ def handle_oauth_authorize(
     scope_raw = query.get("scope")
     code_challenge = query.get("code_challenge") or None
     code_challenge_method = query.get("code_challenge_method") or None
+    requested_action_raw = query.get("requested_action")
+    return_context_raw = query.get("return_context")
 
     if not client_id:
         return None, oauth_error_body("invalid_request", "client_id is required."), 400
@@ -46,6 +54,12 @@ def handle_oauth_authorize(
         return None, oauth_error_body("invalid_request", "state is required."), 400
     if response_type != "code":
         return None, oauth_error_body("unsupported_response_type", "Only code is supported."), 400
+
+    try:
+        requested_action = normalize_requested_action(requested_action_raw)
+    except ValueError:
+        return None, oauth_error_body("invalid_request", "requested_action is not allowed."), 400
+    return_context = normalize_return_context(return_context_raw)
 
     client = client_store.get_client(client_id)
     if client is None:
@@ -77,6 +91,8 @@ def handle_oauth_authorize(
         code_challenge_method=code_challenge_method if code_challenge else None,
         created_at=now,
         expires_at=now + timedelta(seconds=ttl_s),
+        requested_action=requested_action,
+        return_context=return_context,
     )
     auth_request_store.save(request)
     redirect_url = build_spa_oauth_login_url(deps.config, oauth_request_id=oauth_request_id)
@@ -91,6 +107,7 @@ def handle_oauth_authorize_complete(
 ) -> tuple[str | None, dict | None, int]:
     token_service = deps.oauth_token_service
     auth_request_store = deps.oauth_authorization_request_store
+    profile_repository = deps.profile_repository
     if token_service is None or auth_request_store is None:
         body = oauth_error_body("invalid_request", "OAuth server is not configured.")
         return None, body, 503
@@ -99,7 +116,27 @@ def handle_oauth_authorize_complete(
     if not request_id:
         return None, oauth_error_body("invalid_request", "oauth_request_id is required."), 400
 
-    auth_request = auth_request_store.consume(request_id, now=_now())
+    now = _now()
+    auth_request = auth_request_store.get(request_id)
+    if auth_request is None:
+        return None, oauth_error_body("invalid_grant", "Authorization request expired or unknown."), 400
+    if now >= auth_request.expires_at:
+        return None, oauth_error_body("invalid_grant", "Authorization request expired or unknown."), 400
+
+    if action_requires_phone_verification(auth_request.requested_action):
+        phone_verified = False
+        if profile_repository is not None:
+            profile = profile_repository.get_by_supabase_user_id(current_user.supabase_user_id)
+            if profile is not None:
+                phone_verified = profile.phone_verified
+        if not phone_verified:
+            body, status = build_verification_required_response(
+                deps.config,
+                return_context=auth_request.return_context,
+            )
+            return None, body, status
+
+    auth_request = auth_request_store.consume(request_id, now=now)
     if auth_request is None:
         return None, oauth_error_body("invalid_grant", "Authorization request expired or unknown."), 400
 

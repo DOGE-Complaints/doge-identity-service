@@ -145,4 +145,6 @@ class AuthorizationRequest:
     code_challenge_method: str | None
     created_at: datetime
     expires_at: datetime
+    requested_action: str | None = None
+    return_context: str | None = None
 

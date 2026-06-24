@@ -20,3 +20,11 @@ def build_spa_oauth_login_url(config: AppConfig, *, oauth_request_id: str) -> st
     base = resolve_spa_login_base_url(config)
     query = urlencode({"oauth_request_id": oauth_request_id})
     return f"{base}/login?{query}"
+
+
+def build_spa_verify_url(config: AppConfig, *, return_context: str | None) -> str:
+    base = resolve_spa_login_base_url(config)
+    if return_context:
+        query = urlencode({"context": return_context})
+        return f"{base}/verify?{query}"
+    return f"{base}/verify"
