@@ -20,6 +20,7 @@ class RateLimitRule:
 
 ROUTE_AUTH_EID_START = "POST /auth/eid/start"
 ROUTE_AUTH_CALLBACK = "GET /auth/{provider}/callback"
+ROUTE_AUTH_PHONE_REQUEST = "POST /auth/phone/request"
 
 
 def rate_limit_rules_for_config(config: AppConfig) -> dict[str, RateLimitRule]:
@@ -33,5 +34,10 @@ def rate_limit_rules_for_config(config: AppConfig) -> dict[str, RateLimitRule]:
             requests=config.rate_limit_callback_requests,
             window_s=config.rate_limit_callback_window_s,
             per=RateLimitScope.IP,
+        ),
+        ROUTE_AUTH_PHONE_REQUEST: RateLimitRule(
+            requests=config.rate_limit_phone_request_requests,
+            window_s=config.rate_limit_phone_request_window_s,
+            per=RateLimitScope.USER,
         ),
     }

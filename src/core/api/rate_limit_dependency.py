@@ -7,6 +7,7 @@ from core.security.rate_limit import RateLimitExceeded
 from core.security.rate_limit_config import (
     ROUTE_AUTH_CALLBACK,
     ROUTE_AUTH_EID_START,
+    ROUTE_AUTH_PHONE_REQUEST,
     rate_limit_rules_for_config,
 )
 
@@ -54,4 +55,15 @@ async def require_callback_rate_limit(request: Request) -> None:
         request=request,
         route_key=ROUTE_AUTH_CALLBACK,
         limit_key=f"ip:{_client_ip(request)}",
+    )
+
+
+async def require_phone_request_rate_limit(
+    request: Request,
+    current_user: UserClaims = Depends(get_current_user),
+) -> None:
+    _enforce_rate_limit(
+        request=request,
+        route_key=ROUTE_AUTH_PHONE_REQUEST,
+        limit_key=f"user:{current_user.supabase_user_id}",
     )

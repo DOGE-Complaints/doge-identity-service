@@ -72,6 +72,8 @@ class AppConfig:
     rate_limit_callback_requests: int
     rate_limit_callback_window_s: int
     rate_limit_trusted_proxy_count: int
+    rate_limit_phone_request_requests: int
+    rate_limit_phone_request_window_s: int
     service_api_token: str
 
 
@@ -246,5 +248,7 @@ def load_config_from_env(source: Mapping[str, str] | None = None) -> AppConfig:
         rate_limit_callback_requests=_int(env, "RATE_LIMIT_CALLBACK_REQUESTS", "5"),
         rate_limit_callback_window_s=_int(env, "RATE_LIMIT_CALLBACK_WINDOW_S", "600"),
         rate_limit_trusted_proxy_count=_int(env, "RATE_LIMIT_TRUSTED_PROXY_COUNT", "0"),
+        rate_limit_phone_request_requests=_int(env, "RATE_LIMIT_PHONE_REQUEST_REQUESTS", "5"),
+        rate_limit_phone_request_window_s=_int(env, "RATE_LIMIT_PHONE_REQUEST_WINDOW_S", "600"),
         service_api_token=_value(env, "SERVICE_API_TOKEN", ""),
     )

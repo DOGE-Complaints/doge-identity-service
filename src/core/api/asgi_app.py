@@ -36,6 +36,7 @@ from core.oauth.introspection import handle_oauth_introspect
 from core.api.rate_limit_dependency import (
     require_callback_rate_limit,
     require_eid_start_rate_limit,
+    require_phone_request_rate_limit,
 )
 from core.api.security import UnauthorizedError, UserClaims, get_current_user, require_service_token
 from core.config import AppConfig, ConfigError, provide_app_config
@@ -345,6 +346,7 @@ def _register_routes(app: FastAPI) -> None:
     async def auth_phone_request(
         request: Request,
         current_user: UserClaims = Depends(get_current_user),
+        _: None = Depends(require_phone_request_rate_limit),
     ) -> JSONResponse:
         deps = get_api_dependencies()
         trace_id = _trace_id_from_request(request)
