@@ -12,23 +12,7 @@ from core.security.rate_limit_config import (
 )
 
 
-def _client_ip(request: Request) -> str:
-    from core.api.asgi_app import get_api_dependencies
-
-    trusted_proxy_count = get_api_dependencies().config.rate_limit_trusted_proxy_count
-    if trusted_proxy_count > 0:
-        forwarded = request.headers.get("x-forwarded-for")
-        if forwarded:
-            hops = [hop.strip() for hop in forwarded.split(",") if hop.strip()]
-            if hops:
-                idx = len(hops) - trusted_proxy_count - 1
-                if idx >= 0:
-                    return hops[idx]
-    if request.client is not None:
-        return request.client.host
-    return "unknown"
-
-
+from core.api.request_context import client_ip
 def _enforce_rate_limit(*, request: Request, route_key: str, limit_key: str) -> None:
     from core.api.asgi_app import get_api_dependencies
 
@@ -51,10 +35,13 @@ async def require_eid_start_rate_limit(
 
 
 async def require_callback_rate_limit(request: Request) -> None:
+    from core.api.asgi_app import get_api_dependencies
+
+    deps = get_api_dependencies()
     _enforce_rate_limit(
         request=request,
         route_key=ROUTE_AUTH_CALLBACK,
-        limit_key=f"ip:{_client_ip(request)}",
+        limit_key=f"ip:{client_ip(request, trusted_proxy_count=deps.config.rate_limit_trusted_proxy_count)}",
     )
 
 

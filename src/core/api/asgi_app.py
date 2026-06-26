@@ -41,6 +41,7 @@ from core.api.rate_limit_dependency import (
 from core.api.security import UnauthorizedError, UserClaims, get_current_user, require_service_token
 from core.config import AppConfig, ConfigError, provide_app_config
 from core.logging_setup import configure_logging, log_runtime_exception
+from core.security.audit_context import AuditHashes, audit_hashes_from_request
 from core.security.rate_limit import RateLimitExceeded
 
 PROTECTED_OPTIONS_PATHS: tuple[str, ...] = (
@@ -57,6 +58,15 @@ PROTECTED_OPTIONS_PATHS: tuple[str, ...] = (
 
 def _trace_id_from_request(request: Request) -> str:
     return ensure_trace_id(request.headers.get("x-trace-id"))
+
+
+def _audit_hashes_from_request(request: Request) -> AuditHashes:
+    deps = get_api_dependencies()
+    return audit_hashes_from_request(
+        request,
+        hashing_key=deps.config.eid_secret or "",
+        trusted_proxy_count=deps.config.rate_limit_trusted_proxy_count,
+    )
 
 
 async def _phone_payload_from_request(request: Request) -> dict[str, str]:
@@ -311,6 +321,7 @@ def _register_routes(app: FastAPI) -> None:
             deps,
             current_user=current_user,
             trace_id=trace_id,
+            audit=_audit_hashes_from_request(request),
             return_url=start_payload["return_url"],
             return_context=start_payload["return_context"],
             requested_action=start_payload["requested_action"],
@@ -339,6 +350,7 @@ def _register_routes(app: FastAPI) -> None:
             provider_name=provider,
             raw_params=_query_params_as_strings(request),
             trace_id=trace_id,
+            audit=_audit_hashes_from_request(request),
         )
         return _render_eid_callback_outcome(request, outcome, trace_id=trace_id)
 
@@ -356,6 +368,7 @@ def _register_routes(app: FastAPI) -> None:
             current_user=current_user,
             phone=phone_payload["phone"],
             trace_id=trace_id,
+            audit=_audit_hashes_from_request(request),
         )
         return _json_envelope(body, status)
 
@@ -373,6 +386,7 @@ def _register_routes(app: FastAPI) -> None:
             phone=phone_payload["phone"],
             code=phone_payload["code"],
             trace_id=trace_id,
+            audit=_audit_hashes_from_request(request),
         )
         return _json_envelope(body, status)
 

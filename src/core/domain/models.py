@@ -98,6 +98,8 @@ class PhoneAuditEvent:
     success: bool
     failure_reason: str | None
     request_id: str | None
+    ip_hash: str | None
+    user_agent_hash: str | None
     created_at: datetime
 
 

@@ -19,6 +19,7 @@ from core.phone.sms_text import build_verification_sms_text
 from core.phone.telnyx.delivery_ingest import apply_delivery_update, parse_telnyx_messaging_webhook
 from core.phone.telnyx.webhook_signature import verify_telnyx_webhook_signature
 from core.providers.config_spec import _env_value
+from core.security.audit_context import AuditHashes
 from core.security.hashing import hash_secret
 from core.security.return_url import (
     InvalidReturnUrlError,
@@ -117,11 +118,13 @@ def _log_phone_audit(
     success: bool,
     failure_reason: str | None = None,
     request_id: str | None = None,
+    audit: AuditHashes | None = None,
 ) -> None:
-    audit = deps.phone_audit_log_repository
-    if audit is None:
+    audit = audit or AuditHashes(ip_hash=None, user_agent_hash=None)
+    audit_repo = deps.phone_audit_log_repository
+    if audit_repo is None:
         return
-    audit.log_event(
+    audit_repo.log_event(
         PhoneAuditEvent(
             id=str(uuid.uuid4()),
             supabase_user_id=supabase_user_id,
@@ -130,6 +133,8 @@ def _log_phone_audit(
             success=success,
             failure_reason=failure_reason,
             request_id=request_id,
+            ip_hash=audit.ip_hash,
+            user_agent_hash=audit.user_agent_hash,
             created_at=datetime.now(timezone.utc),
         )
     )
@@ -145,11 +150,13 @@ def _log_eid_audit(
     success: bool,
     failure_reason: str | None = None,
     request_id: str | None = None,
+    audit: AuditHashes | None = None,
 ) -> None:
-    audit = deps.eid_audit_log_repository
-    if audit is None:
+    audit = audit or AuditHashes(ip_hash=None, user_agent_hash=None)
+    audit_repo = deps.eid_audit_log_repository
+    if audit_repo is None:
         return
-    audit.log_event(
+    audit_repo.log_event(
         EIDAuditEvent(
             id=str(uuid.uuid4()),
             supabase_user_id=supabase_user_id,
@@ -159,8 +166,8 @@ def _log_eid_audit(
             success=success,
             failure_reason=failure_reason,
             request_id=request_id,
-            ip_hash=None,
-            user_agent_hash=None,
+            ip_hash=audit.ip_hash,
+            user_agent_hash=audit.user_agent_hash,
             created_at=datetime.now(timezone.utc),
         )
     )
@@ -171,6 +178,7 @@ def handle_auth_eid_start(
     *,
     current_user: UserClaims,
     trace_id: str,
+    audit: AuditHashes,
     return_url: str | None = None,
     return_context: str | None = None,
     requested_action: str | None = None,
@@ -218,6 +226,7 @@ def handle_auth_eid_start(
         provider=provider.provider_name,
         success=True,
         request_id=trace_id,
+        audit=audit,
     )
 
     payload = {
@@ -247,6 +256,7 @@ def handle_auth_eid_callback(
     provider_name: str,
     raw_params: dict[str, str],
     trace_id: str,
+    audit: AuditHashes,
 ) -> EidCallbackOutcome:
     store = deps.verification_session_store
     profile_repo = deps.profile_repository
@@ -321,6 +331,7 @@ def handle_auth_eid_callback(
             success=False,
             failure_reason="session_expired",
             request_id=trace_id,
+            audit=audit,
         )
         return EidCallbackOutcome(
             outcome="failed",
@@ -345,6 +356,7 @@ def handle_auth_eid_callback(
             success=False,
             failure_reason=reason,
             request_id=trace_id,
+            audit=audit,
         )
         return EidCallbackOutcome(
             outcome="failed",
@@ -365,6 +377,7 @@ def handle_auth_eid_callback(
             success=False,
             failure_reason=reason,
             request_id=trace_id,
+            audit=audit,
         )
         return EidCallbackOutcome(
             outcome="failed",
@@ -400,6 +413,7 @@ def handle_auth_eid_callback(
             success=False,
             failure_reason="profile_conflict",
             request_id=trace_id,
+            audit=audit,
         )
         return EidCallbackOutcome(
             outcome="failed",
@@ -419,6 +433,7 @@ def handle_auth_eid_callback(
         method=verification.login_method,
         success=True,
         request_id=trace_id,
+        audit=audit,
     )
 
     return EidCallbackOutcome(
@@ -435,6 +450,7 @@ def handle_phone_request(
     current_user: UserClaims,
     phone: str,
     trace_id: str,
+    audit: AuditHashes,
 ) -> tuple[dict, int]:
     registry = deps.sms_sender_registry
     session_store = deps.phone_verification_session_store
@@ -468,6 +484,7 @@ def handle_phone_request(
                     success=False,
                     failure_reason=SmsErrorCode.RATE_LIMITED.value,
                     request_id=trace_id,
+                    audit=audit,
                 )
                 raise SmsSenderError(
                     "phone verification resend is rate limited",
@@ -497,6 +514,7 @@ def handle_phone_request(
                 success=False,
                 failure_reason=exc.code.value,
                 request_id=trace_id,
+                audit=audit,
             )
         return _phone_error_response(exc, trace_id=trace_id)
 
@@ -507,6 +525,7 @@ def handle_phone_request(
         provider=sender.provider_name,
         success=True,
         request_id=trace_id,
+        audit=audit,
     )
     payload = {
         "sent": True,
@@ -522,6 +541,7 @@ def handle_phone_confirm(
     phone: str,
     code: str,
     trace_id: str,
+    audit: AuditHashes,
 ) -> tuple[dict, int]:
     session_store = deps.phone_verification_session_store
     profile_repo = deps.profile_repository
@@ -576,6 +596,7 @@ def handle_phone_confirm(
             success=False,
             failure_reason=exc.code.value,
             request_id=trace_id,
+            audit=audit,
         )
         return _phone_error_response(exc, trace_id=trace_id)
 
@@ -597,6 +618,7 @@ def handle_phone_confirm(
             success=False,
             failure_reason="profile_conflict",
             request_id=trace_id,
+            audit=audit,
         )
         body = build_error_envelope("profile_conflict", str(exc), trace_id=trace_id)
         return body, 409
@@ -608,6 +630,7 @@ def handle_phone_confirm(
         provider=verification.provider,
         success=True,
         request_id=trace_id,
+        audit=audit,
     )
     return build_success_envelope({"status": "verified"}), 200
 
