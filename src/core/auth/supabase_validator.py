@@ -19,6 +19,7 @@ class SupabaseJwtValidatorImpl:
             iss={"essential": True, "value": self._expected_iss},
             sub={"essential": True},
             exp={"essential": True},
+            aud={"essential": True, "value": "authenticated"},
         )
 
     def validate(self, token: str) -> UserClaims:
