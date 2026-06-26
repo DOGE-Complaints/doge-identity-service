@@ -34,6 +34,37 @@ def _require_supabase_creds_from_dotenv() -> tuple[str, str]:
     return url, key
 
 
+def _require_supabase_jwt_validation_creds_from_dotenv() -> tuple[str, str]:
+    """Return Supabase auth URL and JWT secret for HS256 validator live sanity."""
+    dotenv = _parse_dotenv_file(_DOTENV_PATH)
+    url = (
+        dotenv.get("SUPABASE_TEST_URL")
+        or dotenv.get("SUPABASE_URL")
+        or ""
+    ).strip().rstrip("/")
+    secret = (
+        dotenv.get("SUPABASE_TEST_JWT_SECRET")
+        or dotenv.get("SUPABASE_JWT_SECRET")
+        or ""
+    ).strip()
+    if not url or not secret:
+        pytest.skip(
+            "No SUPABASE_TEST_URL/SUPABASE_URL + SUPABASE_TEST_JWT_SECRET/"
+            "SUPABASE_JWT_SECRET in .env — skipping JWT live sanity"
+        )
+    return url, secret
+
+
+def _optional_live_access_token_from_dotenv() -> str | None:
+    dotenv = _parse_dotenv_file(_DOTENV_PATH)
+    token = (
+        dotenv.get("SUPABASE_TEST_ACCESS_TOKEN")
+        or dotenv.get("SUPABASE_LIVE_ACCESS_TOKEN")
+        or ""
+    ).strip()
+    return token or None
+
+
 @pytest.fixture
 def live_supabase_db():
     from core.infrastructure.db_supabase import SupabaseDatabase

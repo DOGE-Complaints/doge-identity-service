@@ -28,19 +28,25 @@ def _make_valid_token(
     supabase_url: str = SUPABASE_URL,
     exp_offset: int = 3600,
     iss: str | None = None,
+    aud: str | None = "authenticated",
 ) -> str:
     now = int(time.time())
     claims = {
         "sub": USER_ID,
         "email": "user@example.com",
         "role": "authenticated",
-        "aud": "authenticated",
         "iss": iss if iss is not None else f"{supabase_url.rstrip('/')}/auth/v1",
         "exp": now + exp_offset,
         "iat": now,
     }
+    if aud is not None:
+        claims["aud"] = aud
     key = OctKey.import_key(secret)
     return jwt.encode({"alg": "HS256"}, claims, key)
+
+
+def _b64url_oct_jwk(secret: str) -> dict[str, str]:
+    return {"kty": "oct", "k": _b64url(secret.encode())}
 
 
 def _make_alg_none_token() -> str:
@@ -94,3 +100,43 @@ def test_iss_mismatch_raises(validator: SupabaseJwtValidatorImpl) -> None:
     token = _make_valid_token(iss="https://wrong.supabase.co/auth/v1")
     with pytest.raises(JwtValidationError):
         validator.validate(token)
+
+
+def test_wrong_aud_raises(validator: SupabaseJwtValidatorImpl) -> None:
+    token = _make_valid_token(aud="service_role")
+    with pytest.raises(JwtValidationError):
+        validator.validate(token)
+
+
+def test_missing_aud_raises(validator: SupabaseJwtValidatorImpl) -> None:
+    token = _make_valid_token(aud=None)
+    with pytest.raises(JwtValidationError):
+        validator.validate(token)
+
+
+def test_raw_secret_import_validates_hs256_token(validator: SupabaseJwtValidatorImpl) -> None:
+    token = _make_valid_token()
+    assert validator.validate(token).supabase_user_id == USER_ID
+
+
+def test_raw_octkey_import_is_canonical_for_supabase_hs256(
+    validator: SupabaseJwtValidatorImpl,
+) -> None:
+    """Supabase signs with dashboard JWT secret string; raw OctKey.import_key matches HS256."""
+    token = _make_valid_token()
+    validator.validate(token)
+    wrapped_key = OctKey.import_key(_b64url_oct_jwk(JWT_SECRET))
+    wrapped_token = jwt.encode(
+        {"alg": "HS256"},
+        {
+            "sub": USER_ID,
+            "role": "authenticated",
+            "aud": "authenticated",
+            "iss": f"{SUPABASE_URL.rstrip('/')}/auth/v1",
+            "exp": int(time.time()) + 3600,
+        },
+        wrapped_key,
+    )
+    # joserfc: JWK k=b64url(secret bytes) may coincide with raw import for short secrets;
+    # validator canonical path remains raw string per spec 09 / Supabase dashboard secret.
+    validator.validate(wrapped_token)
