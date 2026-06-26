@@ -101,7 +101,7 @@ sequenceDiagram
 
 ## 1. Проверка личности пользователя — Supabase JWT ✅
 
-`SupabaseJwtValidatorImpl` ([`supabase_validator.py:12-45`](../../src/core/auth/supabase_validator.py)): библиотека `joserfc`, алгоритм **HS256** на секрете `SUPABASE_JWT_SECRET`. Обязательно сходятся: издатель `iss == {SUPABASE_URL}/auth/v1`, наличие `sub` и `exp`, и роль `authenticated`. Иначе — `JwtValidationError`. Покрыто тестами на типовые атаки: просрочка, чужая подпись, `alg=none`, неверный издатель.
+`SupabaseJwtValidatorImpl` ([`supabase_validator.py:12-45`](../../src/core/auth/supabase_validator.py)): библиотека `joserfc`, алгоритм **HS256** на секрете `SUPABASE_JWT_SECRET` (`OctKey.import_key` — сырая строка Dashboard JWT Secret). Обязательно сходятся: издатель `iss == {SUPABASE_URL}/auth/v1`, `aud == authenticated`, наличие `sub` и `exp`, и роль `authenticated`. Иначе — `JwtValidationError`. Покрыто тестами: просрочка, чужая подпись, `alg=none`, неверный издатель, неверный/отсутствующий `aud` ([`test_supabase_jwt_validator.py`](../../tests/test_supabase_jwt_validator.py)).
 
 ## 2. Пропуск на входе — Bearer ✅
 
