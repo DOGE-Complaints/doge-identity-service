@@ -78,6 +78,11 @@ def _demo_config(**overrides: object) -> AppConfig:
         "phone_max_attempts": 5,
         "phone_resend_cooldown_s": 60,
         "phone_one_account_per_number": True,
+        "rate_limit_eid_start_requests": 5,
+        "rate_limit_eid_start_window_s": 600,
+        "rate_limit_callback_requests": 5,
+        "rate_limit_callback_window_s": 600,
+        "rate_limit_trusted_proxy_count": 0,
         "service_api_token": "",
     }
     base.update(overrides)

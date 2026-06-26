@@ -17,6 +17,7 @@ from core.api.dependencies import (
 from core.api.security import ServiceTokenAuth, SupabaseJwtBearerTokenAuth
 from core.config.providers import provide_app_config
 from core.domain.models import UserClaims
+from core.security.rate_limit import InMemoryRateLimiter
 
 
 IDENTITY_OPTIONAL_FIELDS = EPIC_IDS_04_OPTIONAL_FIELDS
@@ -63,6 +64,7 @@ def test_api_dependencies_identity_slots_default_none() -> None:
         config=config,
         bearer_token_auth=_stub_bearer_auth(),
         service_token_auth=ServiceTokenAuth.disabled(),
+        rate_limiter=InMemoryRateLimiter(),
         db_backend="in_memory",
         db_ready=True,
     )
@@ -76,6 +78,7 @@ def test_api_dependencies_is_frozen() -> None:
         config=config,
         bearer_token_auth=_stub_bearer_auth(),
         service_token_auth=ServiceTokenAuth.disabled(),
+        rate_limiter=InMemoryRateLimiter(),
         db_backend="in_memory",
         db_ready=True,
     )
