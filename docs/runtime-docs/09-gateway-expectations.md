@@ -25,6 +25,30 @@ identity и gateway — два разных сервиса, и важно, чт�
 
 Почему так (best practice): сервисный токен доказывает «зовёт доверенный сервис», но НЕ доказывает, какой человек и пройдена ли верификация. Для платформы, где проверенная личность — суть подотчётности, gateway обязан проверить пользователя (иначе «confused deputy» — подача за кого угодно). Подробный разбор — в gap-отчёте.
 
+## Ленивый гейт телефона (web signup, enforce на потребителе)
+
+> **Источник:** [DOC-IDS-ONB-01](../tasks/backlog-stories/identity-onboarding/DOC-IDS-ONB-01-lazy-phone-gate-contract.md) · gap G3 в [`identity-onboarding-ux-2026-06-12`](../analysis/identity-onboarding-ux-2026-06-12.md).
+
+При **web signup** телефон **не** спрашиваем при регистрации — только в момент **защищённого действия** (продуктовое решение 2026-06-12). Identity **не** блокирует действия сам: отдаёт флаг `phone_verified` и флоу верификации; **enforce — на потребителе** (spa-app / gateway).
+
+### Контракт (gateway / spa перед действием)
+
+1. Потребитель читает статус верификации:
+   - **spa-app:** `GET /me` → `phone_verified` ([`me_response.py:42`](../../src/core/api/me_response.py));
+   - **gateway:** `POST /oauth/introspect` (service-token) → `{active, sub, phone_verified}` ([`introspection.py`](../../src/core/oauth/introspection.py), [OAUTH-02](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-02-introspection-and-service-token.md)).
+2. Если `phone_verified === false` → **не выполнять** защищённое действие; направить пользователя на verify (inline PV-05: `/auth/phone/request` → `/auth/phone/confirm`).
+3. После успешного confirm (`phone_verified=true`) → повторить действие.
+
+**Каноничный пример:** создание/публикация стори — контент живёт в gateway; перед `POST …/stories` gateway (или spa перед вызовом gateway) обязан убедиться в `phone_verified=true`. Альтернатива на OAuth-path: identity уже отдаёт `verification_required` при `requested_action=stories:submit` (см. ниже) — это **другая точка входа** (GPT), не заменяет lazy-gate в web.
+
+### Sequence (словами, web)
+
+Пользователь пользуется системой без телефона → инициирует защищённое действие (напр. «создать стори») → потребитель видит `phone_verified=false` → verify-экран (PV-05) → `phone_verified=true` → действие выполняется.
+
+**SSOT флоу верификации:** [STORY-IDS-PV-05](../tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-05-verification-flow-api/STORY-IDS-PV-05-verification-flow-api.md) · [19-phone-verification-flow](../requirements/19-phone-verification-flow.md) · runbook [`onboarding-phone-verification-api.md`](../runbook/onboarding-phone-verification-api.md).
+
+**Вне scope identity:** полный перечень защищённых действий — продукт/gateway; код гейта в этом репозитории **отсутствует намеренно**.
+
 ## Что для этого нужно от identity (по факту)
 
 | Нужно (по парадигме) | Факт в коде identity | Статус |
