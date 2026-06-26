@@ -125,13 +125,16 @@ def test_dynamic_callback_route_resolves_mock_provider(test_client) -> None:
 def test_handle_auth_eid_callback_returns_outcome_type() -> None:
     from core.api.eid_callback import EidCallbackOutcome
     from core.api.handlers import handle_auth_eid_callback
+    from core.security.audit_context import AuditHashes
 
     deps = get_api_dependencies()
+    empty_audit = AuditHashes(ip_hash=None, user_agent_hash=None)
     outcome = handle_auth_eid_callback(
         deps,
         provider_name="mock",
         raw_params={"session_id": "missing"},
         trace_id="trace-test",
+        audit=empty_audit,
     )
     assert isinstance(outcome, EidCallbackOutcome)
     assert outcome.outcome == "failed"

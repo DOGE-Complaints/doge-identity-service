@@ -283,7 +283,11 @@ def test_phone_audit_events_contain_no_pii(test_client: TestClient) -> None:
     for event in deps.phone_audit_log_repository.list_events(supabase_user_id=_DEMO_USER_ID):
         serialized = (
             f"{event.event_type}|{event.provider}|{event.failure_reason}|"
-            f"{event.request_id}|{event.success}"
+            f"{event.request_id}|{event.success}|{event.ip_hash}|{event.user_agent_hash}"
         )
         assert _EE_PHONE not in serialized
         assert code not in serialized
+        if event.event_type == "phone_verification_requested":
+            assert event.ip_hash is not None
+            assert event.user_agent_hash is not None
+            assert "testclient" not in serialized
