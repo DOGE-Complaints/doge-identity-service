@@ -63,6 +63,8 @@ def _demo_config(**overrides: object) -> AppConfig:
         "rate_limit_callback_requests": 5,
         "rate_limit_callback_window_s": 600,
         "rate_limit_trusted_proxy_count": 0,
+        "rate_limit_phone_request_requests": 5,
+        "rate_limit_phone_request_window_s": 600,
         "service_api_token": "",
     }
     base.update(overrides)

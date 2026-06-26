@@ -25,6 +25,8 @@ def _rate_limit_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("RATE_LIMIT_EID_START_WINDOW_S", "600")
     monkeypatch.setenv("RATE_LIMIT_CALLBACK_REQUESTS", "2")
     monkeypatch.setenv("RATE_LIMIT_CALLBACK_WINDOW_S", "600")
+    monkeypatch.setenv("RATE_LIMIT_PHONE_REQUEST_REQUESTS", "10")
+    monkeypatch.setenv("RATE_LIMIT_PHONE_REQUEST_WINDOW_S", "600")
     yield
     _clear_api_dependencies_cache()
 
@@ -98,3 +100,27 @@ def test_phone_otp_cooldown_still_domain_400_not_http_429(
     assert second.status_code == 400
     assert second.json()["error"]["code"] == SmsErrorCode.RATE_LIMITED.value
     assert "retry_after" not in second.json()["error"]
+
+
+def test_phone_request_rate_limit_returns_429_with_retry_after(
+    test_client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _clear_api_dependencies_cache()
+    monkeypatch.setenv("RATE_LIMIT_PHONE_REQUEST_REQUESTS", "2")
+    monkeypatch.setenv("RATE_LIMIT_PHONE_REQUEST_WINDOW_S", "600")
+    monkeypatch.setenv("PHONE_RESEND_COOLDOWN_S", "0")
+
+    token = _demo_bearer_token()
+    phones = ("+37255555556", "+37255555557", "+37255555558")
+
+    assert _request_phone(test_client, token=token, phone=phones[0]).status_code == 200
+    assert _request_phone(test_client, token=token, phone=phones[1]).status_code == 200
+
+    limited = _request_phone(test_client, token=token, phone=phones[2])
+    assert limited.status_code == 429
+    assert limited.headers.get("retry-after") is not None
+    body = limited.json()
+    assert body["error"]["code"] == "rate_limit_exceeded"
+    assert isinstance(body["error"]["retry_after"], int)
+    assert body["error"]["retry_after"] >= 1
