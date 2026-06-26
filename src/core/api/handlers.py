@@ -455,6 +455,8 @@ def handle_phone_request(
 
         active = session_store.get_active_by_user(user_id, now=now)
         if active is not None:
+            # Domain OTP cooldown (400 RATE_LIMITED) — separate from HTTP 429 rate_limit_exceeded
+            # enforced in rate_limit_dependency before this handler (SEC-01).
             cooldown_end = active.created_at + timedelta(
                 seconds=deps.config.phone_resend_cooldown_s
             )

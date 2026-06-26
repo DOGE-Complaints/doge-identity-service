@@ -16,7 +16,7 @@ from core.api.eid_callback import (
     build_callback_json_envelope,
     has_safe_redirect_target,
 )
-from core.api.envelope import build_error_envelope, ensure_trace_id
+from core.api.envelope import build_error_envelope, build_rate_limit_envelope, ensure_trace_id
 from core.api.handlers import (
     handle_auth_eid_callback,
     handle_auth_eid_start,
@@ -33,9 +33,14 @@ from core.oauth.handlers import (
     handle_oauth_token,
 )
 from core.oauth.introspection import handle_oauth_introspect
+from core.api.rate_limit_dependency import (
+    require_callback_rate_limit,
+    require_eid_start_rate_limit,
+)
 from core.api.security import UnauthorizedError, UserClaims, get_current_user, require_service_token
 from core.config import AppConfig, ConfigError, provide_app_config
 from core.logging_setup import configure_logging, log_runtime_exception
+from core.security.rate_limit import RateLimitExceeded
 
 PROTECTED_OPTIONS_PATHS: tuple[str, ...] = (
     "/me",
@@ -213,6 +218,18 @@ async def _lifespan(app: FastAPI):
 
 
 def _register_exception_handlers(app: FastAPI) -> None:
+    @app.exception_handler(RateLimitExceeded)
+    async def rate_limit_handler(
+        request: Request, exc: RateLimitExceeded
+    ) -> JSONResponse:
+        trace_id = _trace_id_from_request(request)
+        body = build_rate_limit_envelope(exc.retry_after_s, trace_id=trace_id)
+        return JSONResponse(
+            content=body,
+            status_code=429,
+            headers={"Retry-After": str(exc.retry_after_s)},
+        )
+
     @app.exception_handler(UnauthorizedError)
     async def unauthorized_handler(
         request: Request, exc: UnauthorizedError
@@ -284,6 +301,7 @@ def _register_routes(app: FastAPI) -> None:
     async def auth_eid_start(
         request: Request,
         current_user: UserClaims = Depends(get_current_user),
+        _: None = Depends(require_eid_start_rate_limit),
     ) -> JSONResponse:
         deps = get_api_dependencies()
         trace_id = _trace_id_from_request(request)
@@ -299,7 +317,11 @@ def _register_routes(app: FastAPI) -> None:
         return _json_envelope(body, status)
 
     @app.get("/auth/{provider}/callback")
-    async def auth_eid_callback(request: Request, provider: str) -> Response:
+    async def auth_eid_callback(
+        request: Request,
+        provider: str,
+        _: None = Depends(require_callback_rate_limit),
+    ) -> Response:
         deps = get_api_dependencies()
         trace_id = _trace_id_from_request(request)
         registry = deps.eid_provider_registry

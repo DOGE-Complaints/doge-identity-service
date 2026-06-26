@@ -19,6 +19,7 @@ from core.domain.contracts import (
 )
 from core.phone.registry import SmsSenderRegistry
 from core.providers.registry import EIDProviderRegistry
+from core.security.rate_limit import InMemoryRateLimiter
 
 if TYPE_CHECKING:
     from core.api.security import ServiceTokenAuth
@@ -45,6 +46,7 @@ class ApiDependencies:
     config: AppConfig
     bearer_token_auth: BearerTokenAuth
     service_token_auth: ServiceTokenAuth
+    rate_limiter: InMemoryRateLimiter
 
     # ── DB state ───────────────────────────────────────────────────
     db_backend: str
@@ -105,6 +107,7 @@ def build_api_dependencies() -> ApiDependencies:
         config=config,
         bearer_token_auth=service_factory.get_bearer_token_auth(),
         service_token_auth=service_factory.get_service_token_auth(),
+        rate_limiter=InMemoryRateLimiter(),
         db_backend=db_backend,
         db_ready=db_ready,
         db_checks=db_checks,

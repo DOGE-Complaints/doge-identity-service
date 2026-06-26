@@ -67,6 +67,11 @@ class AppConfig:
     phone_max_attempts: int
     phone_resend_cooldown_s: int
     phone_one_account_per_number: bool
+    rate_limit_eid_start_requests: int
+    rate_limit_eid_start_window_s: int
+    rate_limit_callback_requests: int
+    rate_limit_callback_window_s: int
+    rate_limit_trusted_proxy_count: int
     service_api_token: str
 
 
@@ -236,5 +241,10 @@ def load_config_from_env(source: Mapping[str, str] | None = None) -> AppConfig:
         phone_max_attempts=_int(env, "PHONE_MAX_ATTEMPTS", "5"),
         phone_resend_cooldown_s=_int(env, "PHONE_RESEND_COOLDOWN_S", "60"),
         phone_one_account_per_number=_bool(env, "PHONE_ONE_ACCOUNT_PER_NUMBER", "true"),
+        rate_limit_eid_start_requests=_int(env, "RATE_LIMIT_EID_START_REQUESTS", "5"),
+        rate_limit_eid_start_window_s=_int(env, "RATE_LIMIT_EID_START_WINDOW_S", "600"),
+        rate_limit_callback_requests=_int(env, "RATE_LIMIT_CALLBACK_REQUESTS", "5"),
+        rate_limit_callback_window_s=_int(env, "RATE_LIMIT_CALLBACK_WINDOW_S", "600"),
+        rate_limit_trusted_proxy_count=_int(env, "RATE_LIMIT_TRUSTED_PROXY_COUNT", "0"),
         service_api_token=_value(env, "SERVICE_API_TOKEN", ""),
     )
