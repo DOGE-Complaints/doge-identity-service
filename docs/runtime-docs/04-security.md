@@ -88,7 +88,7 @@ sequenceDiagram
 | OAuth-движок (код/токен/PKCE) | [`repositories.py:430`](../../src/core/infrastructure/repositories.py) (in-memory), [`db_supabase.py`](../../src/core/infrastructure/db_supabase.py) (Supabase при `DB_BACKEND=supabase`) | ✅ |
 | OAuth-маршруты `/oauth/authorize`, `/oauth/authorize/complete`, `/oauth/token` | [`asgi_app.py:368-403`](../../src/core/api/asgi_app.py), [`core/oauth/handlers.py`](../../src/core/oauth/handlers.py) | ✅ построен ([OAUTH-01](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-01-oauth-server-endpoints.md)) |
 | Durable handshake/codes (Supabase Postgres) | [`SupabaseAuthorizationRequestStore`](../../src/core/infrastructure/db_supabase.py), [`SupabaseOAuthTokenService`](../../src/core/infrastructure/db_supabase.py), миграция [`20260624000001_oauth_authorization_tables.sql`](../../supabase/migrations/20260624000001_oauth_authorization_tables.sql) | ✅ при `DB_BACKEND=supabase` ([OAUTH-03](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-03-persistent-token-store-supabase.md)); demo — in-memory |
-| eID-старт/callback (`/auth/eid/start`, `/auth/{provider}/callback`) | [`asgi_app.py:247,265`](../../src/core/api/asgi_app.py) | ✅ mock; реальный провайдер 🟦 DEFERRED |
+| eID-старт/callback (`/auth/eid/start`, `/auth/{provider}/callback`) | [`asgi_app.py`](../../src/core/api/asgi_app.py), [`rate_limit_dependency.py`](../../src/core/api/rate_limit_dependency.py) | ✅ HTTP rate-limit (SEC-01, pkg-000035) |
 | Флаг «нужна верификация» в сессии | поля `return_context`/`requested_action` в [`models.py`](../../src/core/domain/models.py) | ⚪ поля есть; relay через OAuth = [OAUTH-04](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-04-verify-gate-and-verification-required.md) |
 | **introspection-endpoint** для gateway (`{active, sub, phone_verified}`) | [`introspection.py`](../../src/core/oauth/introspection.py), [`asgi_app.py:407-416`](../../src/core/api/asgi_app.py) | ✅ построен ([OAUTH-02](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-02-introspection-and-service-token.md)) |
 | Проверка сервисного токена на входе identity | `AppConfig.service_api_token` ([`schema.py:70,238`](../../src/core/config/schema.py)), `ServiceTokenAuth` ([`security.py:89-116`](../../src/core/api/security.py)); **обязателен в pilot** | ✅ (gate disabled в demo при пустом токене) |
@@ -122,6 +122,10 @@ sequenceDiagram
 ## 6. CORS ✅
 
 [`asgi_app.py:75-80`](../../src/core/api/asgi_app.py): список разрешённых origin'ов из `CORS_ALLOWED_ORIGINS` (в проде — конкретные домены, не `*`).
+
+## 8. HTTP rate limiting (anti-abuse) ✅
+
+Сквозной слой `rate_limit_dependency` ([`rate_limit_dependency.py`](../../src/core/api/rate_limit_dependency.py)) + in-memory store ([`rate_limit.py`](../../src/core/security/rate_limit.py)). Конфиг: `RATE_LIMIT_*` env ([`schema.py`](../../src/core/config/schema.py)). Волна pkg-000035: `POST /auth/eid/start` (5/600s/user), `GET /auth/{provider}/callback` (5/600s/ip). Превышение → HTTP **429** + `error.code=rate_limit_exceeded` + `retry_after` ([`envelope.py`](../../src/core/api/envelope.py)). OTP-cooldown на `POST /auth/phone/request` остаётся доменным **400** `RATE_LIMITED` (не дублируется HTTP-лимитом). **Callback client IP:** по умолчанию `RATE_LIMIT_TRUSTED_PROXY_COUNT=0` — `X-Forwarded-For` **не доверяется** (ключ `ip:{request.client.host}`); за reverse-proxy выставить число доверенных hop'ов (client = элемент `len(hops) - count - 1` в XFF). Тесты: [`test_rate_limiting.py`](../../tests/test_rate_limiting.py).
 
 ## 7. Секреты
 
