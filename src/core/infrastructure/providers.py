@@ -105,6 +105,7 @@ def provide_service_factory(config: AppConfig | None = None) -> DefaultServiceFa
     supabase_jwt_validator = SupabaseJwtValidatorImpl(
         jwt_secret=resolved_config.supabase_jwt_secret or "test-secret-for-demo",
         supabase_url=resolved_config.supabase_url or "https://demo.local",
+        request_timeout_s=float(resolved_config.request_timeout_s or 15),
     )
     bearer_token_auth = CompositeBearerTokenAuth(
         supabase_auth=SupabaseJwtBearerTokenAuth(validator=supabase_jwt_validator),
