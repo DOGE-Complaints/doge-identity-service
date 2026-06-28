@@ -177,6 +177,11 @@ def load_config_from_env(source: Mapping[str, str] | None = None) -> AppConfig:
 
     _validate_active_sms_provider_config(env, sms_provider)
 
+    if profile is DeploymentProfile.PILOT and sms_provider == "file":
+        raise ConfigError(
+            "SMS_PROVIDER=file is forbidden for APP_PROFILE=pilot (plaintext OTP on disk)"
+        )
+
     if profile is DeploymentProfile.PILOT:
         pilot_required = (
             ("API_BASE_URL", _value(env, "API_BASE_URL", "")),

@@ -12,7 +12,7 @@ from core.phone.runtime import SmsProviderRuntime
 
 
 def _needs_sms_http_client(config: AppConfig) -> bool:
-    return config.sms_provider != "mock"
+    return config.sms_provider not in {"mock", "file"}
 
 
 def build_sms_provider_runtime(
@@ -23,12 +23,12 @@ def build_sms_provider_runtime(
     http_client: httpx.Client | None = None
     settings: dict[str, Any] = {}
     config_env = resolve_config_env(env)
+    descriptor = get_sms_provider_descriptor(config.sms_provider)
+
+    if descriptor is not None and config.sms_provider != "mock":
+        settings[descriptor.name] = descriptor.config_spec.load(config_env)
 
     if _needs_sms_http_client(config):
         http_client = httpx.Client(timeout=float(config.request_timeout_s))
-        descriptor = get_sms_provider_descriptor(config.sms_provider)
-        if descriptor is not None:
-            loaded = descriptor.config_spec.load(config_env)
-            settings[descriptor.name] = loaded
 
     return SmsProviderRuntime(config=config, http_client=http_client, settings=settings)
