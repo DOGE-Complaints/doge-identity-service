@@ -13,6 +13,8 @@ from core.infrastructure.db_supabase import (
     SupabaseHealthRepository,
     SupabaseOAuthClientStore,
     SupabaseOAuthTokenService,
+    SupabasePhoneAuditLogRepository,
+    SupabasePhoneVerificationSessionStore,
     SupabaseProfileRepository,
     SupabaseVerificationSessionStore,
 )
@@ -67,6 +69,13 @@ def provide_service_factory(config: AppConfig | None = None) -> DefaultServiceFa
             eid_audit_log_repository,
             oauth_client_store,
         ) = _build_in_memory_repositories(resolved_config)
+        oauth_token_service = InMemoryOAuthTokenService(
+            config=resolved_config,
+            client_store=oauth_client_store,
+        )
+        oauth_authorization_request_store = InMemoryAuthorizationRequestStore()
+        phone_verification_session_store = InMemoryPhoneVerificationSessionStore()
+        phone_audit_log_repository = InMemoryPhoneAuditLogRepository()
     elif resolved_config.db_backend == "supabase":
         if not resolved_config.supabase_url or not resolved_config.supabase_service_role:
             raise ValueError(
@@ -85,22 +94,16 @@ def provide_service_factory(config: AppConfig | None = None) -> DefaultServiceFa
             supabase_db,
             fallback_config=resolved_config,
         )
-    else:
-        raise ValueError(f"Unsupported db_backend: {resolved_config.db_backend}")
-
-    if resolved_config.db_backend == "supabase":
         oauth_token_service = SupabaseOAuthTokenService(
             supabase_db,
             config=resolved_config,
             client_store=oauth_client_store,
         )
         oauth_authorization_request_store = SupabaseAuthorizationRequestStore(supabase_db)
+        phone_verification_session_store = SupabasePhoneVerificationSessionStore(supabase_db)
+        phone_audit_log_repository = SupabasePhoneAuditLogRepository(supabase_db)
     else:
-        oauth_token_service = InMemoryOAuthTokenService(
-            config=resolved_config,
-            client_store=oauth_client_store,
-        )
-        oauth_authorization_request_store = InMemoryAuthorizationRequestStore()
+        raise ValueError(f"Unsupported db_backend: {resolved_config.db_backend}")
 
     supabase_jwt_validator = SupabaseJwtValidatorImpl(
         jwt_secret=resolved_config.supabase_jwt_secret or "test-secret-for-demo",
@@ -118,9 +121,6 @@ def provide_service_factory(config: AppConfig | None = None) -> DefaultServiceFa
         session_store=verification_session_store,
     )
     registry = build_registry(provider_runtime)
-
-    phone_verification_session_store = InMemoryPhoneVerificationSessionStore()
-    phone_audit_log_repository = InMemoryPhoneAuditLogRepository()
     merged_env = resolve_config_env()
     sms_sender_registry = build_sms_registry(
         build_sms_provider_runtime(config=resolved_config, env=merged_env)
