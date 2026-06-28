@@ -25,12 +25,13 @@ Supabase Auth выдаёт access tokens (JWT) при login. Identity-service д
 - Суpabase Dashboard → Settings → API → JWT Secret.
 - Простая валидация: `joserfc.jwt.decode(token, key=SUPABASE_JWT_SECRET, algorithms=["HS256"])`.
 
-### RS256 (альтернатива, для JWKS)
-- JWT подписан RSA приватным ключом Supabase.
+### ES256 / RS256 (Supabase Cloud, JWKS)
+- JWT подписан асимметричным ключом Supabase (типично **ES256** в Cloud).
 - JWKS endpoint: `{SUPABASE_URL}/auth/v1/.well-known/jwks.json`
-- Требует кэширования публичных ключей (TTL 1 час).
+- Валидация через `JwksCache` (тот же паттерн, что OIDC id_token): `ES256`, `RS256`, `ES384`, `ES512`.
+- Алгоритм выбирается по JWT header `alg`; при unknown `kid` — один refresh JWKS.
 
-**MVP выбор:** HS256 с `SUPABASE_JWT_SECRET`. Проще в реализации, нет зависимости от JWKS endpoint. Если в будущем Supabase переключится на RS256 — меняем только валидатор, не всю логику.
+**As-built (2026-06-28):** `SupabaseJwtValidatorImpl` поддерживает **HS256** (секрет) и **JWKS-путь** для асимметричных алгоритмов. Для локального demo (`supabase_url` ends with `demo.local`) JWKS не инициализируется — только HS256.
 
 ---
 
@@ -38,7 +39,7 @@ Supabase Auth выдаёт access tokens (JWT) при login. Identity-service д
 
 | Claim | Значение | Проверка (фактически в коде) |
 |-------|---------|---------|
-| `alg` | `HS256` | Разрешены только `["HS256"]` ✅ |
+| `alg` | `HS256` или JWKS (`ES256`, `RS256`, …) | HS256 через секрет; асимметричные — через JWKS ✅ |
 | `iss` | `{SUPABASE_URL}/auth/v1` | essential, должен совпадать с конфигом ✅ |
 | `aud` | `authenticated` | essential, должен совпадать с `authenticated` ✅ |
 | `exp` | Unix timestamp | essential, `exp > now()` ✅ |
