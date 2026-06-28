@@ -12,6 +12,8 @@ from core.infrastructure.db_supabase import (
     SupabaseHealthRepository,
     SupabaseOAuthClientStore,
     SupabaseOAuthTokenService,
+    SupabasePhoneAuditLogRepository,
+    SupabasePhoneVerificationSessionStore,
     SupabaseProfileRepository,
     SupabaseVerificationSessionStore,
 )
@@ -19,6 +21,8 @@ from core.infrastructure.providers import provide_service_factory
 from core.infrastructure.repositories import (
     InMemoryAuthorizationRequestStore,
     InMemoryOAuthTokenService,
+    InMemoryPhoneAuditLogRepository,
+    InMemoryPhoneVerificationSessionStore,
     InMemoryProfileRepository,
 )
 from core.infrastructure.service_factory import DefaultServiceFactory
@@ -61,6 +65,14 @@ def test_provide_service_factory_supabase_returns_supabase_repositories(
         factory.get_oauth_authorization_request_store(),
         SupabaseAuthorizationRequestStore,
     )
+    assert isinstance(
+        factory.get_phone_verification_session_store(),
+        SupabasePhoneVerificationSessionStore,
+    )
+    assert isinstance(
+        factory.get_phone_audit_log_repository(),
+        SupabasePhoneAuditLogRepository,
+    )
 
 
 def test_backend_switch_is_env_only(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -74,6 +86,14 @@ def test_backend_switch_is_env_only(monkeypatch: pytest.MonkeyPatch) -> None:
         in_memory_factory.get_oauth_authorization_request_store(),
         InMemoryAuthorizationRequestStore,
     )
+    assert isinstance(
+        in_memory_factory.get_phone_verification_session_store(),
+        InMemoryPhoneVerificationSessionStore,
+    )
+    assert isinstance(
+        in_memory_factory.get_phone_audit_log_repository(),
+        InMemoryPhoneAuditLogRepository,
+    )
 
     for key, value in _SUPABASE_ENV.items():
         monkeypatch.setenv(key, value)
@@ -85,6 +105,14 @@ def test_backend_switch_is_env_only(monkeypatch: pytest.MonkeyPatch) -> None:
     assert isinstance(
         supabase_factory.get_oauth_authorization_request_store(),
         SupabaseAuthorizationRequestStore,
+    )
+    assert isinstance(
+        supabase_factory.get_phone_verification_session_store(),
+        SupabasePhoneVerificationSessionStore,
+    )
+    assert isinstance(
+        supabase_factory.get_phone_audit_log_repository(),
+        SupabasePhoneAuditLogRepository,
     )
 
 
