@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import logging
 
+import httpx
+
 from core.api.security import CompositeBearerTokenAuth, ServiceTokenAuth, SupabaseJwtBearerTokenAuth
 from core.auth.supabase_validator import SupabaseJwtValidatorImpl
 from core.config.providers import provide_app_config, resolve_config_env
@@ -34,6 +36,7 @@ from core.phone.registry_builder import build_sms_registry
 from core.phone.runtime_factory import build_sms_provider_runtime
 from core.providers.registry_builder import build_registry
 from core.providers.runtime_factory import build_provider_runtime
+from core.security.oidc.jwks_cache import JwksCache
 
 logger = logging.getLogger(__name__)
 
@@ -105,10 +108,16 @@ def provide_service_factory(config: AppConfig | None = None) -> DefaultServiceFa
     else:
         raise ValueError(f"Unsupported db_backend: {resolved_config.db_backend}")
 
+    supabase_url = resolved_config.supabase_url.rstrip("/") if resolved_config.supabase_url else ""
+    jwks_cache: JwksCache | None = None
+    jwks_http_client: httpx.Client | None = None
+    if supabase_url:
+        jwks_uri = f"{supabase_url}/auth/v1/.well-known/jwks.json"
+        jwks_http_client = httpx.Client(timeout=float(resolved_config.request_timeout_s or 15))
+        jwks_cache = JwksCache(jwks_http_client, jwks_uri)
     supabase_jwt_validator = SupabaseJwtValidatorImpl(
-        jwt_secret=resolved_config.supabase_jwt_secret or "test-secret-for-demo",
-        supabase_url=resolved_config.supabase_url or "https://demo.local",
-        request_timeout_s=float(resolved_config.request_timeout_s or 15),
+        supabase_url=supabase_url,
+        jwks_cache=jwks_cache,
     )
     bearer_token_auth = CompositeBearerTokenAuth(
         supabase_auth=SupabaseJwtBearerTokenAuth(validator=supabase_jwt_validator),
@@ -142,4 +151,5 @@ def provide_service_factory(config: AppConfig | None = None) -> DefaultServiceFa
         sms_sender_registry=sms_sender_registry,
         phone_verification_session_store=phone_verification_session_store,
         phone_audit_log_repository=phone_audit_log_repository,
+        jwks_http_client=jwks_http_client,
     )

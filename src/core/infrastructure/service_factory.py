@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import httpx
+
 from core.api.security import ServiceTokenAuth
 from core.config.schema import AppConfig
 from core.domain.contracts import (
@@ -38,6 +40,7 @@ class DefaultServiceFactory:
     sms_sender_registry: SmsSenderRegistry
     phone_verification_session_store: PhoneVerificationSessionStore
     phone_audit_log_repository: PhoneAuditLogRepository
+    jwks_http_client: httpx.Client | None = None
 
     def get_health_repository(self) -> HealthRepository:
         return self.health_repository
@@ -80,3 +83,6 @@ class DefaultServiceFactory:
 
     def get_phone_audit_log_repository(self) -> PhoneAuditLogRepository:
         return self.phone_audit_log_repository
+
+    def get_jwks_http_client(self) -> httpx.Client | None:
+        return self.jwks_http_client

@@ -31,7 +31,6 @@ class AppConfig:
     oidc_request_timeout_s: int
     supabase_url: str
     supabase_service_role: str
-    supabase_jwt_secret: str
     database_url: str
     authentigate_issuer: str
     authentigate_client_id: str
@@ -157,7 +156,6 @@ def load_config_from_env(source: Mapping[str, str] | None = None) -> AppConfig:
 
     supabase_url = _value(env, "SUPABASE_URL", "")
     supabase_service_role = _value(env, "SUPABASE_SERVICE_ROLE", "")
-    supabase_jwt_secret = _value(env, "SUPABASE_JWT_SECRET", "")
     database_url = _value(env, "DATABASE_URL", "")
     eid_secret = str(env.get("DOGESTONIA_EID_SECRET", "")).strip()  # one-liner, no fallback
     eid_session_enc_key = _value(env, "EID_SESSION_ENC_KEY", "")
@@ -187,7 +185,6 @@ def load_config_from_env(source: Mapping[str, str] | None = None) -> AppConfig:
             ("API_BASE_URL", _value(env, "API_BASE_URL", "")),
             ("SUPABASE_URL", supabase_url),
             ("SUPABASE_SERVICE_ROLE", supabase_service_role),
-            ("SUPABASE_JWT_SECRET", supabase_jwt_secret),
             ("DATABASE_URL", database_url),
             ("DOGESTONIA_EID_SECRET", eid_secret),
             ("EID_SESSION_ENC_KEY", eid_session_enc_key),
@@ -212,7 +209,6 @@ def load_config_from_env(source: Mapping[str, str] | None = None) -> AppConfig:
         oidc_request_timeout_s=_int(env, "OIDC_REQUEST_TIMEOUT_S", "10"),
         supabase_url=supabase_url,
         supabase_service_role=supabase_service_role,
-        supabase_jwt_secret=supabase_jwt_secret,
         database_url=database_url,
         authentigate_issuer=_value(env, "AUTHENTIGATE_ISSUER", ""),
         authentigate_client_id=_value(env, "AUTHENTIGATE_CLIENT_ID", ""),

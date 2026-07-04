@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+import httpx
+
 from core.config import provide_app_config
 from core.config.schema import AppConfig
 from core.domain.contracts import (
@@ -65,6 +67,7 @@ class ApiDependencies:
     sms_sender_registry: SmsSenderRegistry | None = None
     phone_verification_session_store: PhoneVerificationSessionStore | None = None
     phone_audit_log_repository: PhoneAuditLogRepository | None = None
+    jwks_http_client: httpx.Client | None = None
 
 
 HandlerDependencies = ApiDependencies
@@ -122,4 +125,5 @@ def build_api_dependencies() -> ApiDependencies:
         sms_sender_registry=service_factory.get_sms_sender_registry(),
         phone_verification_session_store=service_factory.get_phone_verification_session_store(),
         phone_audit_log_repository=service_factory.get_phone_audit_log_repository(),
+        jwks_http_client=service_factory.get_jwks_http_client(),
     )

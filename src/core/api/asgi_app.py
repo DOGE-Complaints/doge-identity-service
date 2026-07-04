@@ -226,6 +226,8 @@ async def _lifespan(app: FastAPI):
         dict(deps.db_checks),
     )
     yield
+    if deps.jwks_http_client is not None:
+        deps.jwks_http_client.close()
 
 
 def _register_exception_handlers(app: FastAPI) -> None:

@@ -3,10 +3,8 @@ from __future__ import annotations
 import base64
 import json
 
-import httpx
 from joserfc import jwt
-from joserfc.errors import InvalidKeyIdError, JoseError
-from joserfc.jwk import OctKey
+from joserfc.errors import InvalidKeyIdError, JoseError, MissingKeyError
 
 from core.domain.models import JwtValidationError, UserClaims
 from core.security.oidc.jwks_cache import JwksCache
@@ -32,26 +30,27 @@ class SupabaseJwtValidatorImpl:
     def __init__(
         self,
         *,
-        jwt_secret: str,
         supabase_url: str,
-        http_client: httpx.Client | None = None,
-        request_timeout_s: float = 15.0,
+        jwks_cache: JwksCache | None = None,
     ) -> None:
-        self._jwt_secret = jwt_secret
         self._supabase_url = supabase_url.rstrip("/")
-        self._expected_iss = f"{self._supabase_url}/auth/v1"
-        self._key = OctKey.import_key(jwt_secret)
-        self._claims_registry = jwt.JWTClaimsRegistry(
-            iss={"essential": True, "value": self._expected_iss},
-            sub={"essential": True},
-            exp={"essential": True},
-            aud={"essential": True, "value": "authenticated"},
-        )
-        self._jwks_cache: JwksCache | None = None
-        if self._supabase_url and not self._supabase_url.endswith("demo.local"):
-            jwks_uri = f"{self._supabase_url}/auth/v1/.well-known/jwks.json"
-            client = http_client or httpx.Client(timeout=request_timeout_s)
-            self._jwks_cache = JwksCache(client, jwks_uri)
+        self._jwks_cache = jwks_cache
+        if self._supabase_url:
+            self._expected_iss = f"{self._supabase_url}/auth/v1"
+            self._claims_registry = jwt.JWTClaimsRegistry(
+                iss={"essential": True, "value": self._expected_iss},
+                sub={"essential": True},
+                exp={"essential": True},
+                aud={"essential": True, "value": "authenticated"},
+            )
+        else:
+            self._expected_iss = ""
+            self._claims_registry = jwt.JWTClaimsRegistry(
+                iss={"essential": True},
+                sub={"essential": True},
+                exp={"essential": True},
+                aud={"essential": True, "value": "authenticated"},
+            )
 
     def _claims_from_token(self, token_obj: jwt.Token) -> UserClaims:
         self._claims_registry.validate(token_obj.claims)
@@ -69,17 +68,22 @@ class SupabaseJwtValidatorImpl:
             role=str(claims["role"]),
         )
 
-    def _validate_hs256(self, token: str) -> UserClaims:
-        token_obj = jwt.decode(token, self._key, algorithms=["HS256"])
-        return self._claims_from_token(token_obj)
-
     def _validate_jwks(self, token: str, alg: str) -> UserClaims:
+        if not self._supabase_url:
+            raise JwtValidationError("JWKS validation unavailable: supabase_url not configured")
         if self._jwks_cache is None:
             raise JwtValidationError(f"JWKS validation unavailable for alg={alg}")
 
         token_obj = None
         for force_refresh in (False, True):
-            key_set = self._jwks_cache.get_key_set(force_refresh=force_refresh)
+            try:
+                key_set = self._jwks_cache.get_key_set(force_refresh=force_refresh)
+            except MissingKeyError as exc:
+                if force_refresh:
+                    raise JwtValidationError(
+                        f"JWT signing key not found: {exc}"
+                    ) from exc
+                continue
             try:
                 token_obj = jwt.decode(token, key_set, algorithms=[alg])
                 break
@@ -98,14 +102,10 @@ class SupabaseJwtValidatorImpl:
     def validate(self, token: str) -> UserClaims:
         alg = _header_alg(token)
         try:
-            if alg == "HS256":
-                return self._validate_hs256(token)
             if alg in _JWKS_ALGORITHMS:
                 return self._validate_jwks(token, alg)
             raise JwtValidationError(f"Unsupported JWT algorithm: {alg!r}")
         except JwtValidationError:
             raise
         except JoseError as exc:
-            raise JwtValidationError(f"JWT validation failed: {exc}") from exc
-        except Exception as exc:
             raise JwtValidationError(f"JWT validation failed: {exc}") from exc
