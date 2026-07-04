@@ -63,24 +63,12 @@ curl -s http://127.0.0.1:8100/health
 ```
 
 ## 4. Тестовый токен (нужен для обоих режимов)
-Эндпоинты требуют Bearer JWT. В `demo`-профиле (если в `.env` НЕ заданы `SUPABASE_JWT_SECRET`/`SUPABASE_URL`) сервис принимает токен, подписанный демо-секретом. Сминтить его:
+Эндпоинты требуют Bearer JWT, подписанный ключом из JWKS вашего Supabase-проекта. Для локальной разработки используйте реальный access token после login в Supabase Auth или offline-харнес из [`tests/supabase_jwt_harness.py`](../../tests/supabase_jwt_harness.py) (ES256 + mock JWKS).
 
-```bash
-.venv/bin/python - <<'PY'
-import time
-from joserfc import jwt
-from joserfc.jwk import OctKey
-claims = {
-  "sub": "11111111-1111-1111-1111-111111111111",
-  "role": "authenticated", "aud": "authenticated",
-  "iss": "https://demo.local/auth/v1",
-  "exp": int(time.time())+3600, "iat": int(time.time()),
-}
-print(jwt.encode({"alg":"HS256"}, claims, OctKey.import_key("test-secret-for-demo")))
-PY
-```
-Скопировать вывод в переменную: `TOKEN=<вставить>`.
-> Если в `.env` заданы свои `SUPABASE_JWT_SECRET`/`SUPABASE_URL` — подписывай этим секретом, а `iss` = `<SUPABASE_URL>/auth/v1`.
+Для ручного smoke с реальным Cloud-проектом: залогиньтесь через Supabase Auth и возьмите `access_token` из session.
+
+Скопировать в переменную: `TOKEN=<access_token>`.
+> `iss` токена должен быть `<SUPABASE_URL>/auth/v1`, `aud=authenticated`, `role=authenticated`.
 
 ---
 

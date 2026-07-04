@@ -22,9 +22,8 @@ Runbook для поднятия identity-сервиса на **новом** Supa
 
 | Dashboard field | Environment variable | Notes |
 |-----------------|----------------------|--------|
-| Project URL | `SUPABASE_URL` | `https://<project-ref>.supabase.co` |
+| Project URL | `SUPABASE_URL` | `https://<project-ref>.supabase.co` — JWKS: `{URL}/auth/v1/.well-known/jwks.json` |
 | `service_role` key (secret) | `SUPABASE_SERVICE_ROLE` | **Server only** — never in browser or client apps |
-| JWT Secret | `SUPABASE_JWT_SECRET` | Для HS256 validation (req-09); Settings → API → JWT Settings |
 
 Скопируйте шаблон:
 
@@ -39,7 +38,6 @@ cp .env.example .env
 DB_BACKEND=supabase
 SUPABASE_URL=https://<project-ref>.supabase.co
 SUPABASE_SERVICE_ROLE=<service_role_key>
-SUPABASE_JWT_SECRET=<jwt_secret>
 APP_PROFILE=demo
 API_BASE_URL=http://localhost:8100
 EID_PROVIDER=mock
@@ -85,7 +83,7 @@ cd doge-identity-service
 make check-env
 ```
 
-Убедитесь, что `SUPABASE_URL` и `SUPABASE_JWT_SECRET` не `<not set>`.
+Убедитесь, что `SUPABASE_URL` не `<not set>` (JWKS validation активен при непустом URL).
 
 ---
 
@@ -164,13 +162,13 @@ Live integration tests используют **отдельный** Supabase-пр
 |---------------|---------|
 | `SUPABASE_TEST_URL` | PostgREST base URL тестового проекта |
 | `SUPABASE_TEST_SERVICE_ROLE_KEY` | `service_role` key тестового проекта |
-| `SUPABASE_TEST_JWT_SECRET` | JWT secret тестового проекта (positive JWT tests) |
 
 Workflow (EPIC-IDS-06) маппит в runner env, например:
 
 - `SUPABASE_URL` ← `secrets.SUPABASE_TEST_URL`
 - `SUPABASE_SERVICE_ROLE` ← `secrets.SUPABASE_TEST_SERVICE_ROLE_KEY`
-- `SUPABASE_JWT_SECRET` ← `secrets.SUPABASE_TEST_JWT_SECRET`
+
+JWKS validation uses `SUPABASE_URL` only (SEC-06 JWKS-only). Optional: `SUPABASE_TEST_ACCESS_TOKEN` in `.env` for operator-assisted JWT live sanity.
 
 ### Operator checklist
 

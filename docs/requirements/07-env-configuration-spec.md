@@ -1,5 +1,7 @@
 # 07. Спецификация переменных окружения
 
+> ⚠️ **Частично устарело (2026-06-24):** не отражает eID-Easy, phone-верификацию, NODE_ID, DB_BACKEND, SERVICE_API_TOKEN — фактический SSOT конфига = `src/core/config/schema.py`.
+
 > **Статус:** НЕ реализовано. Spec для `src/core/config/schema.py` и `example.env`.
 > **Связь:** Файл 06 (scaffold) → реализует `load_config_from_env`. Файл 12 (Authentigate) → использует AUTHENTIGATE_*. Файл 14 (OAuth server) → использует OAUTH_* и GPT_OAUTH_*.
 
@@ -23,14 +25,13 @@
 
 | Переменная | Required | Default | Описание |
 |-----------|---------|---------|---------|
-| `SUPABASE_URL` | Yes (pilot) | — | Project URL. Dashboard → Settings → API → Project URL |
+| `SUPABASE_URL` | Yes (pilot) | — | Project URL. Dashboard → Settings → API → Project URL. **Обязателен для JWKS validation** (`{URL}/auth/v1/.well-known/jwks.json`). |
 | `SUPABASE_SERVICE_ROLE` | Yes (pilot) | — | Service role key. Только server-side. Никогда в браузер. |
-| `SUPABASE_JWT_SECRET` | Yes (если нет JWKS) | — | JWT secret для валидации Supabase Access Token. Supabase Dashboard → Settings → API → JWT Secret. |
 | `DATABASE_URL` | Yes (если psycopg) | — | `postgresql://postgres:[PASSWORD]@[HOST]:5432/postgres` |
 
 > **Примечание:** `SUPABASE_ANON_KEY` (anon key для клиентского SDK) намеренно опущен — identity-service server-side всегда работает через `SUPABASE_SERVICE_ROLE`. Anon key используется только во фронтенд-приложениях, которые конфигурируются отдельно.
 
-**Примечание про JWT validation:** Supabase выдаёт JWT либо подписанные HS256 (`SUPABASE_JWT_SECRET`) либо RS256 (через JWKS endpoint). Для self-hosted Supabase — HS256 с `SUPABASE_JWT_SECRET`. Для Supabase Cloud с JWKS — RS256. Identity-service поддерживает оба варианта.
+**Примечание про JWT validation (SEC-06):** Supabase Cloud подписывает access tokens асимметрично (ES256). Identity-service проверяет подпись **только через JWKS** по `SUPABASE_URL`. `SUPABASE_JWT_SECRET` удалён.
 
 ### Authentigate OIDC
 
@@ -92,10 +93,6 @@ SUPABASE_URL=
 
 # Service role key (server only, never in browser)
 SUPABASE_SERVICE_ROLE=
-
-# JWT Secret for validating Supabase access tokens
-# Supabase Dashboard → Settings → API → JWT Secret
-SUPABASE_JWT_SECRET=
 
 # Direct Postgres connection (for psycopg)
 # postgresql://postgres:[PASSWORD]@db.[PROJECT_REF].supabase.co:5432/postgres
@@ -165,7 +162,6 @@ python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 |-----------|------|-------|
 | `SUPABASE_URL` | optional | required |
 | `SUPABASE_SERVICE_ROLE` | optional | required |
-| `SUPABASE_JWT_SECRET` | optional | required |
 | `DATABASE_URL` | optional | required |
 | `DOGESTONIA_EID_SECRET` | optional | required |
 | `CODE_VERIFIER_ENCRYPTION_KEY` | optional | required |

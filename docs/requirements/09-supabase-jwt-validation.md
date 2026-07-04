@@ -1,7 +1,7 @@
 # 09. Supabase JWT Validation
 
-> **Статус:** реализовано (актуализировано 2026-06-24). Код: `src/core/auth/supabase_validator.py` и `src/core/api/security.py`.
-> **Предусловие:** `SUPABASE_JWT_SECRET` или JWKS endpoint настроен (файл 07).
+> **Статус:** реализовано (актуализировано 2026-07-04, SEC-06 JWKS-only). Код: `src/core/auth/supabase_validator.py` и `src/core/api/security.py`.
+> **Предусловие:** `SUPABASE_URL` настроен — JWKS endpoint `{SUPABASE_URL}/auth/v1/.well-known/jwks.json` (файл 07).
 > **Связь:** Используется во всех protected endpoints (/me, /auth/eid/start, /stories, /oauth/authorize).
 > **Аудит:** G-5 закрыт SEC-03 (2026-06-26) — `aud` + форма импорта ключа согласованы с кодом.
 
@@ -20,18 +20,14 @@ Supabase Auth выдаёт access tokens (JWT) при login. Identity-service д
 
 ## Алгоритмы подписи Supabase JWT
 
-### HS256 (Supabase Cloud, стандарт)
-- JWT подписан симметричным секретом `SUPABASE_JWT_SECRET`.
-- Суpabase Dashboard → Settings → API → JWT Secret.
-- Простая валидация: `joserfc.jwt.decode(token, key=SUPABASE_JWT_SECRET, algorithms=["HS256"])`.
+Supabase Cloud подписывает access tokens **асимметрично** (типично **ES256**). Identity-service проверяет подпись **только через JWKS** — симметричный HS256-путь удалён (SEC-06 D-1).
 
-### ES256 / RS256 (Supabase Cloud, JWKS)
-- JWT подписан асимметричным ключом Supabase (типично **ES256** в Cloud).
+### JWKS-only (as-built SEC-06)
 - JWKS endpoint: `{SUPABASE_URL}/auth/v1/.well-known/jwks.json`
-- Валидация через `JwksCache` (тот же паттерн, что OIDC id_token): `ES256`, `RS256`, `ES384`, `ES512`.
-- Алгоритм выбирается по JWT header `alg`; при unknown `kid` — один refresh JWKS.
-
-**As-built (2026-06-28):** `SupabaseJwtValidatorImpl` поддерживает **HS256** (секрет) и **JWKS-путь** для асимметричных алгоритмов. Для локального demo (`supabase_url` ends with `demo.local`) JWKS не инициализируется — только HS256.
+- Разрешённые алгоритмы: `ES256`, `RS256`, `ES384`, `ES512` (по JWT header `alg`).
+- Валидация через `JwksCache` (тот же паттерн, что OIDC id_token): DI в [`providers.py`](../../src/core/infrastructure/providers.py) создаёт `httpx.Client` + `JwksCache` при непустом `SUPABASE_URL`.
+- При unknown `kid` — один refresh JWKS; пустой `SUPABASE_URL` → fail-closed (JWKS недоступен).
+- **HS256 не поддерживается** для Supabase access tokens (удалён `SUPABASE_JWT_SECRET`).
 
 ---
 
@@ -39,7 +35,7 @@ Supabase Auth выдаёт access tokens (JWT) при login. Identity-service д
 
 | Claim | Значение | Проверка (фактически в коде) |
 |-------|---------|---------|
-| `alg` | `HS256` или JWKS (`ES256`, `RS256`, …) | HS256 через секрет; асимметричные — через JWKS ✅ |
+| `alg` | JWKS (`ES256`, `RS256`, …) | Только асимметричные алгоритмы через JWKS ✅ |
 | `iss` | `{SUPABASE_URL}/auth/v1` | essential, должен совпадать с конфигом ✅ |
 | `aud` | `authenticated` | essential, должен совпадать с `authenticated` ✅ |
 | `exp` | Unix timestamp | essential, `exp > now()` ✅ |
@@ -48,13 +44,13 @@ Supabase Auth выдаёт access tokens (JWT) при login. Identity-service д
 
 > **SEC-03 (2026-06-26):** `aud=authenticated` валидируется через `JWTClaimsRegistry`. Решение и live-sanity: [`epic-ids-12-sec-03-jwt-aud-decision-2026-06-26.md`](../analysis/epic-ids-12-sec-03-jwt-aud-decision-2026-06-26.md).
 
-**Атака на `alg: none`:** Явно задавать список разрешённых алгоритмов `["HS256"]`. Никогда `algorithms=None` или `algorithms=["*"]`. (В коде: `jwt.decode(token, key, algorithms=["HS256"])` ✅.)
+**Атака на `alg: none` / HS256:** Явно задавать список разрешённых JWKS-алгоритмов; HS256 отклоняется как unsupported. Никогда `algorithms=None` или `algorithms=["*"]`.
 
 ---
 
 ## Спецификация модуля `src/core/auth/supabase_validator.py`
 
-> **Форма реализации (фактическая):** не свободная функция, а **класс `SupabaseJwtValidatorImpl`** с методом `validate(token)`, реализующий `Protocol` `SupabaseJwtValidator` из `src/core/domain/contracts.py`. `UserClaims` и `JwtValidationError` живут в `src/core/domain/models.py` (валидатор их импортирует). Конфигурация (`jwt_secret`, `supabase_url`) передаётся в конструктор, а не в каждый вызов.
+> **Форма реализации (фактическая):** класс **`SupabaseJwtValidatorImpl`** с методом `validate(token)`, реализующий `Protocol` `SupabaseJwtValidator`. Конфигурация: `supabase_url` + инжектированный `JwksCache` (создаётся в `providers.py`).
 
 ```python
 # src/core/domain/contracts.py
@@ -75,56 +71,9 @@ class JwtValidationError(Exception):
     """Raised when JWT is invalid, expired, or tampered."""
 ```
 
-### Реализация (фактический код `SupabaseJwtValidatorImpl`)
+### Реализация (фактический код, сокращённо)
 
-```python
-from joserfc import jwt
-from joserfc.errors import JoseError
-from joserfc.jwk import OctKey
-
-from core.domain.models import JwtValidationError, UserClaims
-
-
-class SupabaseJwtValidatorImpl:
-    def __init__(self, *, jwt_secret: str, supabase_url: str) -> None:
-        self._jwt_secret = jwt_secret
-        self._supabase_url = supabase_url.rstrip("/")
-        self._expected_iss = f"{self._supabase_url}/auth/v1"
-        self._key = OctKey.import_key(jwt_secret)
-        self._claims_registry = jwt.JWTClaimsRegistry(
-            iss={"essential": True, "value": self._expected_iss},
-            sub={"essential": True},
-            exp={"essential": True},
-            aud={"essential": True, "value": "authenticated"},
-        )
-
-    def validate(self, token: str) -> UserClaims:
-        try:
-            token_obj = jwt.decode(token, self._key, algorithms=["HS256"])
-            self._claims_registry.validate(token_obj.claims)
-        except JoseError as exc:
-            raise JwtValidationError(f"JWT validation failed: {exc}") from exc
-        except Exception as exc:
-            raise JwtValidationError(f"JWT validation failed: {exc}") from exc
-
-        claims = token_obj.claims
-        if claims.get("role") != "authenticated":
-            raise JwtValidationError("Token role is not 'authenticated'")
-
-        sub = claims.get("sub")
-        if not sub:
-            raise JwtValidationError("JWT sub missing")
-
-        return UserClaims(
-            supabase_user_id=str(sub),
-            email=claims.get("email"),
-            role=str(claims["role"]),
-        )
-```
-
-Импорт ключа: `OctKey.import_key(jwt_secret)` — **сырая строка** JWT Secret из Supabase Dashboard (Settings → API). Это канонический путь для HS256; не требует JWK-обёртки `{"kty":"oct","k":…}`.
-
----
+См. [`supabase_validator.py`](../../src/core/auth/supabase_validator.py): `_header_alg` → если `alg` в `_JWKS_ALGORITHMS`, decode через `JwksCache.get_key_set()` с одним retry при `InvalidKeyIdError`; иначе `JwtValidationError("Unsupported JWT algorithm")`.
 
 ## FastAPI Dependency Pattern
 

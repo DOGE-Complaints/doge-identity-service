@@ -101,7 +101,7 @@ sequenceDiagram
 
 ## 1. Проверка личности пользователя — Supabase JWT ✅
 
-`SupabaseJwtValidatorImpl` ([`supabase_validator.py:12-45`](../../src/core/auth/supabase_validator.py)): библиотека `joserfc`, алгоритм **HS256** на секрете `SUPABASE_JWT_SECRET` (`OctKey.import_key` — сырая строка Dashboard JWT Secret). Обязательно сходятся: издатель `iss == {SUPABASE_URL}/auth/v1`, `aud == authenticated`, наличие `sub` и `exp`, и роль `authenticated`. Иначе — `JwtValidationError`. Покрыто тестами: просрочка, чужая подпись, `alg=none`, неверный издатель, неверный/отсутствующий `aud` ([`test_supabase_jwt_validator.py`](../../tests/test_supabase_jwt_validator.py)).
+`SupabaseJwtValidatorImpl` ([`supabase_validator.py`](../../src/core/auth/supabase_validator.py)): библиотека `joserfc`, **JWKS-only** (ES256/RS256 через `{SUPABASE_URL}/auth/v1/.well-known/jwks.json`, `JwksCache` из DI). Обязательно сходятся: издатель `iss == {SUPABASE_URL}/auth/v1`, `aud == authenticated`, наличие `sub` и `exp`, и роль `authenticated`. HS256 и `SUPABASE_JWT_SECRET` удалены (SEC-06). Покрыто тестами: ES256 happy path, kid refresh, alg reject, просрочка, чужая подпись, `alg=none`, неверный издатель/aud ([`test_supabase_jwt_validator.py`](../../tests/test_supabase_jwt_validator.py)).
 
 ## 2. Пропуск на входе — Bearer ✅
 
@@ -133,4 +133,4 @@ sequenceDiagram
 
 ## 7. Секреты
 
-`SUPABASE_JWT_SECRET`, `SUPABASE_SERVICE_ROLE`, `OAUTH_ACCESS_TOKEN_SECRET`, `SERVICE_API_TOKEN`, `DOGESTONIA_EID_SECRET` (единый HMAC-секрет), `CODE_VERIFIER_ENCRYPTION_KEY` (AES-256 — ⚪ заявлен, но шифрование verifier в коде пока не используется). В режиме **pilot** отсутствие критичных секретов → сервис не стартует ([`schema.py:173-188`](../../src/core/config/schema.py)).
+`SUPABASE_SERVICE_ROLE`, `OAUTH_ACCESS_TOKEN_SECRET`, `SERVICE_API_TOKEN`, `DOGESTONIA_EID_SECRET` (единый HMAC-секрет), `CODE_VERIFIER_ENCRYPTION_KEY` (AES-256 — ⚪ заявлен, но шифрование verifier в коде пока не используется). Supabase JWT проверяется через JWKS по `SUPABASE_URL` — отдельного `SUPABASE_JWT_SECRET` нет (SEC-06). В режиме **pilot** отсутствие критичных секретов → сервис не стартует ([`schema.py`](../../src/core/config/schema.py)).

@@ -80,7 +80,7 @@ python3.11 -m venv .venv
 Railway после деплоя сам опрашивает `/health` и не переключает трафик, пока не получит 200 (gate деплоя). `railway.json` переопределяет только healthcheck-поля; `startCommand` остаётся единственным источником истины в `railpack.json`.
 
 **Переменные окружения в Railway.** Для `demo` достаточно дефолтов. Для боевого `APP_PROFILE=pilot` обязательны (fail-fast `ConfigError` на старте, см. [`schema.py`](../../src/core/config/schema.py) `pilot_required`):
-`API_BASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE`, `SUPABASE_JWT_SECRET`, `DATABASE_URL`, `DOGESTONIA_EID_SECRET`, `EID_SESSION_ENC_KEY`, `OAUTH_ACCESS_TOKEN_SECRET`, `GPT_OAUTH_CLIENT_SECRET`. `PORT` Railway задаёт сам — не переопределять.
+`API_BASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE`, `DATABASE_URL`, `DOGESTONIA_EID_SECRET`, `EID_SESSION_ENC_KEY`, `OAUTH_ACCESS_TOKEN_SECRET`, `GPT_OAUTH_CLIENT_SECRET`. `PORT` Railway задаёт сам — не переопределять.
 
 ---
 
