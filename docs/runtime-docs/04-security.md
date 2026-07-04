@@ -2,11 +2,13 @@
 
 ## О чём этот документ
 
-Здесь два пласта. Первый — **строительные блоки безопасности**, которые уже реально работают в коде (проверка токенов, защита строк в БД, хэширование персональных данных). Второй — **подробный разбор того, как должна работать авторизация целиком**: от момента, когда пользователь в ChatGPT захотел подать историю, до момента, когда gateway убедился, что этот человек существует и прошёл eID. Второй пласт — это согласованная целевая модель (решения от 2026-06-04); по ходу честно помечаю, что из неё уже в коде, а что пока заглушка.
+Здесь два пласта. Первый — **строительные блоки безопасности**, которые уже реально работают в коде (проверка токенов, защита строк в БД, хэширование персональных данных). Второй — **подробный разбор того, как должна работать авторизация целиком**: от момента, когда пользователь в ChatGPT захотел подать историю, до момента, когда gateway убедился, что этот человек существует и прошёл верификацию телефона. Второй пласт — согласованная модель: OAuth-преамбула (2026-06-04, D-6) + **browser-submit handoff** (2026-07-04, GW-DRAFT-02); по ходу помечаю as-built vs superseded.
 
 ---
 
-# Часть A. Как устроена авторизация (целевой процесс)
+# Часть A. Как устроена авторизация (browser-submit + OAuth)
+
+> **Актуализация (2026-07-04, IDS-DOC-DRAFT-05):** продуктовый submit истории — **браузер** через gateway `/story-drafts*`; GPT **стешит** черновик и редиректит в spa. OAuth `/oauth/authorize|token|introspect` **остаётся каноном** для GPT Actions (D-6). As-built gateway: [`API_REFERENCE §6.8`](../../../doge-complaints-gateway/docs/runtime-docs/api-reference/API_REFERENCE.md).
 
 ## Действующие лица
 
@@ -19,64 +21,77 @@
 
 ## Главный принцип: два независимых вопроса
 
-Когда gateway получает «создай историю», он должен ответить на **два разных** вопроса, и это два разных слоя защиты:
+Когда gateway создаёт историю от имени пользователя, он должен ответить на **два разных** вопроса — но **на разных путях** transport может отличаться:
 
-1. **«Меня зовёт доверенный сервис или кто попало?»** → решается **сервисным токеном** (или mTLS). Это межсервисное доверие.
-2. **«Кто этот человек и прошёл ли он верификацию (телефон)?»** → решается **проверкой пользовательского токена у identity** (introspection). Это идентичность пользователя.
+1. **«Меня зовёт доверенный сервис или кто попало?»** → **сервисный токен** (или mTLS). На пути stash: `POST /story-drafts` (только service token). На browser submit service token **не** требуется — доверие к вызову обеспечивает публичный HTTPS + Bearer пользователя.
+2. **«Кто этот человек и прошёл ли он верификацию (телефон)?»** → **проверка у identity**. Продуктовый submit (GW-DRAFT-02): gateway форвардит Supabase Bearer на **`GET /me`** (не локальная JWT-валидация в gateway). OAuth **`POST /oauth/introspect`** остаётся валидным для других потребителей (GPT Actions, legacy intake) — D-6.
 
 > **Phone-pivot (2026-06):** активный гейт — `phone_verified` (разовая верификация по SMS-OTP). eID **отложен** (доп. расходы SK) — eID-разделы ниже сохранены как DEFERRED. Источник: [`phone-verification-architecture-2026-06-10`](../analysis/phone-verification-architecture-2026-06-10.md).
 
-Сервисный токен сам по себе **не** доказывает, какой пользователь стоит за запросом — поэтому нужны оба слоя. Если довериться только сервисному токену, появляется классическая дыра «confused deputy» (подача истории от имени кого угодно), а для платформы, где смысл в проверенной личности, это недопустимо.
+Сервисный токен сам по себе **не** доказывает, какой пользователь стоит за запросом — поэтому browser submit всегда сопровождается проверкой пользователя у identity. Если довериться только сервисному токену на user-facing path, появляется «confused deputy» (подача от имени кого угодно).
 
-## Sequence-диаграмма (подача истории из GPT)
+## Sequence-диаграмма (browser-submit handoff)
 
 ```mermaid
 sequenceDiagram
     participant U as Пользователь
     participant GPT as Custom GPT
-    participant UI as spa-app (вход + verify)
+    participant UI as spa-app
     participant ID as identity
     participant GW as gateway
 
     U->>GPT: «Подай историю»
-    Note over GPT: токена нет в сессии
-    GPT->>UI: redirect на авторизацию (+флаг «нужна верификация»)
-    U->>UI: вход / регистрация (Supabase Auth)
-    UI->>ID: OAuth /authorize (Supabase JWT пользователя)
-    ID-->>UI: authorization code
-    UI-->>GPT: возврат code
-    GPT->>ID: /oauth/token (code + client creds)
-    ID-->>GPT: access token (+ известен статус phone_verified)
+    Note over GPT: OAuth path D-6 unchanged
+    GPT->>UI: redirect authorize if needed
+    U->>UI: вход Supabase Auth
+    UI->>ID: OAuth /authorize → /token
+    ID-->>GPT: access token optional for Actions
 
     alt телефон не подтверждён
-        ID-->>UI: нужна верификация → inline-экран verify
-        U->>UI: ввод номера (+372) → SMS-код
-        UI->>ID: POST /auth/phone/request → /auth/phone/confirm
-        ID->>ID: ставит profiles.phone_verified = true
+        UI->>ID: POST /auth/phone/request → /confirm
+        ID->>ID: profiles.phone_verified = true
     end
 
-    Note over GPT,GW: теперь у пользователя есть доступ
-    GPT->>GW: POST создать историю (сервисный токен + токен пользователя)
-    GW->>GW: 1) проверка сервисного токена (доверие)
-    GW->>ID: 2) introspection: токен валиден? phone_verified?
-    ID-->>GW: {active:true, sub, phone_verified:true}
-    GW->>GW: история создаётся
-    GW-->>GPT: 200 story accepted
-    Note over GW: если phone_verified=false → 403, GPT ведёт юзера на verify
+    GPT->>GW: POST /story-drafts service token only
+    GW-->>GPT: draft_id
+    GPT->>UI: redirect browser with draft_id
+
+    UI->>GW: GET /story-drafts/{id} Bearer
+    GW->>ID: GET /me forwarded Bearer
+    ID-->>GW: sub phone_verified session check
+
+    UI->>GW: POST /story-drafts/{id}/submit Bearer
+    GW->>ID: GET /me phone_verified gate
+    alt phone_verified true
+        GW->>GW: create story 202
+        GW-->>UI: 202 Accepted
+    else phone_verified false
+        GW-->>UI: 403 verification_required
+    end
 ```
 
-> **as-is vs target:** диаграмма — **целевая**. Сейчас (as-is): OAuth-маршруты `/oauth/*` — **✅ построены** ([OAUTH-01](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-01-oauth-server-endpoints.md)); introspection-endpoint **`POST /oauth/introspect`** — **✅ построен** ([OAUTH-02](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-02-introspection-and-service-token.md)); сервисный gate — `SERVICE_API_TOKEN` / `ServiceTokenAuth` (обязателен в `APP_PROFILE=pilot`). Durable handshake/codes в Supabase — **✅ построен** при `DB_BACKEND=supabase` ([OAUTH-03](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-03-persistent-token-store-supabase.md)); demo/offline-тесты — `in_memory`. Gateway пока **не зовёт** identity (intake открыт). Телефонная верификация (`/auth/phone/*`, `/me`) — **построена**. Оставшийся разрыв: verify-gate ([OAUTH-04](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-04-verify-gate-and-verification-required.md)).
+> **as-is (2026-07-04):** OAuth `/oauth/*`, **`POST /oauth/introspect`**, verify-gate relay (`verification_required`), `/me`, phone PV, JWKS Supabase JWT — **✅ построены** в identity. Gateway story-draft handoff (**GW-DRAFT-01/02**) **подключён**: read/submit вызывают identity **`GET /me`** с форвардом Supabase Bearer ([`me_client.py`](../../../doge-complaints-gateway/src/core/identity/me_client.py)). SPA/GPT client redirect — вне этого репо.
 
 ## Тот же процесс словами (по шагам)
 
-1. **Пользователь просит GPT подать историю.** У GPT нет токена доступа.
-2. **GPT отправляет пользователя на страницу входа** внутри spa-app — как любой OAuth-клиент, когда нет сессии. Передаётся флаг, что действие требует **верификации** (потому что это отправка истории).
-3. **Пользователь входит или регистрируется** (через Supabase Auth внутри UI).
-4. **identity проводит OAuth-обмен** (`/oauth/authorize` → `/oauth/token`) и выдаёт GPT **access-токен**. При этом identity знает статус `phone_verified` пользователя.
-5. **Если телефон не подтверждён** — пользователю показывают inline-экран верификации (ввод номера +372 → SMS-код, `/auth/phone/request` → `/auth/phone/confirm`), и identity ставит `profiles.phone_verified = true`. (Внешний redirect не нужен — это наши же API.)
-6. **GPT получает токен** и теперь **сам шлёт запрос на создание истории напрямую в gateway** — контент истории через identity не проходит.
-7. **gateway проверяет два слоя:** сначала сервисный токен (это доверенный вызов), затем дёргает identity (**introspection**), чтобы убедиться: токен живой, и `phone_verified = true`.
-8. **Если всё ок — история создаётся.** Если телефон не подтверждён — gateway отвечает 403 (`verification_required`), и GPT подсказывает пользователю пройти верификацию.
+**OAuth-преамбула (D-6, без изменений):**
+
+1. **Пользователь просит GPT подать историю.** У GPT может не быть OAuth access token.
+2. **GPT отправляет пользователя на страницу входа** в spa-app с флагом «нужна верификация» (`requested_action=stories:submit`).
+3. **Пользователь входит или регистрируется** (Supabase Auth в UI).
+4. **identity проводит OAuth-обмен** (`/oauth/authorize` → `/oauth/token`) и выдаёт GPT access token. Identity знает `phone_verified`.
+5. **Если телефон не подтверждён** — inline verify (`/auth/phone/request` → `/auth/phone/confirm`); identity ставит `phone_verified=true`.
+
+**Browser-submit handoff (актуальный user path, GW-DRAFT-02):**
+
+6. **GPT стешит черновик** в gateway: `POST /story-drafts` (только service token, тело = `StoryIntakeRequest`) → **`draft_id`**. Контент через identity **не** проходит.
+7. **GPT редиректит браузер** (spa) на handoff URL с `draft_id`.
+8. **Браузер читает черновик:** `GET /story-drafts/{draft_id}` с Supabase Bearer; gateway форвардит Bearer → identity **`GET /me`** (проверка активной сессии, без гейта `phone_verified` на read).
+9. **Браузер сабмитит:** `POST /story-drafts/{draft_id}/submit` с тем же Bearer; gateway снова **`GET /me`** → гейт `phone_verified=true` → **202** + создание истории; `false` → **403** `verification_required` + `verify_url`; identity недоступен → **503** (fail-closed).
+
+### Superseded (исторический GPT-direct submit)
+
+> **Superseded GW-DRAFT-03:** ранее канон описывал, что **GPT сам шлёт** запрос создания истории в gateway (`POST /intake/stories` или аналог) с **сервисным + OAuth user token**, а gateway проверял пользователя через **`POST /oauth/introspect`**. Этот путь **не** является продуктовым user submit после story-draft handoff. Operator/service intake с service token может оставаться — см. gateway [`security-env-api-access.md §4`](../../../doge-complaints-gateway/docs/runtime-docs/security-env-api-access.md).
 
 ## Что из этого уже в коде, а что нет
 
@@ -89,11 +104,19 @@ sequenceDiagram
 | OAuth-маршруты `/oauth/authorize`, `/oauth/authorize/complete`, `/oauth/token` | [`asgi_app.py:368-403`](../../src/core/api/asgi_app.py), [`core/oauth/handlers.py`](../../src/core/oauth/handlers.py) | ✅ построен ([OAUTH-01](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-01-oauth-server-endpoints.md)) |
 | Durable handshake/codes (Supabase Postgres) | [`SupabaseAuthorizationRequestStore`](../../src/core/infrastructure/db_supabase.py), [`SupabaseOAuthTokenService`](../../src/core/infrastructure/db_supabase.py), миграция [`20260624000001_oauth_authorization_tables.sql`](../../supabase/migrations/20260624000001_oauth_authorization_tables.sql) | ✅ при `DB_BACKEND=supabase` ([OAUTH-03](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-03-persistent-token-store-supabase.md)); demo — in-memory |
 | eID-старт/callback (`/auth/eid/start`, `/auth/{provider}/callback`) | [`asgi_app.py`](../../src/core/api/asgi_app.py), [`rate_limit_dependency.py`](../../src/core/api/rate_limit_dependency.py) | ✅ HTTP rate-limit (SEC-01, pkg-000035) |
-| Флаг «нужна верификация» в сессии | поля `return_context`/`requested_action` в [`models.py`](../../src/core/domain/models.py) | ⚪ поля есть; relay через OAuth = [OAUTH-04](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-04-verify-gate-and-verification-required.md) |
-| **introspection-endpoint** для gateway (`{active, sub, phone_verified}`) | [`introspection.py`](../../src/core/oauth/introspection.py), [`asgi_app.py:407-416`](../../src/core/api/asgi_app.py) | ✅ построен ([OAUTH-02](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-02-introspection-and-service-token.md)) |
+| Флаг «нужна верификация» в сессии | поля `return_context`/`requested_action` в [`models.py`](../../src/core/domain/models.py) | ✅ relay через OAuth ([OAUTH-04](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-04-verify-gate-and-verification-required.md)) |
+| **introspection-endpoint** (`{active, sub, phone_verified}`) | [`introspection.py`](../../src/core/oauth/introspection.py), [`asgi_app.py:407-416`](../../src/core/api/asgi_app.py) | ✅ ([OAUTH-02](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-02-introspection-and-service-token.md)); D-6 — канон для GPT Actions |
+| Gateway story-draft → identity **`GET /me`** | as-built gateway [`me_client.py`](../../../doge-complaints-gateway/src/core/identity/me_client.py), [`API_REFERENCE §6.8`](../../../doge-complaints-gateway/docs/runtime-docs/api-reference/API_REFERENCE.md) | ✅ на стороне gateway (GW-DRAFT-02) |
 | Проверка сервисного токена на входе identity | `AppConfig.service_api_token` ([`schema.py:70,238`](../../src/core/config/schema.py)), `ServiceTokenAuth` ([`security.py:89-116`](../../src/core/api/security.py)); **обязателен в pilot** | ✅ (gate disabled в demo при пустом токене) |
 
-То есть телефонная верификация, `/me`, OAuth-маршруты, **introspection+сервисный gate** и **durable handshake/codes при `DB_BACKEND=supabase`** **построены**; gateway intake ещё не подключён. При `DB_BACKEND=in_memory` (demo/offline-тесты) handshake/codes остаются in-memory. eID — отложен (mock остаётся как provider-каркас).
+Identity-side: телефонная верификация, `/me`, OAuth, introspection, verify-gate и durable handshake/codes при `DB_BACKEND=supabase` **построены**. Gateway **вызывает** identity `/me` на story-draft read/submit. При `DB_BACKEND=in_memory` (demo) handshake/codes — in-memory. eID — отложен (mock как provider-каркас).
+
+## As-built references (cross-repo)
+
+- Gateway [`API_REFERENCE.md §6.8`](../../../doge-complaints-gateway/docs/runtime-docs/api-reference/API_REFERENCE.md) — `POST/GET /story-drafts`, `POST …/submit`
+- Gateway [`story-draft-handoff/INDEX.md`](../../../doge-complaints-gateway/docs/tasks/backlog-stories/story-draft-handoff/INDEX.md)
+- Gateway [`security-env-api-access.md §4`](../../../doge-complaints-gateway/docs/runtime-docs/security-env-api-access.md) — browser submit auth model
+- Identity story [`STORY-IDS-DOC-DRAFT-05`](../tasks/backlog-stories/story-draft-handoff/STORY-IDS-DOC-DRAFT-05-browser-submit-security-canon-sync.md)
 
 ---
 
