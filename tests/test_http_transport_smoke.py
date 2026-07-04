@@ -2,18 +2,12 @@
 
 from __future__ import annotations
 
-import time
-
 import pytest
 from fastapi.testclient import TestClient
-from joserfc import jwt
-from joserfc.jwk import OctKey
 
 from core.api.asgi_app import _clear_api_dependencies_cache, create_app
 from core.config.providers import provide_app_config
-
-_DEMO_JWT_SECRET = "test-secret-for-demo"
-_DEMO_SUPABASE_URL = "https://demo.local"
+from tests.supabase_jwt_harness import DEFAULT_USER_ID, mint_supabase_access_token
 
 _IDENTITY_ROUTE_PATHS = frozenset(
     {
@@ -38,20 +32,6 @@ def _reset_deps() -> None:
     _clear_api_dependencies_cache()
 
 
-def _demo_bearer_token() -> str:
-    now = int(time.time())
-    claims = {
-        "sub": "11111111-1111-1111-1111-111111111111",
-        "role": "authenticated",
-        "aud": "authenticated",
-        "iss": f"{_DEMO_SUPABASE_URL.rstrip('/')}/auth/v1",
-        "exp": now + 3600,
-        "iat": now,
-    }
-    key = OctKey.import_key(_DEMO_JWT_SECRET)
-    return jwt.encode({"alg": "HS256"}, claims, key)
-
-
 def test_health_returns_200(test_client: TestClient) -> None:
     response = test_client.get("/health")
     assert response.status_code == 200
@@ -73,11 +53,11 @@ def test_me_without_auth_returns_401(test_client: TestClient) -> None:
 
 
 def test_me_with_bearer_returns_200_not_verified(test_client: TestClient) -> None:
-    token = _demo_bearer_token()
+    token = mint_supabase_access_token()
     response = test_client.get("/me", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
     data = response.json()["data"]
-    assert data["supabase_user_id"] == "11111111-1111-1111-1111-111111111111"
+    assert data["supabase_user_id"] == DEFAULT_USER_ID
     assert data["eid_verified"] is False
 
 

@@ -2,21 +2,16 @@
 
 from __future__ import annotations
 
-import time
-
 import pytest
 from fastapi import Request
 from fastapi.testclient import TestClient
-from joserfc import jwt
-from joserfc.jwk import OctKey
 
 from core.api.asgi_app import _clear_api_dependencies_cache, get_api_dependencies
 from core.security.audit_context import audit_hashes_from_request, hash_audit_value
 from core.security.hashing import hash_secret
+from tests.supabase_jwt_harness import DEFAULT_USER_ID, mint_supabase_access_token
 
-_DEMO_JWT_SECRET = "test-secret-for-demo"
-_DEMO_SUPABASE_URL = "https://demo.local"
-_DEMO_USER_ID = "11111111-1111-1111-1111-111111111111"
+_DEMO_USER_ID = DEFAULT_USER_ID
 _EE_PHONE = "+37255555555"
 _RETURN_URL = "https://dogestonia.ee/verify"
 _TEST_UA = "DogestoniaTestAgent/1.0"
@@ -33,20 +28,6 @@ def _reset_deps(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("DOGESTONIA_EID_SECRET", _EID_HASH_KEY)
     yield
     _clear_api_dependencies_cache()
-
-
-def _demo_bearer_token(*, sub: str = _DEMO_USER_ID) -> str:
-    now = int(time.time())
-    claims = {
-        "sub": sub,
-        "role": "authenticated",
-        "aud": "authenticated",
-        "iss": f"{_DEMO_SUPABASE_URL.rstrip('/')}/auth/v1",
-        "exp": now + 3600,
-        "iat": now,
-    }
-    key = OctKey.import_key(_DEMO_JWT_SECRET)
-    return jwt.encode({"alg": "HS256"}, claims, key)
 
 
 def test_hash_audit_value_uses_hmac_sha256() -> None:
@@ -75,7 +56,7 @@ def test_audit_hashes_from_request_hashes_ip_and_ua() -> None:
 def test_eid_start_audit_records_hashed_ip_ua_not_raw(
     test_client: TestClient,
 ) -> None:
-    token = _demo_bearer_token()
+    token = mint_supabase_access_token()
     response = test_client.post(
         "/auth/eid/start",
         headers={
@@ -112,7 +93,7 @@ def test_phone_request_audit_records_hashed_ip_ua_not_raw(
 ) -> None:
     from tests.test_phone_verification_flow import _mock_sender
 
-    token = _demo_bearer_token()
+    token = mint_supabase_access_token()
     response = test_client.post(
         "/auth/phone/request",
         headers={

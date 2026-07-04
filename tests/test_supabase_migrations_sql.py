@@ -76,6 +76,18 @@ POST_HISTORICAL_MIGRATIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
             "stories:submit",
         ),
     ),
+    (
+        "20260626000001_phone_persistence_tables.sql",
+        (
+            "phone_verification_sessions",
+            "phone_audit_events",
+            "phone_verification_sessions_expires_idx",
+            "phone_audit_created_at_idx",
+            "ENABLE ROW LEVEL SECURITY",
+            "phone_verification_sessions_service_role_all",
+            "phone_audit_events_service_role_all",
+        ),
+    ),
 )
 
 HISTORICAL_MIGRATIONS: tuple[tuple[str, tuple[str, ...]], ...] = (

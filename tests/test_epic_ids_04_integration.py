@@ -1,10 +1,6 @@
 from __future__ import annotations
 
-import time
-
 import pytest
-from joserfc import jwt
-from joserfc.jwk import OctKey
 
 from core.api.dependencies import build_api_dependencies
 from core.api.security import CompositeBearerTokenAuth, SupabaseJwtBearerTokenAuth
@@ -20,6 +16,7 @@ from core.infrastructure.repositories import (
     InMemoryVerificationSessionStore,
 )
 from core.infrastructure.service_factory import DefaultServiceFactory
+from tests.supabase_jwt_harness import DEFAULT_USER_ID, TEST_SUPABASE_URL, mint_supabase_access_token
 
 _BASE_ENV = {
     "APP_PROFILE": "demo",
@@ -34,20 +31,6 @@ _SUPABASE_ENV = {
     "SUPABASE_URL": "https://example.supabase.co",
     "SUPABASE_SERVICE_ROLE": "service-role-key",
 }
-
-
-def _make_demo_jwt(*, secret: str = "test-secret-for-demo", supabase_url: str = "https://demo.local") -> str:
-    now = int(time.time())
-    claims = {
-        "sub": "11111111-1111-1111-1111-111111111111",
-        "role": "authenticated",
-        "aud": "authenticated",
-        "iss": f"{supabase_url.rstrip('/')}/auth/v1",
-        "exp": now + 3600,
-        "iat": now,
-    }
-    key = OctKey.import_key(secret)
-    return jwt.encode({"alg": "HS256"}, claims, key)
 
 
 def test_epic_section8_imports() -> None:
@@ -125,6 +108,6 @@ def test_build_api_dependencies_bearer_accepts_valid_demo_jwt(
     for key, value in _BASE_ENV.items():
         monkeypatch.setenv(key, value)
     deps = build_api_dependencies()
-    token = _make_demo_jwt()
+    token = mint_supabase_access_token(user_id=DEFAULT_USER_ID, supabase_url=TEST_SUPABASE_URL)
     claims = deps.bearer_token_auth.validate({"authorization": f"Bearer {token}"})
-    assert claims.supabase_user_id == "11111111-1111-1111-1111-111111111111"
+    assert claims.supabase_user_id == DEFAULT_USER_ID

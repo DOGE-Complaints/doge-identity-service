@@ -30,9 +30,9 @@ def _block_dotenv_leakage(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LOG_FORMAT", "text")
     # DB — never real Supabase in unit tests
     monkeypatch.setenv("DB_BACKEND", "in_memory")
-    monkeypatch.setenv("SUPABASE_URL", "")
+    monkeypatch.setenv("SUPABASE_URL", "https://test-project.supabase.co")
     monkeypatch.setenv("SUPABASE_SERVICE_ROLE", "")
-    monkeypatch.setenv("SUPABASE_JWT_SECRET", "")
+    monkeypatch.delenv("SUPABASE_JWT_SECRET", raising=False)
     monkeypatch.setenv("DATABASE_URL", "")
     # Authentigate OIDC — stub
     monkeypatch.setenv("AUTHENTIGATE_ISSUER", "https://stub.local")
@@ -76,6 +76,13 @@ def _block_dotenv_leakage(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PHONE_ONE_ACCOUNT_PER_NUMBER", "true")
     # CORS default for most tests (test_client may override)
     monkeypatch.setenv("CORS_ALLOWED_ORIGINS", "*")
+
+
+@pytest.fixture(autouse=True)
+def _mock_supabase_jwks_http(monkeypatch: pytest.MonkeyPatch) -> None:
+    from tests.supabase_jwt_harness import patch_providers_httpx_client_for_jwks
+
+    patch_providers_httpx_client_for_jwks(monkeypatch)
 
 
 @pytest.fixture(scope="session", autouse=True)

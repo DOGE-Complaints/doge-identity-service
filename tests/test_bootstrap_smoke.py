@@ -52,7 +52,6 @@ def test_config_fail_fast_on_pilot_empty_eid_secret(monkeypatch: pytest.MonkeyPa
     monkeypatch.setenv("EID_PROVIDER", "mock")
     monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
     monkeypatch.setenv("SUPABASE_SERVICE_ROLE", "sr")
-    monkeypatch.setenv("SUPABASE_JWT_SECRET", "jwt")
     monkeypatch.setenv("DATABASE_URL", "postgresql://localhost/db")
     monkeypatch.setenv("DOGESTONIA_EID_SECRET", "")
     monkeypatch.setenv("OAUTH_ACCESS_TOKEN_SECRET", "oauth")

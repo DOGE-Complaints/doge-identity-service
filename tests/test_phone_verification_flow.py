@@ -8,17 +8,14 @@ from datetime import datetime, timezone
 
 import pytest
 from fastapi.testclient import TestClient
-from joserfc import jwt
-from joserfc.jwk import OctKey
 
 from core.api.asgi_app import _clear_api_dependencies_cache, create_app, get_api_dependencies
 from core.config.providers import provide_app_config
 from core.phone.base import SmsErrorCode
 from core.phone.mock.mock_sender import MockSmsSender
+from tests.supabase_jwt_harness import DEFAULT_USER_ID, mint_supabase_access_token
 
-_DEMO_JWT_SECRET = "test-secret-for-demo"
-_DEMO_SUPABASE_URL = "https://demo.local"
-_DEMO_USER_ID = "11111111-1111-1111-1111-111111111111"
+_DEMO_USER_ID = DEFAULT_USER_ID
 _OTHER_USER_ID = "22222222-2222-2222-2222-222222222222"
 _EE_PHONE = "+37255555555"
 _US_PHONE = "+15555555555"
@@ -32,20 +29,6 @@ def _reset_deps(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PHONE_RESEND_COOLDOWN_S", "60")
     yield
     _clear_api_dependencies_cache()
-
-
-def _demo_bearer_token(*, sub: str = _DEMO_USER_ID) -> str:
-    now = int(time.time())
-    claims = {
-        "sub": sub,
-        "role": "authenticated",
-        "aud": "authenticated",
-        "iss": f"{_DEMO_SUPABASE_URL.rstrip('/')}/auth/v1",
-        "exp": now + 3600,
-        "iat": now,
-    }
-    key = OctKey.import_key(_DEMO_JWT_SECRET)
-    return jwt.encode({"alg": "HS256"}, claims, key)
 
 
 def _mock_sender() -> MockSmsSender:
@@ -62,6 +45,10 @@ def _extract_code(text: str) -> str:
     return match.group(1)
 
 
+def _demo_bearer_token(*, sub: str = _DEMO_USER_ID) -> str:
+    return mint_supabase_access_token(user_id=sub)
+
+
 def _request_phone(test_client: TestClient, *, token: str, phone: str) -> dict:
     response = test_client.post(
         "/auth/phone/request",
@@ -74,7 +61,7 @@ def _request_phone(test_client: TestClient, *, token: str, phone: str) -> dict:
 def test_phone_request_creates_session_sends_sms_and_returns_expires_at(
     test_client: TestClient,
 ) -> None:
-    token = _demo_bearer_token()
+    token = mint_supabase_access_token()
     response = _request_phone(test_client, token=token, phone=_EE_PHONE)
     assert response.status_code == 200
     data = response.json()["data"]
@@ -111,14 +98,14 @@ def test_phone_request_creates_session_sends_sms_and_returns_expires_at(
 
 
 def test_phone_request_country_not_allowed(test_client: TestClient) -> None:
-    token = _demo_bearer_token()
+    token = mint_supabase_access_token()
     response = _request_phone(test_client, token=token, phone=_US_PHONE)
     assert response.status_code == 400
     assert response.json()["error"]["code"] == SmsErrorCode.COUNTRY_NOT_ALLOWED.value
 
 
 def test_phone_request_rate_limited_before_cooldown(test_client: TestClient) -> None:
-    token = _demo_bearer_token()
+    token = mint_supabase_access_token()
     first = _request_phone(test_client, token=token, phone=_EE_PHONE)
     assert first.status_code == 200
 
@@ -134,7 +121,7 @@ def test_phone_request_after_cooldown_invalidates_previous_code(
     monkeypatch.setenv("PHONE_RESEND_COOLDOWN_S", "0")
     _clear_api_dependencies_cache()
 
-    token = _demo_bearer_token()
+    token = mint_supabase_access_token()
     first = _request_phone(test_client, token=token, phone=_EE_PHONE)
     assert first.status_code == 200
     first_code = _extract_code(_mock_sender().sent_messages[-1][1])
@@ -152,7 +139,7 @@ def test_phone_request_after_cooldown_invalidates_previous_code(
 
 
 def test_phone_confirm_full_flow_sets_phone_verified(test_client: TestClient) -> None:
-    token = _demo_bearer_token()
+    token = mint_supabase_access_token()
     request = _request_phone(test_client, token=token, phone=_EE_PHONE)
     assert request.status_code == 200
 
@@ -175,7 +162,7 @@ def test_phone_confirm_full_flow_sets_phone_verified(test_client: TestClient) ->
 
 
 def test_phone_confirm_wrong_code_returns_code_mismatch(test_client: TestClient) -> None:
-    token = _demo_bearer_token()
+    token = mint_supabase_access_token()
     assert _request_phone(test_client, token=token, phone=_EE_PHONE).status_code == 200
 
     confirm = test_client.post(
@@ -191,7 +178,7 @@ def test_phone_confirm_expired_code(test_client: TestClient, monkeypatch: pytest
     monkeypatch.setenv("PHONE_CODE_TTL_S", "1")
     _clear_api_dependencies_cache()
 
-    token = _demo_bearer_token()
+    token = mint_supabase_access_token()
     assert _request_phone(test_client, token=token, phone=_EE_PHONE).status_code == 200
     code = _extract_code(_mock_sender().sent_messages[-1][1])
 
@@ -213,7 +200,7 @@ def test_phone_confirm_too_many_attempts(
     monkeypatch.setenv("PHONE_MAX_ATTEMPTS", "2")
     _clear_api_dependencies_cache()
 
-    token = _demo_bearer_token()
+    token = mint_supabase_access_token()
     assert _request_phone(test_client, token=token, phone=_EE_PHONE).status_code == 200
 
     for _ in range(2):
@@ -238,7 +225,7 @@ def test_phone_confirm_duplicate_number_returns_409(monkeypatch: pytest.MonkeyPa
     _clear_api_dependencies_cache()
     app = create_app(provide_app_config())
     with TestClient(app) as test_client:
-        first_token = _demo_bearer_token(sub=_DEMO_USER_ID)
+        first_token = mint_supabase_access_token(user_id=_DEMO_USER_ID)
         assert _request_phone(test_client, token=first_token, phone=_EE_PHONE).status_code == 200
         first_code = _extract_code(_mock_sender().sent_messages[-1][1])
         assert (
@@ -250,7 +237,7 @@ def test_phone_confirm_duplicate_number_returns_409(monkeypatch: pytest.MonkeyPa
             == 200
         )
 
-        second_token = _demo_bearer_token(sub=_OTHER_USER_ID)
+        second_token = mint_supabase_access_token(user_id=_OTHER_USER_ID)
         assert _request_phone(test_client, token=second_token, phone=_EE_PHONE).status_code == 200
         second_code = _extract_code(_mock_sender().sent_messages[-1][1])
         conflict = test_client.post(
@@ -263,7 +250,7 @@ def test_phone_confirm_duplicate_number_returns_409(monkeypatch: pytest.MonkeyPa
 
 
 def test_phone_audit_events_contain_no_pii(test_client: TestClient) -> None:
-    token = _demo_bearer_token()
+    token = mint_supabase_access_token()
     request = _request_phone(test_client, token=token, phone=_EE_PHONE)
     code = _extract_code(_mock_sender().sent_messages[-1][1])
 

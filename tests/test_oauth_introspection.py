@@ -22,9 +22,10 @@ from fastapi.testclient import TestClient
 
 from core.api.asgi_app import _clear_api_dependencies_cache, get_api_dependencies
 from core.domain.models import ProfileRecord
+from tests.supabase_jwt_harness import DEFAULT_USER_ID, mint_supabase_access_token
 
 _SERVICE_TOKEN = "test-service-api-token"
-_DEMO_USER_ID = "11111111-1111-1111-1111-111111111111"
+_DEMO_USER_ID = DEFAULT_USER_ID
 _CLIENT_ID = "test-gpt-client"
 _CLIENT_SECRET = "test-gpt-client-secret"
 _REDIRECT_URI = "https://oauth.pstmn.io/v1/callback"
@@ -34,8 +35,6 @@ _REDIRECT_URI = "https://oauth.pstmn.io/v1/callback"
 def _introspection_env(monkeypatch: pytest.MonkeyPatch) -> None:
     _clear_api_dependencies_cache()
     monkeypatch.setenv("SERVICE_API_TOKEN", _SERVICE_TOKEN)
-    monkeypatch.setenv("SUPABASE_JWT_SECRET", "test-secret-for-demo")
-    monkeypatch.setenv("SUPABASE_URL", "https://demo.local")
     yield
     _clear_api_dependencies_cache()
 
@@ -51,23 +50,6 @@ def _pkce_pair() -> tuple[str, str]:
     digest = hashlib.sha256(verifier.encode("utf-8")).digest()
     challenge = base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
     return verifier, challenge
-
-
-def _demo_bearer_token() -> str:
-    from joserfc import jwt
-    from joserfc.jwk import OctKey
-
-    now = int(time.time())
-    claims = {
-        "sub": _DEMO_USER_ID,
-        "role": "authenticated",
-        "aud": "authenticated",
-        "iss": "https://demo.local/auth/v1",
-        "exp": now + 3600,
-        "iat": now,
-    }
-    key = OctKey.import_key("test-secret-for-demo")
-    return jwt.encode({"alg": "HS256"}, claims, key)
 
 
 def _authorize_params(**overrides: str) -> dict[str, str]:
@@ -92,7 +74,7 @@ def _issue_oauth_access_token(test_client: TestClient) -> str:
     oauth_request_id = parse_qs(urlparse(authorize.headers["location"]).query)["oauth_request_id"][0]
     complete = test_client.post(
         "/oauth/authorize/complete",
-        headers={"Authorization": f"Bearer {_demo_bearer_token()}"},
+        headers={"Authorization": f"Bearer {mint_supabase_access_token()}"},
         json={"oauth_request_id": oauth_request_id},
         follow_redirects=False,
     )

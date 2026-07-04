@@ -1,15 +1,13 @@
-"""EPIC-IDS-06 Story 2 — SupabaseJwtValidator synthetic JWT tests (no network)."""
+"""EPIC-IDS-06 Story 2 / SEC-06 — SupabaseJwtValidator JWKS-only tests (no network)."""
 
 from __future__ import annotations
 
-import base64
-import json
 import time
 
 import httpx
 import pytest
 from joserfc import jwt
-from joserfc.jwk import OctKey, RSAKey
+from joserfc.jwk import ECKey, RSAKey
 
 from core.auth.supabase_validator import (
     JwtValidationError,
@@ -17,78 +15,30 @@ from core.auth.supabase_validator import (
     _header_alg,
 )
 from core.domain.models import UserClaims
+from core.security.oidc.jwks_cache import JwksCache
+from tests.supabase_jwt_harness import (
+    DEFAULT_USER_ID,
+    TEST_SUPABASE_URL,
+    build_test_jwks_cache,
+    build_test_validator,
+    jwks_http_handler,
+    jwks_uri,
+    mint_alg_none_token,
+    mint_header_alg_token,
+    mint_supabase_access_token,
+    mint_with_foreign_key,
+)
 
-JWT_SECRET = "story2-jwt-secret"
-SUPABASE_URL = "https://test-project.supabase.co"
-USER_ID = "22222222-2222-2222-2222-222222222222"
-
-
-def _b64url(data: bytes) -> str:
-    return base64.urlsafe_b64encode(data).rstrip(b"=").decode()
-
-
-def _make_valid_token(
-    *,
-    secret: str = JWT_SECRET,
-    supabase_url: str = SUPABASE_URL,
-    exp_offset: int = 3600,
-    iss: str | None = None,
-    aud: str | None = "authenticated",
-) -> str:
-    now = int(time.time())
-    claims = {
-        "sub": USER_ID,
-        "email": "user@example.com",
-        "role": "authenticated",
-        "iss": iss if iss is not None else f"{supabase_url.rstrip('/')}/auth/v1",
-        "exp": now + exp_offset,
-        "iat": now,
-    }
-    if aud is not None:
-        claims["aud"] = aud
-    key = OctKey.import_key(secret)
-    return jwt.encode({"alg": "HS256"}, claims, key)
-
-
-def _b64url_oct_jwk(secret: str) -> dict[str, str]:
-    return {"kty": "oct", "k": _b64url(secret.encode())}
-
-
-def _make_header_alg_token(alg: str) -> str:
-    now = int(time.time())
-    claims = {
-        "sub": USER_ID,
-        "role": "authenticated",
-        "aud": "authenticated",
-        "iss": f"{SUPABASE_URL.rstrip('/')}/auth/v1",
-        "exp": now + 3600,
-    }
-    header = _b64url(json.dumps({"alg": alg, "typ": "JWT"}).encode())
-    payload = _b64url(json.dumps(claims).encode())
-    return f"{header}.{payload}.invalid-signature"
-
-
-def _make_alg_none_token() -> str:
-    now = int(time.time())
-    claims = {
-        "sub": USER_ID,
-        "role": "authenticated",
-        "aud": "authenticated",
-        "iss": f"{SUPABASE_URL.rstrip('/')}/auth/v1",
-        "exp": now + 3600,
-    }
-    header = _b64url(json.dumps({"alg": "none", "typ": "JWT"}).encode())
-    payload = _b64url(json.dumps(claims).encode())
-    return f"{header}.{payload}."
+USER_ID = DEFAULT_USER_ID
 
 
 @pytest.fixture
 def validator() -> SupabaseJwtValidatorImpl:
-    return SupabaseJwtValidatorImpl(jwt_secret=JWT_SECRET, supabase_url=SUPABASE_URL)
+    return build_test_validator()
 
 
-def test_valid_token_returns_user_claims(validator: SupabaseJwtValidatorImpl) -> None:
-    token = _make_valid_token()
+def test_valid_es256_token_returns_user_claims(validator: SupabaseJwtValidatorImpl) -> None:
+    token = mint_supabase_access_token(user_id=USER_ID)
     claims = validator.validate(token)
     assert claims == UserClaims(
         supabase_user_id=USER_ID,
@@ -98,113 +48,81 @@ def test_valid_token_returns_user_claims(validator: SupabaseJwtValidatorImpl) ->
 
 
 def test_expired_token_raises_jwt_validation_error(validator: SupabaseJwtValidatorImpl) -> None:
-    token = _make_valid_token(exp_offset=-120)
+    token = mint_supabase_access_token(user_id=USER_ID, exp_offset=-120)
     with pytest.raises(JwtValidationError):
         validator.validate(token)
 
 
 def test_wrong_signature_raises(validator: SupabaseJwtValidatorImpl) -> None:
-    token = _make_valid_token(secret="other-secret")
+    token = mint_with_foreign_key(user_id=USER_ID)
     with pytest.raises(JwtValidationError):
         validator.validate(token)
 
 
 def test_alg_none_attack_rejected(validator: SupabaseJwtValidatorImpl) -> None:
-    token = _make_alg_none_token()
+    token = mint_alg_none_token()
     with pytest.raises(JwtValidationError):
         validator.validate(token)
 
 
 def test_iss_mismatch_raises(validator: SupabaseJwtValidatorImpl) -> None:
-    token = _make_valid_token(iss="https://wrong.supabase.co/auth/v1")
+    token = mint_supabase_access_token(
+        user_id=USER_ID,
+        iss="https://wrong.supabase.co/auth/v1",
+    )
     with pytest.raises(JwtValidationError):
         validator.validate(token)
 
 
 def test_wrong_aud_raises(validator: SupabaseJwtValidatorImpl) -> None:
-    token = _make_valid_token(aud="service_role")
+    token = mint_supabase_access_token(user_id=USER_ID, aud="service_role")
     with pytest.raises(JwtValidationError):
         validator.validate(token)
 
 
 def test_missing_aud_raises(validator: SupabaseJwtValidatorImpl) -> None:
-    token = _make_valid_token(aud=None)
+    token = mint_supabase_access_token(user_id=USER_ID, aud=None)
     with pytest.raises(JwtValidationError):
         validator.validate(token)
 
 
-def test_raw_secret_import_validates_hs256_token(validator: SupabaseJwtValidatorImpl) -> None:
-    token = _make_valid_token()
-    assert validator.validate(token).supabase_user_id == USER_ID
+def test_header_alg_parses_es256() -> None:
+    token = mint_supabase_access_token(user_id=USER_ID)
+    assert _header_alg(token) == "ES256"
 
 
-def test_raw_octkey_import_is_canonical_for_supabase_hs256(
-    validator: SupabaseJwtValidatorImpl,
-) -> None:
-    """Supabase signs with dashboard JWT secret string; raw OctKey.import_key matches HS256."""
-    token = _make_valid_token()
-    validator.validate(token)
-    wrapped_key = OctKey.import_key(_b64url_oct_jwk(JWT_SECRET))
-    wrapped_token = jwt.encode(
-        {"alg": "HS256"},
-        {
-            "sub": USER_ID,
-            "role": "authenticated",
-            "aud": "authenticated",
-            "iss": f"{SUPABASE_URL.rstrip('/')}/auth/v1",
-            "exp": int(time.time()) + 3600,
-        },
-        wrapped_key,
-    )
-    # joserfc: JWK k=b64url(secret bytes) may coincide with raw import for short secrets;
-    # validator canonical path remains raw string per spec 09 / Supabase dashboard secret.
-    validator.validate(wrapped_token)
+def test_hs256_algorithm_rejected(validator: SupabaseJwtValidatorImpl) -> None:
+    token = mint_header_alg_token("HS256")
+    with pytest.raises(JwtValidationError, match="Unsupported JWT algorithm"):
+        validator.validate(token)
 
 
-def test_header_alg_parses_hs256() -> None:
-    token = _make_valid_token()
-    assert _header_alg(token) == "HS256"
-
-
-def test_jwks_cache_disabled_for_demo_local() -> None:
-    validator = SupabaseJwtValidatorImpl(
-        jwt_secret=JWT_SECRET,
-        supabase_url="https://demo.local",
-    )
-    assert validator._jwks_cache is None
-
-
-def test_jwks_unavailable_raises_for_asymmetric_alg_on_demo_local() -> None:
-    validator = SupabaseJwtValidatorImpl(
-        jwt_secret=JWT_SECRET,
-        supabase_url="https://demo.local",
-    )
-    token = _make_header_alg_token("ES256")
+def test_empty_supabase_url_fails_closed_for_es256() -> None:
+    validator = SupabaseJwtValidatorImpl(supabase_url="", jwks_cache=None)
+    token = mint_supabase_access_token(user_id=USER_ID)
     with pytest.raises(JwtValidationError, match="JWKS validation unavailable"):
         validator.validate(token)
 
 
 def test_unsupported_algorithm_rejected(validator: SupabaseJwtValidatorImpl) -> None:
-    token = _make_header_alg_token("RS512")
+    token = mint_header_alg_token("RS512")
     with pytest.raises(JwtValidationError, match="Unsupported JWT algorithm"):
         validator.validate(token)
 
 
 def test_rs256_token_validated_via_mock_jwks() -> None:
-    jwks_uri = f"{SUPABASE_URL.rstrip('/')}/auth/v1/.well-known/jwks.json"
     signing_key = RSAKey.generate_key(2048, parameters={"kid": "supabase-kid"})
     jwks_payload = {"keys": [signing_key.as_dict(private=False)]}
 
     def handler(request: httpx.Request) -> httpx.Response:
-        if request.url == httpx.URL(jwks_uri):
+        if str(request.url).endswith("/.well-known/jwks.json"):
             return httpx.Response(200, json=jwks_payload)
         return httpx.Response(404, text="not found")
 
     http_client = httpx.Client(transport=httpx.MockTransport(handler))
     validator = SupabaseJwtValidatorImpl(
-        jwt_secret=JWT_SECRET,
-        supabase_url=SUPABASE_URL,
-        http_client=http_client,
+        supabase_url=TEST_SUPABASE_URL,
+        jwks_cache=JwksCache(http_client, jwks_uri()),
     )
     now = int(time.time())
     token = jwt.encode(
@@ -214,7 +132,7 @@ def test_rs256_token_validated_via_mock_jwks() -> None:
             "email": "user@example.com",
             "role": "authenticated",
             "aud": "authenticated",
-            "iss": f"{SUPABASE_URL.rstrip('/')}/auth/v1",
+            "iss": f"{TEST_SUPABASE_URL.rstrip('/')}/auth/v1",
             "exp": now + 3600,
             "iat": now,
         },
@@ -226,3 +144,37 @@ def test_rs256_token_validated_via_mock_jwks() -> None:
         email="user@example.com",
         role="authenticated",
     )
+
+
+def test_kid_refresh_retries_jwks_fetch() -> None:
+    signing_key = ECKey.generate_key("P-256", parameters={"kid": "rotated-kid"})
+    call_count = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal call_count
+        if not str(request.url).endswith("/.well-known/jwks.json"):
+            return httpx.Response(404, text="not found")
+        call_count += 1
+        if call_count == 1:
+            return httpx.Response(200, json={"keys": []})
+        return httpx.Response(200, json={"keys": [signing_key.as_dict(private=False)]})
+
+    http_client = httpx.Client(transport=httpx.MockTransport(handler))
+    validator = SupabaseJwtValidatorImpl(
+        supabase_url=TEST_SUPABASE_URL,
+        jwks_cache=JwksCache(http_client, jwks_uri()),
+    )
+    token = jwt.encode(
+        {"alg": "ES256", "kid": "rotated-kid"},
+        {
+            "sub": USER_ID,
+            "role": "authenticated",
+            "aud": "authenticated",
+            "iss": f"{TEST_SUPABASE_URL.rstrip('/')}/auth/v1",
+            "exp": int(time.time()) + 3600,
+        },
+        signing_key,
+    )
+    claims = validator.validate(token)
+    assert claims.supabase_user_id == USER_ID
+    assert call_count == 2

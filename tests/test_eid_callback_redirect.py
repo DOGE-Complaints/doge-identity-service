@@ -2,20 +2,16 @@
 
 from __future__ import annotations
 
-import time
 from unittest.mock import patch
 
 import pytest
-from joserfc import jwt
-from joserfc.jwk import OctKey
 
 from core.api.asgi_app import _clear_api_dependencies_cache, get_api_dependencies
 from core.providers.base import EIDProviderError, EidErrorCode
 from core.providers.mock.mock_provider import MockEIDProvider
+from tests.supabase_jwt_harness import DEFAULT_USER_ID, mint_supabase_access_token
 
-_DEMO_JWT_SECRET = "test-secret-for-demo"
-_DEMO_SUPABASE_URL = "https://demo.local"
-_DEMO_USER_ID = "11111111-1111-1111-1111-111111111111"
+_DEMO_USER_ID = DEFAULT_USER_ID
 _RETURN_URL = "https://dogestonia.ee/verify"
 _JSON_ACCEPT = {"Accept": "application/json"}
 
@@ -26,20 +22,6 @@ def _reset_deps(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ALLOWED_RETURN_URLS", _RETURN_URL)
     yield
     _clear_api_dependencies_cache()
-
-
-def _demo_bearer_token(*, sub: str = _DEMO_USER_ID) -> str:
-    now = int(time.time())
-    claims = {
-        "sub": sub,
-        "role": "authenticated",
-        "aud": "authenticated",
-        "iss": f"{_DEMO_SUPABASE_URL.rstrip('/')}/auth/v1",
-        "exp": now + 3600,
-        "iat": now,
-    }
-    key = OctKey.import_key(_DEMO_JWT_SECRET)
-    return jwt.encode({"alg": "HS256"}, claims, key)
 
 
 def _start_payload(**overrides: object) -> dict[str, str]:
@@ -53,7 +35,7 @@ def _start_payload(**overrides: object) -> dict[str, str]:
 
 
 def _start_and_get_callback_url(test_client) -> str:
-    token = _demo_bearer_token()
+    token = mint_supabase_access_token()
     start = test_client.post(
         "/auth/eid/start",
         headers={"Authorization": f"Bearer {token}"},

@@ -22,7 +22,6 @@ _PILOT_BASE = {
     "EID_PROVIDER": "mock",
     "SUPABASE_URL": "https://example.supabase.co",
     "SUPABASE_SERVICE_ROLE": "sr",
-    "SUPABASE_JWT_SECRET": "jwt",
     "DATABASE_URL": "postgresql://postgres:pass@example:5432/postgres",
     "DOGESTONIA_EID_SECRET": "eid-secret",
     "EID_SESSION_ENC_KEY": "2zy6gKOpxhkaNwtmufGZqYb0T88uh-tkKHC5ygQOnIM=",

@@ -4,19 +4,15 @@ from __future__ import annotations
 
 import base64
 import hashlib
-import time
 from urllib.parse import parse_qs, urlparse
 
 import pytest
 from fastapi.testclient import TestClient
-from joserfc import jwt
-from joserfc.jwk import OctKey
 
 from core.api.asgi_app import _clear_api_dependencies_cache, get_api_dependencies
+from tests.supabase_jwt_harness import DEFAULT_USER_ID, mint_supabase_access_token
 
-_DEMO_JWT_SECRET = "test-secret-for-demo"
-_DEMO_SUPABASE_URL = "https://demo.local"
-_DEMO_USER_ID = "11111111-1111-1111-1111-111111111111"
+_DEMO_USER_ID = DEFAULT_USER_ID
 _CLIENT_ID = "test-gpt-client"
 _CLIENT_SECRET = "test-gpt-client-secret"
 _REDIRECT_URI = "https://oauth.pstmn.io/v1/callback"
@@ -25,8 +21,6 @@ _REDIRECT_URI = "https://oauth.pstmn.io/v1/callback"
 @pytest.fixture(autouse=True)
 def _reset_deps(monkeypatch: pytest.MonkeyPatch) -> None:
     _clear_api_dependencies_cache()
-    monkeypatch.setenv("SUPABASE_JWT_SECRET", _DEMO_JWT_SECRET)
-    monkeypatch.setenv("SUPABASE_URL", _DEMO_SUPABASE_URL)
     monkeypatch.setenv("SMS_PROVIDER", "mock")
     monkeypatch.setenv("PHONE_ALLOWED_DIAL_PREFIXES", "+372")
     monkeypatch.setenv("PHONE_CODE_LENGTH", "6")
@@ -36,20 +30,6 @@ def _reset_deps(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PHONE_ONE_ACCOUNT_PER_NUMBER", "true")
     yield
     _clear_api_dependencies_cache()
-
-
-def _demo_bearer_token(*, sub: str = _DEMO_USER_ID) -> str:
-    now = int(time.time())
-    claims = {
-        "sub": sub,
-        "role": "authenticated",
-        "aud": "authenticated",
-        "iss": f"{_DEMO_SUPABASE_URL.rstrip('/')}/auth/v1",
-        "exp": now + 3600,
-        "iat": now,
-    }
-    key = OctKey.import_key(_DEMO_JWT_SECRET)
-    return jwt.encode({"alg": "HS256"}, claims, key)
 
 
 def _pkce_pair() -> tuple[str, str]:
@@ -128,7 +108,7 @@ def test_oauth_full_flow_with_pkce(test_client: TestClient) -> None:
 
     complete = test_client.post(
         "/oauth/authorize/complete",
-        headers={"Authorization": f"Bearer {_demo_bearer_token()}"},
+        headers={"Authorization": f"Bearer {mint_supabase_access_token()}"},
         json={"oauth_request_id": oauth_request_id},
         follow_redirects=False,
     )
@@ -168,7 +148,7 @@ def test_oauth_token_rejects_wrong_client_secret(test_client: TestClient) -> Non
     oauth_request_id = parse_qs(urlparse(authorize.headers["location"]).query)["oauth_request_id"][0]
     complete = test_client.post(
         "/oauth/authorize/complete",
-        headers={"Authorization": f"Bearer {_demo_bearer_token()}"},
+        headers={"Authorization": f"Bearer {mint_supabase_access_token()}"},
         json={"oauth_request_id": oauth_request_id},
         follow_redirects=False,
     )
@@ -192,7 +172,7 @@ def test_oauth_token_rejects_reused_code(test_client: TestClient) -> None:
     oauth_request_id = parse_qs(urlparse(authorize.headers["location"]).query)["oauth_request_id"][0]
     complete = test_client.post(
         "/oauth/authorize/complete",
-        headers={"Authorization": f"Bearer {_demo_bearer_token()}"},
+        headers={"Authorization": f"Bearer {mint_supabase_access_token()}"},
         json={"oauth_request_id": oauth_request_id},
         follow_redirects=False,
     )
@@ -221,7 +201,7 @@ def test_oauth_token_pkce_mismatch(test_client: TestClient) -> None:
     oauth_request_id = parse_qs(urlparse(authorize.headers["location"]).query)["oauth_request_id"][0]
     complete = test_client.post(
         "/oauth/authorize/complete",
-        headers={"Authorization": f"Bearer {_demo_bearer_token()}"},
+        headers={"Authorization": f"Bearer {mint_supabase_access_token()}"},
         json={"oauth_request_id": oauth_request_id},
         follow_redirects=False,
     )
@@ -246,7 +226,7 @@ def test_me_accepts_oauth_access_token(test_client: TestClient) -> None:
     oauth_request_id = parse_qs(urlparse(authorize.headers["location"]).query)["oauth_request_id"][0]
     complete = test_client.post(
         "/oauth/authorize/complete",
-        headers={"Authorization": f"Bearer {_demo_bearer_token()}"},
+        headers={"Authorization": f"Bearer {mint_supabase_access_token()}"},
         json={"oauth_request_id": oauth_request_id},
         follow_redirects=False,
     )

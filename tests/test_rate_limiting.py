@@ -7,19 +7,16 @@ from fastapi.testclient import TestClient
 
 from core.api.asgi_app import _clear_api_dependencies_cache
 from core.phone.telnyx.errors import SmsErrorCode
-from tests.test_phone_verification_flow import _EE_PHONE, _demo_bearer_token, _request_phone
+from tests.supabase_jwt_harness import DEFAULT_USER_ID, mint_supabase_access_token
+from tests.test_phone_verification_flow import _EE_PHONE, _request_phone
 
-_DEMO_JWT_SECRET = "test-secret-for-demo"
-_DEMO_SUPABASE_URL = "https://demo.local"
-_DEMO_USER_ID = "11111111-1111-1111-1111-111111111111"
+_DEMO_USER_ID = DEFAULT_USER_ID
 _RETURN_URL = "https://dogestonia.ee/verify"
 
 
 @pytest.fixture(autouse=True)
 def _rate_limit_env(monkeypatch: pytest.MonkeyPatch) -> None:
     _clear_api_dependencies_cache()
-    monkeypatch.setenv("SUPABASE_JWT_SECRET", _DEMO_JWT_SECRET)
-    monkeypatch.setenv("SUPABASE_URL", _DEMO_SUPABASE_URL)
     monkeypatch.setenv("ALLOWED_RETURN_URLS", _RETURN_URL)
     monkeypatch.setenv("RATE_LIMIT_EID_START_REQUESTS", "2")
     monkeypatch.setenv("RATE_LIMIT_EID_START_WINDOW_S", "600")
@@ -40,7 +37,7 @@ def _eid_start_payload() -> dict[str, str]:
 
 
 def _post_eid_start(test_client: TestClient, *, token: str | None = None) -> object:
-    headers = {"Authorization": f"Bearer {token or _demo_bearer_token()}"}
+    headers = {"Authorization": f"Bearer {token or mint_supabase_access_token()}"}
     return test_client.post(
         "/auth/eid/start",
         headers=headers,
@@ -93,7 +90,7 @@ def test_callback_rate_limit_ignores_spoofed_x_forwarded_for(
 def test_phone_otp_cooldown_still_domain_400_not_http_429(
     test_client: TestClient,
 ) -> None:
-    token = _demo_bearer_token()
+    token = mint_supabase_access_token()
     assert _request_phone(test_client, token=token, phone=_EE_PHONE).status_code == 200
 
     second = _request_phone(test_client, token=token, phone=_EE_PHONE)
@@ -111,7 +108,7 @@ def test_phone_request_rate_limit_returns_429_with_retry_after(
     monkeypatch.setenv("RATE_LIMIT_PHONE_REQUEST_WINDOW_S", "600")
     monkeypatch.setenv("PHONE_RESEND_COOLDOWN_S", "0")
 
-    token = _demo_bearer_token()
+    token = mint_supabase_access_token()
     phones = ("+37255555556", "+37255555557", "+37255555558")
 
     assert _request_phone(test_client, token=token, phone=phones[0]).status_code == 200

@@ -1,36 +1,16 @@
 from __future__ import annotations
 
-import time
-
 import pytest
 from fastapi.testclient import TestClient
-from joserfc import jwt
-from joserfc.jwk import OctKey
 
 from core.api.asgi_app import _clear_api_dependencies_cache, create_app
 from core.config.providers import provide_app_config
-
-_DEMO_JWT_SECRET = "test-secret-for-demo"
-_DEMO_SUPABASE_URL = "https://demo.local"
+from tests.supabase_jwt_harness import DEFAULT_USER_ID, mint_supabase_access_token
 _TEST_CLIENT_ENV = {
     "CORS_ALLOWED_ORIGINS": "http://localhost:3000,http://127.0.0.1:3000",
     "REQUEST_TIMEOUT_S": "15",
     "OIDC_REQUEST_TIMEOUT_S": "10",
 }
-
-
-def _make_demo_bearer_token() -> str:
-    now = int(time.time())
-    claims = {
-        "sub": "11111111-1111-1111-1111-111111111111",
-        "role": "authenticated",
-        "aud": "authenticated",
-        "iss": f"{_DEMO_SUPABASE_URL}/auth/v1",
-        "exp": now + 3600,
-        "iat": now,
-    }
-    key = OctKey.import_key(_DEMO_JWT_SECRET)
-    return jwt.encode({"alg": "HS256"}, claims, key)
 
 
 def test_app_title(test_client: TestClient) -> None:
@@ -66,11 +46,11 @@ def test_me_without_auth_returns_401(test_client: TestClient) -> None:
 
 
 def test_me_with_bearer_returns_200_not_verified(test_client: TestClient) -> None:
-    token = _make_demo_bearer_token()
+    token = mint_supabase_access_token()
     response = test_client.get("/me", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
     data = response.json()["data"]
-    assert data["supabase_user_id"] == "11111111-1111-1111-1111-111111111111"
+    assert data["supabase_user_id"] == DEFAULT_USER_ID
     assert data["eid_verified"] is False
 
 
@@ -82,7 +62,7 @@ def test_auth_eid_start_rejects_foreign_return_url(
         monkeypatch.setenv(key, value)
     monkeypatch.setenv("ALLOWED_RETURN_URLS", "https://dogestonia.ee/verify")
     app = create_app(provide_app_config())
-    token = _make_demo_bearer_token()
+    token = mint_supabase_access_token()
     with TestClient(app) as client:
         response = client.post(
             "/auth/eid/start",
@@ -101,7 +81,7 @@ def test_auth_eid_start_allows_listed_return_url(
         monkeypatch.setenv(key, value)
     monkeypatch.setenv("ALLOWED_RETURN_URLS", "https://dogestonia.ee/verify")
     app = create_app(provide_app_config())
-    token = _make_demo_bearer_token()
+    token = mint_supabase_access_token()
     with TestClient(app) as client:
         response = client.post(
             "/auth/eid/start",

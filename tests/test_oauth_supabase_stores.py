@@ -33,7 +33,6 @@ def _demo_config(**overrides: object) -> AppConfig:
         "oidc_request_timeout_s": 10,
         "supabase_url": SUPABASE_URL,
         "supabase_service_role": SERVICE_ROLE_KEY,
-        "supabase_jwt_secret": "jwt-secret",
         "database_url": "",
         "authentigate_issuer": "",
         "authentigate_client_id": "",

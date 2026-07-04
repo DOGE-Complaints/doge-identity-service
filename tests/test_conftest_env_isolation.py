@@ -13,7 +13,7 @@ from core.config.providers import provide_app_config
 def test_autouse_sets_in_memory_and_mock_eid() -> None:
     assert os.environ.get("DB_BACKEND") == "in_memory"
     assert os.environ.get("EID_PROVIDER") == "mock"
-    assert os.environ.get("SUPABASE_URL") == ""
+    assert os.environ.get("SUPABASE_URL") == "https://test-project.supabase.co"
 
 
 def test_provide_app_config_stays_in_memory_when_dotenv_has_supabase(

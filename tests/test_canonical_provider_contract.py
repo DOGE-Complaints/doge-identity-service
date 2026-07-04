@@ -11,8 +11,9 @@ from fastapi.testclient import TestClient
 from core.api.asgi_app import _clear_api_dependencies_cache, get_api_dependencies
 from core.providers.base import EIDProviderError, EIDVerificationResult, EidErrorCode
 from core.security.hashing import hash_secret
+from tests.supabase_jwt_harness import DEFAULT_USER_ID, mint_supabase_access_token
 
-_DEMO_USER_ID = "11111111-1111-1111-1111-111111111111"
+_DEMO_USER_ID = DEFAULT_USER_ID
 _RETURN_URL = "https://dogestonia.ee/verify"
 
 
@@ -25,22 +26,7 @@ def _reset_deps(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def _start_and_get_redirect(test_client: TestClient) -> str:
-    import time
-
-    from joserfc import jwt
-    from joserfc.jwk import OctKey
-
-    now = int(time.time())
-    claims = {
-        "sub": _DEMO_USER_ID,
-        "role": "authenticated",
-        "aud": "authenticated",
-        "iss": "https://demo.local/auth/v1",
-        "exp": now + 3600,
-        "iat": now,
-    }
-    key = OctKey.import_key("test-secret-for-demo")
-    token = jwt.encode({"alg": "HS256"}, claims, key)
+    token = mint_supabase_access_token(user_id=_DEMO_USER_ID)
 
     start = test_client.post(
         "/auth/eid/start",

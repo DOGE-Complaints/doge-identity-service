@@ -1,10 +1,6 @@
 from __future__ import annotations
 
-import time
-
 import pytest
-from joserfc import jwt
-from joserfc.jwk import OctKey
 from starlette.requests import Request
 
 from core.api.asgi_app import _clear_api_dependencies_cache, create_app, get_api_dependencies
@@ -17,28 +13,15 @@ from core.api.security import (
 from core.config.providers import provide_app_config
 from core.domain.contracts import BearerTokenAuth
 from core.domain.models import JwtValidationError
+from tests.supabase_jwt_harness import DEFAULT_USER_ID, mint_supabase_access_token
 
-_DEMO_USER_ID = "11111111-1111-1111-1111-111111111111"
+_DEMO_USER_ID = DEFAULT_USER_ID
 
 
 class _StubSupabaseJwtValidator:
     def validate(self, token: str) -> UserClaims:
         del token
         return UserClaims(supabase_user_id=_DEMO_USER_ID, email=None, role="authenticated")
-
-
-def _make_demo_bearer_token() -> str:
-    now = int(time.time())
-    claims = {
-        "sub": _DEMO_USER_ID,
-        "role": "authenticated",
-        "aud": "authenticated",
-        "iss": "https://demo.local/auth/v1",
-        "exp": now + 3600,
-        "iat": now,
-    }
-    key = OctKey.import_key("test-secret-for-demo")
-    return jwt.encode({"alg": "HS256"}, claims, key)
 
 
 def test_unauthorized_error_code() -> None:
@@ -83,7 +66,7 @@ def test_get_current_user_uses_deps_bearer_auth(monkeypatch: pytest.MonkeyPatch)
     }.items():
         monkeypatch.setenv(key, value)
     create_app(provide_app_config())
-    token = _make_demo_bearer_token()
+    token = mint_supabase_access_token()
     scope = {
         "type": "http",
         "headers": [(b"authorization", f"Bearer {token}".encode())],

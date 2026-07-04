@@ -3,7 +3,6 @@
 # Required GitHub repository secrets:
 #   SUPABASE_TEST_URL              — PostgREST base URL (dedicated test project)
 #   SUPABASE_TEST_SERVICE_ROLE_KEY — service_role key for test project
-#   SUPABASE_TEST_JWT_SECRET       — JWT secret (optional for current live_integration suite)
 #
 # Operator: docs/runbook/supabase-project-setup.md § CI
 
@@ -44,7 +43,6 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_TEST_URL }}
           SUPABASE_SERVICE_ROLE: ${{ secrets.SUPABASE_TEST_SERVICE_ROLE_KEY }}
-          SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_TEST_JWT_SECRET }}
           DB_BACKEND: supabase
           APP_PROFILE: demo
           API_BASE_URL: https://test.local

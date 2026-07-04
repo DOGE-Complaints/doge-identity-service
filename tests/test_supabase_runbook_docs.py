@@ -31,7 +31,7 @@ def test_runbook_file_exists() -> None:
         "Create Supabase project",
         "SUPABASE_URL",
         "SUPABASE_SERVICE_ROLE",
-        "SUPABASE_JWT_SECRET",
+        ".well-known/jwks.json",
         "make check-env",
         "make serve",
         "startup.persistence_backend",
@@ -62,7 +62,6 @@ def test_runbook_documents_ci_test_secrets() -> None:
     for secret in (
         "SUPABASE_TEST_URL",
         "SUPABASE_TEST_SERVICE_ROLE_KEY",
-        "SUPABASE_TEST_JWT_SECRET",
     ):
         assert secret in text
     assert "≠" in text or "!=" in text or "отличаться" in text.lower()
@@ -70,7 +69,7 @@ def test_runbook_documents_ci_test_secrets() -> None:
 
 def test_env_example_has_supabase_backend_vars() -> None:
     text = ENV_EXAMPLE.read_text(encoding="utf-8")
-    for key in ("DB_BACKEND", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE", "SUPABASE_JWT_SECRET"):
+    for key in ("DB_BACKEND", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE"):
         assert key in text
 
 

@@ -2,23 +2,19 @@
 
 from __future__ import annotations
 
-import time
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
-from joserfc import jwt
-from joserfc.jwk import OctKey
 
 from core.api.asgi_app import _clear_api_dependencies_cache, create_app, get_api_dependencies
 from core.config.providers import provide_app_config
 from core.domain.models import VerificationSession
 from core.providers.base import EIDVerificationResult
+from tests.supabase_jwt_harness import DEFAULT_USER_ID, mint_supabase_access_token
 
-_DEMO_JWT_SECRET = "test-secret-for-demo"
-_DEMO_SUPABASE_URL = "https://demo.local"
-_DEMO_USER_ID = "11111111-1111-1111-1111-111111111111"
+_DEMO_USER_ID = DEFAULT_USER_ID
 _OTHER_USER_ID = "22222222-2222-2222-2222-222222222222"
 _RETURN_URL = "https://dogestonia.ee/verify"
 
@@ -29,20 +25,6 @@ def _reset_deps(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ALLOWED_RETURN_URLS", _RETURN_URL)
     yield
     _clear_api_dependencies_cache()
-
-
-def _demo_bearer_token(*, sub: str = _DEMO_USER_ID) -> str:
-    now = int(time.time())
-    claims = {
-        "sub": sub,
-        "role": "authenticated",
-        "aud": "authenticated",
-        "iss": f"{_DEMO_SUPABASE_URL.rstrip('/')}/auth/v1",
-        "exp": now + 3600,
-        "iat": now,
-    }
-    key = OctKey.import_key(_DEMO_JWT_SECRET)
-    return jwt.encode({"alg": "HS256"}, claims, key)
 
 
 def _start_payload(**overrides: object) -> dict[str, str]:
@@ -56,7 +38,7 @@ def _start_payload(**overrides: object) -> dict[str, str]:
 
 
 def test_eid_start_creates_session_and_returns_redirect(test_client: TestClient) -> None:
-    token = _demo_bearer_token()
+    token = mint_supabase_access_token()
     response = test_client.post(
         "/auth/eid/start",
         headers={"Authorization": f"Bearer {token}"},
@@ -90,7 +72,7 @@ def test_eid_start_creates_session_and_returns_redirect(test_client: TestClient)
 def test_mock_callback_verifies_profile_and_me_reflects_status(
     test_client: TestClient,
 ) -> None:
-    token = _demo_bearer_token()
+    token = mint_supabase_access_token()
     start = test_client.post(
         "/auth/eid/start",
         headers={"Authorization": f"Bearer {token}"},
@@ -111,7 +93,7 @@ def test_mock_callback_verifies_profile_and_me_reflects_status(
 
 
 def test_mock_callback_replay_is_idempotent(test_client: TestClient) -> None:
-    token = _demo_bearer_token()
+    token = mint_supabase_access_token()
     start = test_client.post(
         "/auth/eid/start",
         headers={"Authorization": f"Bearer {token}"},
@@ -141,7 +123,7 @@ def test_mock_callback_expired_session_does_not_verify_profile(
     _clear_api_dependencies_cache()
     monkeypatch.setenv("ALLOWED_RETURN_URLS", _RETURN_URL)
     app = create_app(provide_app_config())
-    token = _demo_bearer_token()
+    token = mint_supabase_access_token()
 
     with TestClient(app) as client:
         start = client.post(
@@ -199,7 +181,7 @@ def test_mock_callback_profile_hash_conflict_returns_409(
         "core.providers.mock.mock_provider.MockEIDProvider.handle_callback",
         return_value=fixed_verification,
     ):
-        first_token = _demo_bearer_token(sub=_DEMO_USER_ID)
+        first_token = mint_supabase_access_token(user_id=_DEMO_USER_ID)
         first_start = test_client.post(
             "/auth/eid/start",
             headers={"Authorization": f"Bearer {first_token}"},
@@ -211,7 +193,7 @@ def test_mock_callback_profile_hash_conflict_returns_409(
         )
         assert first_callback.status_code == 200
 
-        second_token = _demo_bearer_token(sub=_OTHER_USER_ID)
+        second_token = mint_supabase_access_token(user_id=_OTHER_USER_ID)
         second_start = test_client.post(
             "/auth/eid/start",
             headers={"Authorization": f"Bearer {second_token}"},

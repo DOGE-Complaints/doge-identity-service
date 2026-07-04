@@ -14,11 +14,10 @@ from core.oauth.verification_required import (
     VERIFICATION_REQUIRED_ERROR,
     VERIFICATION_REQUIRED_HTTP_STATUS,
 )
-from tests.test_oauth_server_flow import (
-    _DEMO_USER_ID,
-    _authorize_params,
-    _demo_bearer_token,
-)
+from tests.supabase_jwt_harness import DEFAULT_USER_ID, mint_supabase_access_token
+from tests.test_oauth_server_flow import _authorize_params
+
+_DEMO_USER_ID = DEFAULT_USER_ID
 
 _RETURN_CONTEXT = "gpt-submit-session-abc123"
 
@@ -26,8 +25,6 @@ _RETURN_CONTEXT = "gpt-submit-session-abc123"
 @pytest.fixture(autouse=True)
 def _reset_deps(monkeypatch: pytest.MonkeyPatch) -> None:
     _clear_api_dependencies_cache()
-    monkeypatch.setenv("SUPABASE_JWT_SECRET", "test-secret-for-demo")
-    monkeypatch.setenv("SUPABASE_URL", "https://demo.local")
     monkeypatch.setenv("SMS_PROVIDER", "mock")
     monkeypatch.setenv("PHONE_ALLOWED_DIAL_PREFIXES", "+372")
     monkeypatch.setenv("PHONE_CODE_LENGTH", "6")
@@ -119,7 +116,7 @@ def test_oauth_complete_unverified_stories_submit_returns_verification_required(
 
     complete = test_client.post(
         "/oauth/authorize/complete",
-        headers={"Authorization": f"Bearer {_demo_bearer_token()}"},
+        headers={"Authorization": f"Bearer {mint_supabase_access_token()}"},
         json={"oauth_request_id": oauth_request_id},
     )
     assert complete.status_code == VERIFICATION_REQUIRED_HTTP_STATUS
@@ -140,7 +137,7 @@ def test_oauth_complete_verified_stories_submit_issues_code(test_client: TestCli
 
     complete = test_client.post(
         "/oauth/authorize/complete",
-        headers={"Authorization": f"Bearer {_demo_bearer_token()}"},
+        headers={"Authorization": f"Bearer {mint_supabase_access_token()}"},
         json={"oauth_request_id": oauth_request_id},
         follow_redirects=False,
     )
@@ -163,7 +160,7 @@ def test_oauth_complete_without_verify_requiring_action_issues_code(
 
     complete = test_client.post(
         "/oauth/authorize/complete",
-        headers={"Authorization": f"Bearer {_demo_bearer_token()}"},
+        headers={"Authorization": f"Bearer {mint_supabase_access_token()}"},
         json={"oauth_request_id": oauth_request_id},
         follow_redirects=False,
     )
@@ -180,7 +177,7 @@ def test_verification_required_separate_from_sms_error_http_mapping(
     oauth_request_id = _authorize_and_get_request_id(test_client)
     verify_need = test_client.post(
         "/oauth/authorize/complete",
-        headers={"Authorization": f"Bearer {_demo_bearer_token()}"},
+        headers={"Authorization": f"Bearer {mint_supabase_access_token()}"},
         json={"oauth_request_id": oauth_request_id},
     )
     assert verify_need.status_code == 403
@@ -188,7 +185,7 @@ def test_verification_required_separate_from_sms_error_http_mapping(
 
     otp_request = test_client.post(
         "/auth/phone/request",
-        headers={"Authorization": f"Bearer {_demo_bearer_token()}"},
+        headers={"Authorization": f"Bearer {mint_supabase_access_token()}"},
         json={"phone": "not-a-phone"},
     )
     assert otp_request.status_code == 400
