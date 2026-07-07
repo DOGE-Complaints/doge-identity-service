@@ -61,12 +61,13 @@ python3.11 -m venv .venv
 **[`railpack.json`](../../railpack.json)** — команда старта (builder Railpack):
 ```json
 {
+  "packages": { "python": "3.11" },
   "deploy": {
-    "startCommand": ".venv/bin/python -m uvicorn --app-dir src core.api.asgi_app:app --host 0.0.0.0 --port ${PORT:-8100}"
+    "startCommand": "python -m uvicorn --app-dir src core.api.asgi_app:app --host 0.0.0.0 --port ${PORT:-8100}"
   }
 }
 ```
-Отличие от локала: `--host 0.0.0.0` (слушать снаружи) и `PORT` Railway подставляет сам.
+Отличие от локала: `--host 0.0.0.0` (слушать снаружи), `PORT` Railway подставляет сам, и **`python`** (не `.venv/bin/python` — venv в runtime-образе Railpack не создаётся).
 
 **[`railway.json`](../../railway.json)** — deploy-настройки Railway (схема `railway.com`):
 ```json
@@ -154,6 +155,7 @@ curl -fsS http://localhost:8100/health | jq -e '.data.status == "ok"' && echo "a
 | `ConfigError: <VAR> is required for APP_PROFILE=pilot` | в pilot не задан обязательный секрет — см. список в §3 |
 | `make smoke` всё скипает | сервер не поднят на `IDENTITY_URL` — сначала `make serve` |
 | Railway: деплой висит на healthcheck | `/health` не отвечает 200 — смотри логи старта (вероятно `ConfigError` pilot-секретов) |
+| Railway: **502** на всех маршрутах (`x-railway-fallback`) | crash loop на старте — проверь Deploy Logs; частая причина: `.venv/bin/python` в `startCommand` (используй `python -m uvicorn`, см. §3) |
 
 ---
 
