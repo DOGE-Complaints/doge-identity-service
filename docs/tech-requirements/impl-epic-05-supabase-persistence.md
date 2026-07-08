@@ -1,5 +1,7 @@
 # NFR: Supabase Persistence Layer
 
+> ⚠️ **Reference-only (2026-06-24):** этот документ скопирован из `doge-complaints-gateway` и описывает ДРУГОЙ сервис (intake/кластеризация историй), не identity. Фактический identity-код — в `src/`; актуальные факты — в `docs/analysis/identity-backend-full-audit-2026-06-24.md` и runtime-docs. Использовать только как шаблон-референс; подлежит переписыванию под identity.
+
 ## Назначение
 
 HTTP-клиент к Supabase PostgREST API без Supabase SDK. `SupabaseDatabase` выполняет CRUD через httpx. 5-уровневый healthcheck при старте. Bootstrap SQL schema. Инкрементные миграции.

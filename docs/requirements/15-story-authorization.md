@@ -6,6 +6,8 @@
 > **Предусловие:** Файл 09 (Supabase JWT), файл 13 (conflict logic), файл 14 (OAuth token).
 > **Связь:** Identity-service авторизует story actions; реальная pipeline историй — doge-complaints-gateway.
 
+> ✅ **Статус контракта (2026-06-24):** identity-side verify-gate контракт ПОСТРОЕН под OAUTH-04 — `src/core/oauth/verification_required.py` + verify-gate в `handlers.py`; introspection возвращает `phone_verified`. Активный гейт — `phone_verified` (НЕ `eid_verified`, см. phone-verification pivot). Принуждение на стороне gateway (forward в `/intake/stories`) остаётся в репозитории gateway. Все упоминания `eid_verified` / `profiles.eid_verified` ниже читать как **→ `phone_verified` (pivot)**.
+
 ---
 
 ## Canonical Story Lifecycle в контексте identity-service

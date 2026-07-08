@@ -1,5 +1,7 @@
 # NFR: FastAPI Transport Layer
 
+> ⚠️ **Reference-only (2026-06-24):** этот документ скопирован из `doge-complaints-gateway` и описывает ДРУГОЙ сервис (intake/кластеризация историй), не identity. Фактический identity-код — в `src/`; актуальные факты — в `docs/analysis/identity-backend-full-audit-2026-06-24.md` и runtime-docs. Использовать только как шаблон-референс; подлежит переписыванию под identity.
+
 ## Назначение
 
 HTTP transport слой: FastAPI приложение с lifespan, CORS middleware, HTTP exception handlers, trace_id propagation, response envelope и полный список роутов. Никакой бизнес-логики — только routing, парсинг запросов, вызов handlers.

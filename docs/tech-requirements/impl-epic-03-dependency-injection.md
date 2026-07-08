@@ -1,5 +1,7 @@
 # NFR: Dependency Injection
 
+> ⚠️ **Reference-only (2026-06-24):** этот документ скопирован из `doge-complaints-gateway` и описывает ДРУГОЙ сервис (intake/кластеризация историй), не identity. Фактический identity-код — в `src/`; актуальные факты — в `docs/analysis/identity-backend-full-audit-2026-06-24.md` и runtime-docs. Использовать только как шаблон-референс; подлежит переписыванию под identity.
+
 ## Назначение
 
 Manual singleton DI без IoC контейнера: `ApiDependencies(frozen=True)` dataclass содержит все сервисы, `build_api_dependencies()` строит его один раз, `@lru_cache(maxsize=1)` делает singleton per process, FastAPI роуты получают его через `Depends(get_api_dependencies)`.

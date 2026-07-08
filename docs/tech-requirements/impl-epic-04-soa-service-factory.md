@@ -1,5 +1,7 @@
 # NFR: SOA Service Factory
 
+> ⚠️ **Reference-only (2026-06-24):** этот документ скопирован из `doge-complaints-gateway` и описывает ДРУГОЙ сервис (intake/кластеризация историй), не identity. Фактический identity-код — в `src/`; актуальные факты — в `docs/analysis/identity-backend-full-audit-2026-06-24.md` и runtime-docs. Использовать только как шаблон-референс; подлежит переписыванию под identity.
+
 ## Назначение
 
 Protocol-based SOA архитектура: каждый репозиторий описан как `Protocol` в `domain/contracts.py`. `DefaultServiceFactory(frozen=True)` принимает Protocol-реализации и создаёт сервисы. `provide_service_factory()` выбирает backend (InMemory/SQLite/Supabase) на основе `DB_BACKEND` env var.

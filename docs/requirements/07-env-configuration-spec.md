@@ -65,7 +65,7 @@
 
 | Переменная | Required | Default | Описание |
 |-----------|---------|---------|---------|
-| `CORS_ALLOWED_ORIGINS` | No | `*` (demo) | Comma-separated список разрешённых origins. Production: `https://dogestonia.ee,https://chat.openai.com` |
+| `CORS_ALLOWED_ORIGINS` | No | `*` (demo) | Comma-separated список разрешённых browser origins (схема+хост+порт). Runbook: [`cors-allowed-origins.md`](../runbook/cors-allowed-origins.md) |
 | `ALLOWED_RETURN_URLS` | No | захардкожен | Allowlist return_url для /auth/eid/start. В demo — hardcoded list. В pilot — из env override. |
 
 ---

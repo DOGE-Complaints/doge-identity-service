@@ -1,8 +1,9 @@
 # 08. Supabase Migrations — Data Model
 
-> **Статус:** НЕ реализовано. SQL для выполнения в Supabase SQL editor или через migration runner.
-> **Предусловие:** Supabase проект существует (URL и ключи есть в .env). Таблицы НЕ созданы.
+> **Статус:** реализовано (актуализировано 2026-06-24). SQL применяется в Supabase SQL editor или через migration runner.
+> **Предусловие:** Supabase проект существует (URL и ключи есть в .env). Таблицы созданы миграциями из `supabase/migrations/`.
 > **Связь:** Файл 09 (JWT validation) и файл 11 (eID flow) зависят от этих таблиц.
+> **Аудит:** сверено с реальными миграциями и `000_full_init.sql` — см. `docs/analysis/identity-backend-full-audit-2026-06-24.md`.
 
 ---
 
@@ -13,10 +14,15 @@ supabase/migrations/
 ├── 20260525000001_create_profiles.sql
 ├── 20260525000002_create_eid_verification_sessions.sql
 ├── 20260525000003_create_eid_audit_events.sql
-└── 20260526000001_eid_sessions_provider_abstraction.sql
+├── 20260526000001_eid_sessions_provider_abstraction.sql
+├── 20260527000001_create_story_drafts.sql            # вне identity scope (DEPRECATED)
+├── 20260611000001_profiles_phone_verification.sql    # phone-колонки на profiles
+├── 20260624000001_oauth_authorization_tables.sql     # OAuth handshake + auth codes
+├── 20260624000002_oauth_authorization_request_context.sql  # requested_action/return_context на OAuth-запросе
+└── 20260626000001_phone_persistence_tables.sql       # phone_verification_sessions + phone_audit_events
 ```
 
-Каждая миграция — отдельный файл. Применяются последовательно. **Operational set:** 4 миграции (3 таблицы + provider abstraction для `eid_verification_sessions`). Историческая `20260527000001_create_story_drafts.sql` — вне identity scope (DEPRECATED, см. EPIC-IDS-08 CLEANUP-01).
+Каждая миграция — отдельный файл. Применяются последовательно. **Фактически в `supabase/migrations/` 9 файлов** (см. Migration 5–8 ниже). **Operational set (identity core):** 3 таблицы (`profiles`, `eid_verification_sessions`, `eid_audit_events`) + provider abstraction для `eid_verification_sessions` + phone-верификация на `profiles` + 2 OAuth-таблицы. Историческая `20260527000001_create_story_drafts.sql` — вне identity scope (DEPRECATED, см. EPIC-IDS-08 CLEANUP-01).
 
 ---
 
@@ -268,6 +274,139 @@ CREATE INDEX IF NOT EXISTS idx_eid_sessions_provider
 ```
 
 Не создаёт новую таблицу; расширяет Migration 2. См. [req-17](17-eid-provider-abstraction.md).
+
+---
+
+## Migration 5: phone verification на `public.profiles`
+
+```sql
+-- 20260611000001_profiles_phone_verification.sql
+-- Phone verification status on profiles (mirror eID columns)
+
+ALTER TABLE public.profiles
+    ADD COLUMN IF NOT EXISTS phone_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS verified_phone_hash TEXT,
+    ADD COLUMN IF NOT EXISTS phone_provider TEXT,
+    ADD COLUMN IF NOT EXISTS phone_dial_prefix TEXT,
+    ADD COLUMN IF NOT EXISTS phone_verified_at TIMESTAMPTZ;
+
+-- Partial unique index: 1 verified phone = 1 account (зеркалит unique_verified_person_hash)
+CREATE UNIQUE INDEX IF NOT EXISTS unique_verified_phone_hash
+    ON public.profiles (verified_phone_hash)
+    WHERE verified_phone_hash IS NOT NULL;
+
+-- Invariant: при phone_verified=true hash и timestamp ОБЯЗАТЕЛЬНЫ
+ALTER TABLE public.profiles
+    DROP CONSTRAINT IF EXISTS phone_consistency;
+
+ALTER TABLE public.profiles
+    ADD CONSTRAINT phone_consistency CHECK (
+        (phone_verified = FALSE)
+        OR (
+            phone_verified = TRUE
+            AND verified_phone_hash IS NOT NULL
+            AND phone_verified_at IS NOT NULL
+        )
+    );
+```
+
+Не создаёт новую таблицу; расширяет Migration 1. Структурно зеркалит eID-колонки (`phone_verification` pivot — eID отложен, см. memory `phone-verification-pivot`).
+
+---
+
+## Migration 6: OAuth authorization tables
+
+```sql
+-- 20260624000001_oauth_authorization_tables.sql
+-- Durable OAuth handshake + authorization codes (EPIC-IDS-11 OAUTH-03).
+
+CREATE TABLE IF NOT EXISTS public.oauth_authorization_requests (
+    oauth_request_id TEXT PRIMARY KEY,
+
+    client_id TEXT NOT NULL,
+    redirect_uri TEXT NOT NULL,
+    scopes JSONB NOT NULL DEFAULT '[]'::jsonb,
+    code_challenge TEXT,
+    code_challenge_method TEXT,
+    state TEXT NOT NULL,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMPTZ NOT NULL
+);
+
+-- TTL index для cleanup просроченных handshake-запросов
+CREATE INDEX IF NOT EXISTS oauth_authorization_requests_expires_idx
+    ON public.oauth_authorization_requests (expires_at);
+
+CREATE TABLE IF NOT EXISTS public.oauth_authorization_codes (
+    code TEXT PRIMARY KEY,
+
+    request_id TEXT
+        REFERENCES public.oauth_authorization_requests (oauth_request_id) ON DELETE SET NULL,
+
+    supabase_user_id UUID NOT NULL
+        REFERENCES auth.users(id) ON DELETE CASCADE,
+
+    client_id TEXT NOT NULL,
+    redirect_uri TEXT NOT NULL,
+    scopes JSONB NOT NULL DEFAULT '[]'::jsonb,
+    code_challenge TEXT,
+    code_challenge_method TEXT,
+
+    expires_at TIMESTAMPTZ NOT NULL,
+    consumed BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- TTL index только по непогашенным кодам
+CREATE INDEX IF NOT EXISTS oauth_authorization_codes_expires_idx
+    ON public.oauth_authorization_codes (expires_at)
+    WHERE consumed = FALSE;
+
+-- RLS: только service role
+ALTER TABLE public.oauth_authorization_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.oauth_authorization_codes ENABLE ROW LEVEL SECURITY;
+
+-- (service_role policy для обеих таблиц — см. файл миграции)
+```
+
+Две новые таблицы для OAuth 2.0 flow (Custom GPT). `oauth_authorization_requests` хранит handshake, `oauth_authorization_codes` — выданные authorization codes (PKCE-поля, single-use через `consumed`). Спецификация токенов — файл 14.
+
+---
+
+## Migration 7: OAuth request context
+
+```sql
+-- 20260624000002_oauth_authorization_request_context.sql
+-- Relay requested_action + return_context on OAuth handshake (EPIC-IDS-11 OAUTH-04).
+
+ALTER TABLE public.oauth_authorization_requests
+    ADD COLUMN IF NOT EXISTS requested_action TEXT,
+    ADD COLUMN IF NOT EXISTS return_context TEXT;
+
+ALTER TABLE public.oauth_authorization_requests
+    DROP CONSTRAINT IF EXISTS oauth_authorization_requests_requested_action_check;
+
+ALTER TABLE public.oauth_authorization_requests
+    ADD CONSTRAINT oauth_authorization_requests_requested_action_check
+    CHECK (
+        requested_action IS NULL
+        OR requested_action IN ('eid:verify', 'stories:submit')
+    );
+```
+
+Не создаёт новую таблицу; расширяет Migration 6. Прокидывает `requested_action`/`return_context` через OAuth handshake.
+
+---
+
+## ⚠️ Известный разрыв: bootstrap-only DB неполна
+
+`supabase/bootstrap/000_full_init.sql` собирает схему «с нуля» **только из 4 ранних миграций** и создаёт **3 core-таблицы** (`profiles`, `eid_verification_sessions`, `eid_audit_events`). Он **НЕ содержит**:
+
+- phone-колонок на `profiles` (Migration 5: `phone_verified`, `verified_phone_hash`, `phone_provider`, `phone_dial_prefix`, `phone_verified_at` + `unique_verified_phone_hash` + CHECK `phone_consistency`);
+- OAuth-таблиц `oauth_authorization_requests` / `oauth_authorization_codes` (Migrations 6–7).
+
+**Следствие:** чистый проект, поднятый ТОЛЬКО через `000_full_init.sql`, будет без phone-верификации и без OAuth-таблиц. Полная схема достигается применением всех миграций из `supabase/migrations/` (или нужно догнать bootstrap вручную после init). Это задокументированный gap — см. `docs/analysis/identity-backend-full-audit-2026-06-24.md`. Файл bootstrap здесь намеренно НЕ правится.
 
 ---
 

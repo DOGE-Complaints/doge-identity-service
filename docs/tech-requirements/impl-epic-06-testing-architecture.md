@@ -1,5 +1,7 @@
 # NFR: Testing Architecture
 
+> ⚠️ **Reference-only (2026-06-24):** этот документ скопирован из `doge-complaints-gateway` и описывает ДРУГОЙ сервис (intake/кластеризация историй), не identity. Фактический identity-код — в `src/`; актуальные факты — в `docs/analysis/identity-backend-full-audit-2026-06-24.md` и runtime-docs. Использовать только как шаблон-референс; подлежит переписыванию под identity.
+
 ## Назначение
 
 6-слойная тест-сюита с чёткой изоляцией. Главный инвариант: **unit и integration тесты никогда не трогают реальный Supabase**. Гарантируется `autouse` фикстурой `_block_dotenv_leakage`. CI разделён на offline (каждый push) и live integration (только `main`).

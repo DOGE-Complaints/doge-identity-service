@@ -9,7 +9,7 @@
 ## Контракт «identity ← UI» по пунктам
 
 ### 1. Ходить с разрешённого адреса (CORS)
-Браузер пускает запросы только с origin'ов из `CORS_ALLOWED_ORIGINS` ([`asgi_app.py:75-80`](../../src/core/api/asgi_app.py), пример в [`.env.example:85-86`](../../.env.example)). В проде это конкретные домены (например `https://dogestonia.ee`), не `*`. Если UI на другом адресе — браузер заблокирует. ✅ применяется.
+Браузер пускает запросы только с origin'ов из `CORS_ALLOWED_ORIGINS` ([`asgi_app.py:203-208`](../../src/core/api/asgi_app.py), runbook [`cors-allowed-origins.md`](../runbook/cors-allowed-origins.md)). В проде это конкретные домены (например публичный URL spa на Railway), не `*`. Если UI на другом адресе — браузер заблокирует. ✅ применяется.
 
 ### 2. Прислать токен пользователя
 UI логинит человека через **Supabase Auth** (email/пароль или magic link) и в каждый защищённый запрос кладёт `Authorization: Bearer <supabase_jwt>`. identity сам логин не делает — только проверяет токен ([04-security](04-security.md)). ✅ проверяется.
