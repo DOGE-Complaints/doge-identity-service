@@ -27,6 +27,8 @@ from core.domain.models import (
     AuthorizationRequest,
     EIDAuditEvent,
     OAuthClient,
+    PhoneAuditEvent,
+    PhoneVerificationSession,
     ProfileConflictError,
     ProfileRecord,
     VerificationSession,
@@ -40,6 +42,8 @@ __all__ = [
     "SupabaseProfileRepository",
     "SupabaseVerificationSessionStore",
     "SupabaseEIDAuditLogRepository",
+    "SupabasePhoneVerificationSessionStore",
+    "SupabasePhoneAuditLogRepository",
     "SupabaseOAuthClientStore",
     "SupabaseAuthorizationRequestStore",
     "SupabaseOAuthTokenService",
@@ -672,6 +676,226 @@ class SupabaseEIDAuditLogRepository:
             params=params,
         ) or []
         return [_audit_event_from_row(row) for row in rows]
+
+
+def _phone_verification_session_to_row(session: PhoneVerificationSession) -> dict[str, Any]:
+    return {
+        "id": session.id,
+        "supabase_user_id": session.supabase_user_id,
+        "phone_hash": session.phone_hash,
+        "dial_prefix": session.dial_prefix,
+        "code_hash": session.code_hash,
+        "status": session.status,
+        "attempts": session.attempts,
+        "provider": session.provider,
+        "provider_message_id": session.provider_message_id,
+        "delivery_status": session.delivery_status,
+        "delivery_updated_at": _format_datetime(session.delivery_updated_at),
+        "created_at": _format_datetime(session.created_at),
+        "expires_at": _format_datetime(session.expires_at),
+    }
+
+
+def _phone_verification_session_from_row(row: dict[str, Any]) -> PhoneVerificationSession:
+    return PhoneVerificationSession(
+        id=str(row["id"]),
+        supabase_user_id=str(row["supabase_user_id"]),
+        phone_hash=str(row["phone_hash"]),
+        dial_prefix=str(row["dial_prefix"]),
+        code_hash=str(row["code_hash"]),
+        status=str(row["status"]),
+        attempts=int(row.get("attempts", 0)),
+        created_at=_parse_datetime(row["created_at"]) or _utcnow(),
+        expires_at=_parse_datetime(row["expires_at"]) or _utcnow(),
+        provider=str(row["provider"]),
+        provider_message_id=row.get("provider_message_id"),
+        delivery_status=row.get("delivery_status"),
+        delivery_updated_at=_parse_datetime(row.get("delivery_updated_at")),
+    )
+
+
+def _phone_audit_event_to_row(event: PhoneAuditEvent) -> dict[str, Any]:
+    return {
+        "id": event.id,
+        "supabase_user_id": event.supabase_user_id,
+        "event_type": event.event_type,
+        "provider": event.provider,
+        "success": event.success,
+        "failure_reason": event.failure_reason,
+        "request_id": event.request_id,
+        "ip_hash": event.ip_hash,
+        "user_agent_hash": event.user_agent_hash,
+        "created_at": _format_datetime(event.created_at),
+    }
+
+
+def _phone_audit_event_from_row(row: dict[str, Any]) -> PhoneAuditEvent:
+    return PhoneAuditEvent(
+        id=str(row["id"]),
+        supabase_user_id=row.get("supabase_user_id"),
+        event_type=str(row["event_type"]),
+        provider=row.get("provider"),
+        success=bool(row["success"]),
+        failure_reason=row.get("failure_reason"),
+        request_id=row.get("request_id"),
+        ip_hash=row.get("ip_hash"),
+        user_agent_hash=row.get("user_agent_hash"),
+        created_at=_parse_datetime(row["created_at"]) or _utcnow(),
+    )
+
+
+class SupabasePhoneVerificationSessionStore:
+    def __init__(self, db: SupabaseDatabase) -> None:
+        self._db = db
+
+    def _list_for_user(self, supabase_user_id: str) -> list[PhoneVerificationSession]:
+        rows = self._db._request(
+            method="GET",
+            path="/rest/v1/phone_verification_sessions",
+            params={"supabase_user_id": f"eq.{supabase_user_id}"},
+        ) or []
+        return [_phone_verification_session_from_row(row) for row in rows]
+
+    def create(self, session: PhoneVerificationSession) -> PhoneVerificationSession:
+        rows = self._db._request(
+            method="POST",
+            path="/rest/v1/phone_verification_sessions",
+            json_body=_phone_verification_session_to_row(session),
+            prefer="return=representation",
+        )
+        row = _first_row(rows)
+        return _phone_verification_session_from_row(row) if row else session
+
+    def get_by_id(self, session_id: str) -> PhoneVerificationSession | None:
+        rows = self._db._request(
+            method="GET",
+            path="/rest/v1/phone_verification_sessions",
+            params={"id": f"eq.{session_id}", "limit": "1"},
+        )
+        row = _first_row(rows)
+        return _phone_verification_session_from_row(row) if row else None
+
+    def get_active_by_user(self, supabase_user_id: str, *, now: datetime) -> PhoneVerificationSession | None:
+        active: PhoneVerificationSession | None = None
+        for session in self._list_for_user(supabase_user_id):
+            if session.status != "started":
+                continue
+            if session.expires_at < now:
+                continue
+            if active is None or session.created_at > active.created_at:
+                active = session
+        return active
+
+    def get_latest_for_confirm(self, supabase_user_id: str) -> PhoneVerificationSession | None:
+        latest: PhoneVerificationSession | None = None
+        for session in self._list_for_user(supabase_user_id):
+            if session.status not in {"started", "failed"}:
+                continue
+            if latest is None or session.created_at > latest.created_at:
+                latest = session
+        return latest
+
+    def get_by_provider_message_id(self, provider_message_id: str) -> PhoneVerificationSession | None:
+        rows = self._db._request(
+            method="GET",
+            path="/rest/v1/phone_verification_sessions",
+            params={"provider_message_id": f"eq.{provider_message_id}", "limit": "1"},
+        )
+        row = _first_row(rows)
+        return _phone_verification_session_from_row(row) if row else None
+
+    def replace(self, session: PhoneVerificationSession) -> PhoneVerificationSession:
+        rows = self._db._request(
+            method="PATCH",
+            path="/rest/v1/phone_verification_sessions",
+            params={"id": f"eq.{session.id}"},
+            json_body=_phone_verification_session_to_row(session),
+            prefer="return=representation",
+        )
+        row = _first_row(rows)
+        return _phone_verification_session_from_row(row) if row else session
+
+    def mark_consumed(self, session_id: str) -> None:
+        session = self.get_by_id(session_id)
+        if session is None or session.status == "consumed":
+            return
+        self._db._request(
+            method="PATCH",
+            path="/rest/v1/phone_verification_sessions",
+            params={"id": f"eq.{session_id}"},
+            json_body={"status": "consumed"},
+        )
+
+    def mark_failed(self, session_id: str, reason: str) -> None:
+        del reason
+        if self.get_by_id(session_id) is None:
+            return
+        self._db._request(
+            method="PATCH",
+            path="/rest/v1/phone_verification_sessions",
+            params={"id": f"eq.{session_id}"},
+            json_body={"status": "failed"},
+        )
+
+    def mark_expired(self, session_id: str) -> None:
+        if self.get_by_id(session_id) is None:
+            return
+        self._db._request(
+            method="PATCH",
+            path="/rest/v1/phone_verification_sessions",
+            params={"id": f"eq.{session_id}"},
+            json_body={"status": "expired"},
+        )
+
+    def expire_pending(self, now: datetime) -> int:
+        rows = self._db._request(
+            method="PATCH",
+            path="/rest/v1/phone_verification_sessions",
+            params={
+                "status": "eq.started",
+                "expires_at": f"lt.{_format_datetime(now)}",
+            },
+            json_body={"status": "expired"},
+            prefer="return=representation",
+        )
+        if isinstance(rows, list):
+            return len(rows)
+        return 0
+
+
+class SupabasePhoneAuditLogRepository:
+    def __init__(self, db: SupabaseDatabase) -> None:
+        self._db = db
+
+    def log_event(self, event: PhoneAuditEvent) -> None:
+        self._db._request(
+            method="POST",
+            path="/rest/v1/phone_audit_events",
+            json_body=_phone_audit_event_to_row(event),
+        )
+
+    def list_events(
+        self,
+        *,
+        supabase_user_id: str | None = None,
+        event_type: str | None = None,
+        limit: int = 100,
+    ) -> list[PhoneAuditEvent]:
+        params: dict[str, str] = {
+            "order": "created_at.asc",
+            "limit": str(limit),
+        }
+        if supabase_user_id is not None:
+            params["supabase_user_id"] = f"eq.{supabase_user_id}"
+        if event_type is not None:
+            params["event_type"] = f"eq.{event_type}"
+        rows = self._db._request(
+            method="GET",
+            path="/rest/v1/phone_audit_events",
+            params=params,
+        ) or []
+        events = [_phone_audit_event_from_row(row) for row in rows]
+        return events[-limit:]
 
 
 def _authorization_request_to_row(request: AuthorizationRequest) -> dict[str, Any]:
