@@ -10,6 +10,7 @@
 | [**run-and-healthcheck.md**](./run-and-healthcheck.md) | Поднять сервис локально или на Railway, проверить `/health` и smoke |
 | [**cors-allowed-origins.md**](./cors-allowed-origins.md) | CORS для spa: что писать в `CORS_ALLOWED_ORIGINS` |
 | [**supabase-project-setup.md**](./supabase-project-setup.md) | Новый Supabase-проект, миграции, credentials в `.env` |
+| [**supabase-service-role-rotation.md**](./supabase-service-role-rotation.md) | Ротация `SUPABASE_SERVICE_ROLE` (SEC-04): триггеры, Dashboard → identity env, spa coordination |
 
 ## Phone / onboarding
 

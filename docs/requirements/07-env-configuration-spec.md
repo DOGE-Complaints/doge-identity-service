@@ -26,7 +26,7 @@
 | Переменная | Required | Default | Описание |
 |-----------|---------|---------|---------|
 | `SUPABASE_URL` | Yes (pilot) | — | Project URL. Dashboard → Settings → API → Project URL. **Обязателен для JWKS validation** (`{URL}/auth/v1/.well-known/jwks.json`). |
-| `SUPABASE_SERVICE_ROLE` | Yes (pilot) | — | Service role key. Только server-side. Никогда в браузер. |
+| `SUPABASE_SERVICE_ROLE` | Yes (pilot) | — | Service role key **identity Supabase project**. **Identity-only holder (SEC-04):** только server env `doge-identity-service`; никогда в spa/браузере/client bundle. Не путать с `SUPABASE_SERVICE_ROLE` gateway — отдельный Supabase-проект/ключ ([separation-audit](../analysis/supabase-project-separation-audit-2026-06-03.md)). PostgREST server-side — [`db_supabase.py`](../../src/core/infrastructure/db_supabase.py). Ротация — [`supabase-service-role-rotation.md`](../runbook/supabase-service-role-rotation.md). |
 | `DATABASE_URL` | Yes (если psycopg) | — | `postgresql://postgres:[PASSWORD]@[HOST]:5432/postgres` |
 
 > **Примечание:** `SUPABASE_ANON_KEY` (anon key для клиентского SDK) намеренно опущен — identity-service server-side всегда работает через `SUPABASE_SERVICE_ROLE`. Anon key используется только во фронтенд-приложениях, которые конфигурируются отдельно.

@@ -142,6 +142,14 @@ Identity-side: телефонная верификация, `/me`, OAuth, intros
 
 Во всех таблицах включён Row Level Security. У `profiles` — политики «вижу/меняю только своё» через `auth.uid()` ([миграция:59-77](../../supabase/migrations/20260525000001_create_profiles.sql)); у служебных таблиц — доступ только сервисной роли. Нюанс изоляции (service_role обходит RLS на весь проект) — причина держать identity в отдельном Supabase-проекте ([separation-audit](../analysis/supabase-project-separation-audit-2026-06-03.md)).
 
+### 5.1 `service_role` boundary — identity-only holder (SEC-04) ✅
+
+**Инвариант:** `SUPABASE_SERVICE_ROLE` существует **только** в server env `doge-identity-service` и относится **только к Supabase-проекту identity** (не к gateway и не к spa). **Identity — единственный держатель** `service_role` **своего** Supabase-проекта среди компонентов, которые используют identity DB; ключ **никогда** не уходит в spa, браузер, Vite bundle или иные client artifacts. `doge-complaints-gateway` при необходимости держит **отдельный** `SUPABASE_SERVICE_ROLE` для **своего** Supabase-проекта ([separation-audit](../analysis/supabase-project-separation-audit-2026-06-03.md)). Spa использует только `anon` key (вынос `service_role` с фронта — spa [SEC-01](../../../../../spa-app/docs/tasks/backlog-stories/security-hardening/STORY-SPA-SEC-01-remove-service-role-from-frontend.md); парная identity-стори [SEC-04](../tasks/backlog-stories/security-hardening/STORY-IDS-SEC-04-service-role-isolation.md)).
+
+- **Server-side only:** читается из env в [`schema.py:33,158-159,163-164`](../../src/core/config/schema.py); PostgREST — [`db_supabase.py`](../../src/core/infrastructure/db_supabase.py).
+- **No-expose guard:** значение ключа не логируется, не возвращается в HTTP-ответах/trace/ошибках — проверяемо [`test_service_role_no_expose.py`](../../tests/test_service_role_no_expose.py).
+- **Rotation:** операторская процедура — [`supabase-service-role-rotation.md`](../runbook/supabase-service-role-rotation.md).
+
 ## 6. CORS ✅
 
 [`asgi_app.py:75-80`](../../src/core/api/asgi_app.py): список разрешённых origin'ов из `CORS_ALLOWED_ORIGINS` (в проде — конкретные домены, не `*`).

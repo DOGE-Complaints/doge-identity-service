@@ -202,7 +202,7 @@ ChatGPT --> POST identity/oauth/token (с client_secret)
 
 ### Supabase
 
-См. [`supabase-project-setup.md`](./supabase-project-setup.md). `SUPABASE_SERVICE_ROLE` — **только server**, никогда в браузер.
+См. [`supabase-project-setup.md`](./supabase-project-setup.md). **`SUPABASE_SERVICE_ROLE` — identity-only holder (SEC-04):** только server env identity-backend, ключ **identity Supabase project**; **никогда** в spa/браузере/Vite bundle. `doge-complaints-gateway` — свой `SUPABASE_SERVICE_ROLE` для **своего** проекта (не копировать identity key). Ротация и координация с spa — [`supabase-service-role-rotation.md`](./supabase-service-role-rotation.md).
 
 ### Identity secrets
 
