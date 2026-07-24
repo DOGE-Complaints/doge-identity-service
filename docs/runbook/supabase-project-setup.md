@@ -47,6 +47,18 @@ EID_PROVIDER=mock
 
 ---
 
+## 2a. Auth → Email: Confirm email (**mandatory**)
+
+Identity эмитит `GET /me` → `email_verified: true` для любого валидного JWT (политика D-CAB-3 / ONB-01: «токен ⇒ email подтверждён»). Это **корректно только если** Supabase не выдаёт access token неподтверждённым пользователям.
+
+1. Dashboard → **Authentication** → **Providers** → **Email**.
+2. Включите **Confirm email** (обязательно для новых identity-деплоев и для корректности `email_verified` в `/me`).
+3. Без этого пункта поле `email_verified` в API **нельзя** трактовать как подтверждение адреса.
+
+См. также: [`API_REFERENCE.md` §6](../runtime-docs/api-reference/API_REFERENCE.md) (`email` / `email_verified`).
+
+---
+
 ## 3. Apply SQL migrations (Story 4)
 
 For **new identity deployments**, apply migrations **1–4** only. Canonical full schema (without `story_drafts`): [`supabase/bootstrap/000_full_init.sql`](../../supabase/bootstrap/000_full_init.sql).

@@ -70,6 +70,20 @@ components:
       properties:
         supabase_user_id: { type: string }
         role: { type: string, examples: [authenticated] }
+        email:
+          type: [string, "null"]
+          description: >-
+            Email claim from Supabase JWT; null when claim absent. For OAuth/GPT
+            access tokens Identity sets email to null structurally
+            (CompositeBearerTokenAuth OAuth path).
+        email_verified:
+          type: boolean
+          description: >-
+            Policy (D-CAB-3 / ONB-01): valid token ⇒ true. Correct only when
+            Supabase Auth "Confirm email" is enabled (see supabase-project-setup.md).
+            OAuth/GPT tokens may emit email=null with email_verified=true —
+            consumers must not treat email_verified as "confirmed address exists"
+            without checking email != null.
         eid_verified: { type: boolean }
         display_name: { type: [string, "null"] }
         avatar_url: { type: [string, "null"] }
