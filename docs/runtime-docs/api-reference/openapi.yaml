@@ -1,0 +1,279 @@
+openapi: 3.1.0
+info:
+  title: DOGE Identity Service Runtime API
+  version: 0.1.0
+  summary: Runtime reference for the current FastAPI/handler API surface
+  description: |
+    State separation:
+    - as-is: behavior implemented in `src/core/api/asgi_app.py` + `src/core/api/handlers.py` + `src/core/oauth/handlers.py`;
+    - deferred: eID provider routes run against a mock provider (real Authentigate is post-MVP).
+
+    Envelope: success `{ "data": {...} }`; error `{ "error": { code, message, trace_id? } }`.
+    Exception: OAuth verify-gate returns a flat `{ error: "verification_required", reason, verify_url }` (HTTP 403).
+servers:
+  - url: http://127.0.0.1:8100
+    description: Local dev (make serve)
+  - url: https://identity.example.up.railway.app
+    description: Illustrative Railway URL — substitute your identity domain
+tags:
+  - name: Ops
+    description: Operational endpoints
+  - name: Identity
+    description: Session / profile
+  - name: Phone
+    description: Phone verification (OTP)
+  - name: OAuth
+    description: OAuth 2.0 server for Custom GPT Actions
+  - name: eID
+    description: eID verification (deferred — mock provider)
+  - name: Webhooks
+    description: Inbound provider callbacks
+components:
+  securitySchemes:
+    SupabaseBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: SupabaseJWT (ES256 via JWKS)
+    OAuthBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: OAuthAccessToken (HS256 self-signed)
+    ServiceToken:
+      type: apiKey
+      in: header
+      name: X-Service-Token
+  schemas:
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              examples: [UNAUTHORIZED, INVALID_PHONE, COUNTRY_NOT_ALLOWED, CODE_MISMATCH, CODE_EXPIRED, TOO_MANY_ATTEMPTS, invalid_or_consumed_state, profile_conflict, rate_limit_exceeded, CONFIG_ERROR, NOT_IMPLEMENTED]
+            message: { type: string }
+            trace_id: { type: string }
+            retry_after: { type: integer, description: present only for rate_limit_exceeded }
+    VerificationRequired:
+      type: object
+      description: Flat body returned by /oauth/authorize/complete verify-gate (HTTP 403).
+      required: [error, reason, verify_url]
+      properties:
+        error: { type: string, enum: [verification_required] }
+        reason: { type: string }
+        verify_url: { type: string, format: uri }
+    MeData:
+      type: object
+      properties:
+        supabase_user_id: { type: string }
+        role: { type: string, examples: [authenticated] }
+        eid_verified: { type: boolean }
+        display_name: { type: [string, "null"] }
+        avatar_url: { type: [string, "null"] }
+        eid_provider: { type: [string, "null"] }
+        eid_method: { type: [string, "null"] }
+        eid_country: { type: [string, "null"] }
+        eid_verified_at: { type: [string, "null"], format: date-time }
+        phone_verified: { type: boolean }
+        phone_provider: { type: [string, "null"] }
+        phone_dial_prefix: { type: [string, "null"] }
+        phone_verified_at: { type: [string, "null"], format: date-time }
+        created_at:
+          type: [string, "null"]
+          format: date-time
+          description: >-
+            profiles.created_at when profile exists (profile row created at first
+            verification — not Supabase Auth registration / signup date); null when
+            no profile (no Auth lookup). UI label "Account Created" may be imprecise.
+        account_status:
+          type: string
+          enum: [active, pending, suspended, archived]
+          description: "MVP: always emits `active` (synthetic; no DB column)."
+paths:
+  /health:
+    get:
+      tags: [Ops]
+      summary: Liveness
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      status: { type: string, enum: [ok] }
+                      trace_id: { type: string }
+  /ready:
+    get:
+      tags: [Ops]
+      summary: Readiness (DB/deps probe)
+      responses:
+        "200": { description: ready }
+        "503": { description: degraded }
+  /me:
+    get:
+      tags: [Identity]
+      summary: Current user profile + verification flags
+      description: No auto-provision — missing profile returns 200 with null fields.
+      security: [{ SupabaseBearer: [] }, { OAuthBearer: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/MeData" }
+        "401":
+          description: Missing/invalid token
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } }
+  /auth/phone/request:
+    post:
+      tags: [Phone]
+      summary: Create OTP session and send SMS
+      description: Rate-limited (SEC-01/01b). OTP code never returned/logged.
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone: { type: string, examples: ["+37255555555"] }
+      responses:
+        "200":
+          description: SMS dispatched
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      sent: { type: boolean }
+                      expires_at: { type: string, format: date-time }
+        "400": { description: INVALID_PHONE / COUNTRY_NOT_ALLOWED, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } } }
+        "429": { description: rate_limit_exceeded, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } } }
+        "503": { description: provider unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } } }
+  /auth/phone/confirm:
+    post:
+      tags: [Phone]
+      summary: Verify submitted OTP code
+      security: [{ SupabaseBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, code]
+              properties:
+                phone: { type: string, examples: ["+37255555555"] }
+                code: { type: string, examples: ["123456"] }
+      responses:
+        "200":
+          description: verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      status: { type: string, enum: [verified] }
+        "400": { description: CODE_MISMATCH / CODE_EXPIRED / TOO_MANY_ATTEMPTS / invalid_or_consumed_state, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } } }
+        "409": { description: profile_conflict (number linked to another account), content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } } }
+  /oauth/authorize:
+    get:
+      tags: [OAuth]
+      summary: Start authorization (redirects to spa login)
+      responses:
+        "302": { description: Redirect to spa login URL }
+  /oauth/authorize/complete:
+    post:
+      tags: [OAuth]
+      summary: Complete authorization after login; issue code
+      description: Verify-gate — if requested_action=stories:submit and phone_verified=false, returns 403 flat verification_required.
+      responses:
+        "200": { description: authorization code issued }
+        "403":
+          description: verification_required (flat body, not envelope)
+          content: { application/json: { schema: { $ref: "#/components/schemas/VerificationRequired" } } }
+  /oauth/token:
+    post:
+      tags: [OAuth]
+      summary: Exchange authorization code for access token (PKCE S256 + client_secret)
+      responses:
+        "200":
+          description: token issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token: { type: string }
+                  token_type: { type: string, enum: [Bearer] }
+                  expires_in: { type: integer }
+        "400": { description: invalid_grant / invalid client, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } } }
+  /oauth/introspect:
+    post:
+      tags: [OAuth]
+      summary: RFC 7662-style token introspection
+      security: [{ ServiceToken: [] }, { OAuthBearer: [] }]
+      responses:
+        "200":
+          description: Always 200; inactive tokens return active=false
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  active: { type: boolean }
+                  sub: { type: string }
+                  phone_verified: { type: boolean }
+  /auth/eid/start:
+    post:
+      tags: [eID]
+      summary: Start eID verification (deferred — mock provider)
+      security: [{ SupabaseBearer: [] }]
+      responses:
+        "200": { description: eID session started (mock) }
+        "501": { description: NOT_IMPLEMENTED (provider-dependent), content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } } }
+  /auth/{provider}/callback:
+    get:
+      tags: [eID]
+      summary: eID provider callback (deferred — mock provider)
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "302": { description: Redirect to return_url with outcome }
+        "400": { description: session expired/invalid, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } } }
+  /webhooks/telnyx/messaging:
+    post:
+      tags: [Webhooks]
+      summary: Telnyx SMS delivery-status webhook (PV-07)
+      description: |
+        Public route; authenticated by Ed25519 signature (Telnyx public key), not by header token.
+        Requires TELNYX_WEBHOOK_PUBLIC_KEY — otherwise 503 CONFIG_ERROR on every callback.
+        Configure this URL in Telnyx Messaging Profile → Inbound → Webhook URL.
+      responses:
+        "200": { description: Delivery event processed }
+        "401": { description: invalid signature }
+        "503":
+          description: TELNYX_WEBHOOK_PUBLIC_KEY not configured
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } }
