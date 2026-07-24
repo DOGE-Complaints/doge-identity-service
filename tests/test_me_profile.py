@@ -84,6 +84,20 @@ def test_me_with_valid_jwt_and_profile_returns_200_envelope(
     assert data["created_at"] is not None
     # ISO from ProfileRecord.created_at via _format_datetime
     assert "T" in data["created_at"]
+    assert data["email"] == "user@example.com"
+    assert data["email_verified"] is True
+
+
+def test_me_email_null_when_jwt_has_no_email_claim(test_client: TestClient) -> None:
+    """ONB-01: missing email claim → email=null; email_verified still true (D-CAB-3)."""
+    token = mint_supabase_access_token(email=None)
+    response = test_client.get("/me", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["email"] is None
+    assert data["email_verified"] is True
+    assert data["account_status"] == "active"
+    assert data["created_at"] is None
 
 
 def test_me_with_phone_verified_profile_returns_phone_fields(
@@ -148,6 +162,8 @@ def test_me_missing_profile_returns_200_not_verified_no_db_write(
     assert data["phone_verified_at"] is None
     assert data["created_at"] is None
     assert data["account_status"] == "active"
+    assert data["email"] == "user@example.com"
+    assert data["email_verified"] is True
 
     repo = get_api_dependencies().profile_repository
     assert repo is not None
