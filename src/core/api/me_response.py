@@ -18,6 +18,8 @@ def build_me_data(profile: ProfileRecord | None, current_user: UserClaims) -> di
     """Build GET /me `data` payload (envelope applied by handler)."""
     data: dict = {
         "supabase_user_id": current_user.supabase_user_id,
+        "email": current_user.email,
+        "email_verified": True,
         "eid_verified": False,
         "role": current_user.role,
         "display_name": None,
