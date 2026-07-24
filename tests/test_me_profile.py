@@ -80,6 +80,10 @@ def test_me_with_valid_jwt_and_profile_returns_200_envelope(
     assert data["avatar_url"] == "https://example.com/avatar.png"
     assert data["eid_provider"] == "mock"
     assert data["eid_verified_at"] is not None
+    assert data["account_status"] == "active"
+    assert data["created_at"] is not None
+    # ISO from ProfileRecord.created_at via _format_datetime
+    assert "T" in data["created_at"]
 
 
 def test_me_with_phone_verified_profile_returns_phone_fields(
@@ -142,6 +146,8 @@ def test_me_missing_profile_returns_200_not_verified_no_db_write(
     assert data["phone_provider"] is None
     assert data["phone_dial_prefix"] is None
     assert data["phone_verified_at"] is None
+    assert data["created_at"] is None
+    assert data["account_status"] == "active"
 
     repo = get_api_dependencies().profile_repository
     assert repo is not None
