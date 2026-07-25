@@ -21,7 +21,7 @@ UI логинит человека через **Supabase Auth** (email/паро�
 2. Пользователь вводит код в форме SPA (inline), SPA → `POST /auth/phone/confirm` (`{phone,code}`) → `{data:{status:"verified"}}`.
 3. После успеха `phone_verified=true` в профиле (`GET /me`); никаких 303-редиректов и `return_url`.
 
-Ограничения и ошибки (см. [04-security](04-security.md) и [19-phone-verification-flow](../requirements/19-phone-verification-flow.md)): только эстонские номера **+372**; один номер = один аккаунт (конфликт → `409 profile_conflict`); иностранный номер → `COUNTRY_NOT_ALLOWED`. ✅ применяется.
+Ограничения и ошибки (см. [04-security](04-security.md) и [19-phone-verification-flow](../requirements/19-phone-verification-flow.md)): только эстонские номера **+372**; один номер = один аккаунт (конфликт → `409 profile_conflict`); иностранный номер → `COUNTRY_NOT_ALLOWED` (waitlist-механизм — [`onboarding-waitlist.md`](../runbook/onboarding-waitlist.md)). ✅ применяется.
 
 ### 3b. Ленивый гейт: verify-экран по защищённому действию
 
@@ -40,7 +40,51 @@ UI логинит человека через **Supabase Auth** (email/паро�
 
 **SSOT:** [STORY-IDS-PV-05](../tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-05-verification-flow-api/STORY-IDS-PV-05-verification-flow-api.md) · [onboarding-phone-verification-api.md](../runbook/onboarding-phone-verification-api.md) · gateway-side контракт — [`09-gateway-expectations`](09-gateway-expectations.md).
 
+**Disclosure + boundary copy (EN SSOT):** на verify-экране (перед вводом номера) и для `COUNTRY_NOT_ALLOWED` / 409 `profile_conflict` — [`onboarding-copy.md`](../runbook/onboarding-copy.md) ([DOC-IDS-ONB-02](../tasks/backlog-stories/identity-onboarding/DOC-IDS-ONB-02-disclosure-copy.md)). Рендер — spa-app; канон текста — identity runbook.
+
 **Enforce на потребителе:** identity не перехватывает «создать стори» — только отдаёт флаг и API verify.
+
+### 3c. GPT verify landing: web-страница `/verify` + возврат в GPT
+
+> **Источник:** [DOC-IDS-ONB-03](../tasks/backlog-stories/identity-onboarding/DOC-IDS-ONB-03-gpt-verify-landing-contract.md) · UX вход #2 — [`identity-onboarding-ux-2026-06-12.md`](../analysis/identity-onboarding-ux-2026-06-12.md) §2–3.  
+> **OAuth as-built:** [OAUTH-01](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-01-oauth-server-endpoints.md)…[OAUTH-04](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-04-verify-gate-and-verification-required.md) — **Done** (не 501). Премиса «OAuth = блокер end-to-end» устарела.
+
+В GPT-ветке номер и OTP вводятся **только на нашем web** (не в чате). Identity отдаёт URL verify-экрана и замыкает возврат через OAuth callback; рендер страницы — spa-app.
+
+**Sequence (словами):**
+
+1. GPT инициирует вход/защищённое действие → `GET /oauth/authorize` (с `requested_action`, опц. `return_context`).
+2. Identity → **302** на spa [`build_spa_oauth_login_url`](../../src/core/oauth/spa_login.py): `{spa}/login?oauth_request_id=…`.
+3. Пользователь логинится (Supabase Auth); spa держит `oauth_request_id` для complete.
+4. Spa → `POST /oauth/authorize/complete` (Bearer + `oauth_request_id`).
+5. Если `requested_action` требует телефон и `phone_verified=false` → **HTTP 403** flat body [`verification_required`](../../src/core/oauth/verification_required.py): `{ "error": "verification_required", "reason": "…", "verify_url": "…" }` ([`09-gateway-expectations`](09-gateway-expectations.md) §контракт).
+6. `verify_url` строится [`build_spa_verify_url`](../../src/core/oauth/spa_login.py): `{spa}/verify` или `{spa}/verify?context=<return_context>` (query-имя **`context`** = OAuth `return_context`; identity **не** фиксирует enum значений — напр. spa GPT-bridge может передать `custom_gpt`).
+7. На `/verify`: disclosure ([`onboarding-copy.md`](../runbook/onboarding-copy.md)) → PV-05 `POST /auth/phone/request` → OTP → `POST /auth/phone/confirm`.
+8. После успеха spa снова → `POST /oauth/authorize/complete` → identity **302** на GPT `redirect_uri?code=…&state=…` (связка GPT↔Supabase user замыкается здесь). Spa следует Location в браузере.
+
+**Контракт входа (что страница принимает):**
+
+| Вход | Источник | Ожидание к UI |
+|------|----------|---------------|
+| Path `/verify` | `verify_url` из 403 | Открыть verify-экран (не chat) |
+| Query `context` (опц.) | `return_context` → `build_spa_verify_url` | Сохранить/использовать как GPT-bridge маркер при необходимости |
+| Bearer Supabase JWT | login-шаг | Сессия обязательна для phone API и complete |
+| `oauth_request_id` | login URL / session | Нужен для повторного `authorize/complete` после verify |
+
+**Контракт выхода / возврат:**
+
+| Исход | Поведение UI |
+|-------|----------------|
+| Успех, GPT-ветка (есть `oauth_request_id`) | `POST /oauth/authorize/complete` → follow **302** Location на GPT callback |
+| Успех, non-GPT | Как §3b — вернуть к прерванному UI-действию |
+| `COUNTRY_NOT_ALLOWED` / 409 `profile_conflict` | Boundary copy из [`onboarding-copy.md`](../runbook/onboarding-copy.md) |
+| Повторный 403 `verification_required` | Остаться на verify (не уводить в GPT) |
+
+**Browser-submit (смежный путь):** gateway `POST /story-drafts/{id}/submit` при `phone_verified=false` отдаёт **тот же** shape `verification_required` + `verify_url` ([`09-gateway-expectations`](09-gateway-expectations.md)). §3c фокус — OAuth/GPT landing; lazy web-gate — §3b.
+
+**Disclosure SSOT:** [`onboarding-copy.md`](../runbook/onboarding-copy.md) ([DOC-IDS-ONB-02](../tasks/backlog-stories/identity-onboarding/DOC-IDS-ONB-02-disclosure-copy.md)).
+
+**Вне scope этого контракта:** пиксель/разметка spa; waitlist-механизм — [`onboarding-waitlist.md`](../runbook/onboarding-waitlist.md) ([DOC-IDS-ONB-04](../tasks/backlog-stories/identity-onboarding/DOC-IDS-ONB-04-non-ee-waitlist-spec.md)).
 
 ### 3a. ⏸️ deferred (eID): сказать, куда вернуть после eID
 > ⏸️ **deferred (eID)** — этот redirect-флоу относится к eID-модели; реальный провайдер отложен (2026-06-10). Активна inline-верификация телефона из пункта 3.
@@ -61,7 +105,8 @@ UI передаёт `return_url` (и опционально `return_context`) в
 Мобильные user-agent рекомендации — только при появлении RN-клиента; сейчас UI = spa-app.
 
 ### 5. Дать страницу верификации/авторизации
-В сценарии из [04-security](04-security.md) UI показывает страницу входа (с флагом «нужен eID») и страницу/экран, куда возвращается пользователь после проверки. Этот экран — на стороне UI; identity лишь редиректит и принимает callback. ❌ конкретный URL экрана в коде identity не зашит — это ожидание к UI.
+**Активно (phone + GPT):** login + verify landing — §3 / §3b / **§3c** (`/login?oauth_request_id=…`, `/verify?context=…`, возврат через OAuth complete). База URL spa берётся из `CORS_ALLOWED_ORIGINS[0]` ([`spa_login.py`](../../src/core/oauth/spa_login.py)).  
+**⏸️ deferred (eID):** отдельный eID return_url / callback — §3a / §4; identity редиректит 303 с `eid_status` / `eid_error`.
 
 ## Сводка
 
@@ -71,10 +116,10 @@ UI передаёт `return_url` (и опционально `return_context`) в
 | Bearer Supabase JWT в запросах | `get_current_user` | ✅ |
 | Inline phone-verify: `request` → `confirm` (без redirect) | `POST /auth/phone/request` + `POST /auth/phone/confirm`, гейт `phone_verified` | ✅ активно |
 | Lazy gate: verify-экран при `phone_verified=false` на защищённом действии | §3b — `GET /me` перед действием | ✅ контракт (spa-app) |
+| GPT verify landing `/verify?context=` + возврат в GPT через OAuth complete | §3c — `verify_url` / `authorize/complete` 302 | ✅ контракт (spa-app) |
 | `return_url`/`return_context` при старте eID | поля сессии + `validate_return_url` на start | ⏸️ deferred (eID) |
 | Белый список возвратных URL | `ALLOWED_RETURN_URLS` + redirect только на сохранённый URL | ⏸️ deferred (eID) |
 | SPA-first callback → 303 back | `eid_status` / `eid_error` query markers | ⏸️ deferred (eID) |
-| Экран входа/верификации | — | ❌ ответственность UI |
 
 ## Главное
-Всё «ожидаемое от UI» — это **контракт**, а не код в этом репозитории. SPA-first redirect-модель (start → provider → callback → 303 back) зафиксирована в [`06-eid-providers`](06-eid-providers.md) и [`eid_callback.py`](../../src/core/api/eid_callback.py).
+Всё «ожидаемое от UI» — это **контракт**, а не код в этом репозитории. Активный GPT/phone verify landing — §3c. SPA-first eID redirect-модель (start → provider → callback → 303 back) — deferred; см. [`06-eid-providers`](06-eid-providers.md) и [`eid_callback.py`](../../src/core/api/eid_callback.py).
