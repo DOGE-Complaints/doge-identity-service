@@ -138,6 +138,8 @@ Identity-side: телефонная верификация, `/me`, OAuth, intros
 
 `hash_secret(plaintext, key)` ([`hashing.py:9-11`](../../src/core/security/hashing.py)) — HMAC-SHA256, ключ передаётся явно. Используется для `verified_person_hash` (необратимый «отпечаток» человека). Сам сервис **не хранит** имя/код/дату рождения/сырые токены — только производный хэш.
 
+Тем же `hash_secret` + `DOGESTONIA_EID_SECRET` хэшируются номер телефона и OTP при phone-верификации (`phone_hash` / `verified_phone_hash` / `code_hash`). Окна plaintext vs persist, связь с email/user и пробелы retention — в [10-phone-personal-data-processing](10-phone-personal-data-processing.md) (юридический фокус, факты из кода).
+
 ## 5. Защита строк в БД — RLS ✅
 
 Во всех таблицах включён Row Level Security. У `profiles` — политики «вижу/меняю только своё» через `auth.uid()` ([миграция:59-77](../../supabase/migrations/20260525000001_create_profiles.sql)); у служебных таблиц — доступ только сервисной роли. Нюанс изоляции (service_role обходит RLS на весь проект) — причина держать identity в отдельном Supabase-проекте ([separation-audit](../analysis/supabase-project-separation-audit-2026-06-03.md)).

@@ -10,10 +10,14 @@
 
 | Таблица | Зачем | Миграция | Статус |
 |---------|-------|----------|--------|
-| `public.profiles` | Профиль: статус eID, заготовка под кошелёк, отображаемое имя | `20260525000001` | ✅ |
+| `public.profiles` | Профиль: статус eID, phone-верификация (хэш, не plaintext), заготовка под кошелёк | `20260525000001` + `20260611000001` | ✅ |
 | `public.eid_verification_sessions` | Идущие сейчас eID-проверки (state-машина) | `20260525000002` + `20260526000001` | ✅ |
 | `public.eid_audit_events` | Неизменяемый журнал событий eID (без персональных данных) | `20260525000003` | ✅ |
+| `public.phone_verification_sessions` | OTP-сессии: `phone_hash` / `code_hash`, без plaintext номера | `20260626000001` | ✅ |
+| `public.phone_audit_events` | Журнал phone-событий без телефона/OTP | `20260626000001` | ✅ |
 | `auth.users` | Базовые пользователи — **управляется Supabase Auth**, мы только ссылаемся | внешняя | ✅ |
+
+Обработка телефона (HMAC, окна plaintext, связь с email, retention) — [10-phone-personal-data-processing](10-phone-personal-data-processing.md).
 
 ## profiles — центральная таблица
 
@@ -21,12 +25,14 @@
 
 - **Кто это:** `id`, `supabase_user_id` (уникальная ссылка на `auth.users`, при удалении пользователя профиль удаляется каскадом), `display_name`, `avatar_url`.
 - **Статус eID:** `eid_verified` (да/нет), `verified_person_hash` (необратимый «отпечаток» личности), `eid_provider`, `eid_method`, `eid_country`, `eid_verified_at`.
+- **Статус телефона** ([миграция `20260611000001`](../../supabase/migrations/20260611000001_profiles_phone_verification.sql)): `phone_verified`, `verified_phone_hash` (HMAC, не plaintext E.164), `phone_provider`, `phone_dial_prefix`, `phone_verified_at`. Детали обработки PII — [10-phone-personal-data-processing](10-phone-personal-data-processing.md).
 - **Кошелёк (заготовка на будущее, см. [07-web3](07-web3-foundation.md)):** `wallet_address`, `wallet_linked_at`, `wallet_signature_verified_at`, `wallet_signature_scheme`, `wallet_chain_id`.
 - **Служебное:** `created_at`, `updated_at` (обновляется триггером автоматически).
 
-Два важных правила прямо в БД:
+Правила прямо в БД:
 - `CHECK eid_consistency` — нельзя пометить `eid_verified=true`, не заполнив `verified_person_hash` и `eid_verified_at` (нельзя «верифицировать наполовину»).
 - Частичный уникальный индекс `unique_verified_person_hash` — один и тот же реальный человек не может завести два верифицированных аккаунта (основа защиты от дублей, [req-13](../requirements/13-verified-person-hash-and-conflict.md)).
+- `CHECK phone_consistency` + `unique_verified_phone_hash` — зеркало для телефона (см. миграцию phone).
 
 ## eid_verification_sessions — «проверка в процессе»
 
