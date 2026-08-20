@@ -122,6 +122,22 @@ def test_smspm_send_success_queued() -> None:
     assert "smsId" not in body
 
 
+def test_smspm_send_includes_report_when_url_set() -> None:
+    transport = _MockSmspmTransport(
+        lambda _: httpx.Response(200, json=_success_payload(message_id="msg-report"))
+    )
+    settings = _smspm_settings(
+        SMSPM_REPORT_URL="https://api.example.test/webhooks/smspm/delivery/shared-secret"
+    )
+    sender = _sender_with_transport(transport, settings=settings)
+
+    result = sender.send(to_e164="+37251234567", text="code")
+
+    assert result.accepted is True
+    body = json.loads(transport.requests[0].content.decode())
+    assert body["report"] == "https://api.example.test/webhooks/smspm/delivery/shared-secret"
+
+
 def test_smspm_send_optional_sms_id() -> None:
     transport = _MockSmspmTransport(
         lambda _: httpx.Response(200, json=_success_payload(message_id="msg-smsid"))

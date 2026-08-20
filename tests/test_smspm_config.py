@@ -7,7 +7,11 @@ import pytest
 from core.config import ConfigError, load_config_from_env
 from core.phone.registry_builder import build_sms_registry, registered_sms_provider_names
 from core.phone.runtime_factory import build_sms_provider_runtime
-from core.phone.smspm.config import DEFAULT_SMSPM_API_BASE_URL, SMSPM_SMS_CONFIG_SPEC
+from core.phone.smspm.config import (
+    DEFAULT_SMSPM_API_BASE_URL,
+    SMSPM_REQUIRED_ENV,
+    SMSPM_SMS_CONFIG_SPEC,
+)
 from core.phone.smspm.sender import SmspmSmsSender
 
 
@@ -58,6 +62,20 @@ def test_smspm_sms_provider_requires_token() -> None:
 def test_smspm_sms_provider_requires_from() -> None:
     with pytest.raises(ConfigError, match="SMSPM_FROM"):
         load_config_from_env(_smspm_env(SMSPM_FROM=""))
+
+
+def test_smspm_optional_webhook_and_report_not_required() -> None:
+    settings = SMSPM_SMS_CONFIG_SPEC.load(
+        {
+            "SMSPM_HASH": "hash-test",
+            "SMSPM_TOKEN": "token-test",
+            "SMSPM_FROM": "DOGEstonia",
+        }
+    )
+    assert settings.webhook_shared_secret == ""
+    assert settings.report_url == ""
+    assert "SMSPM_WEBHOOK_SHARED_SECRET" not in SMSPM_REQUIRED_ENV
+    assert "SMSPM_REPORT_URL" not in SMSPM_REQUIRED_ENV
 
 
 def test_smspm_optional_base_url_default() -> None:
