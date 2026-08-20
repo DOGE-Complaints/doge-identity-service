@@ -26,6 +26,8 @@ class SmspmSmsSender:
         }
         if sms_id:
             payload["smsId"] = sms_id
+        if self._settings.report_url:
+            payload["report"] = self._settings.report_url
 
         url = self._settings.api_base_url.rstrip("/")
         headers = {

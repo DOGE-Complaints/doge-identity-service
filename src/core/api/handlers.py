@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import secrets
 import uuid
 from collections.abc import Mapping
 from datetime import datetime, timedelta, timezone
@@ -16,6 +17,7 @@ from core.phone.e164 import normalize_to_e164, resolve_dial_prefix
 from core.config.providers import resolve_config_env
 from core.phone.otp_engine import create_phone_verification_session, verify_phone_code
 from core.phone.sms_text import build_verification_sms_text
+from core.phone.smspm.delivery_ingest import parse_smspm_delivery_query
 from core.phone.telnyx.delivery_ingest import apply_delivery_update, parse_telnyx_messaging_webhook
 from core.phone.telnyx.webhook_signature import verify_telnyx_webhook_signature
 from core.providers.config_spec import _env_value
@@ -752,6 +754,87 @@ def handle_telnyx_messaging_webhook(
         request_id=trace_id,
     )
     return None, 204
+
+
+def handle_smspm_delivery_webhook(
+    deps: ApiDependencies,
+    *,
+    shared_secret: str,
+    query: Mapping[str, str],
+    trace_id: str,
+) -> tuple[dict | None, int]:
+    expected_secret = _env_value(resolve_config_env(), "SMSPM_WEBHOOK_SHARED_SECRET")
+    if not expected_secret:
+        body = build_error_envelope(
+            "CONFIG_ERROR",
+            "SMSPM_WEBHOOK_SHARED_SECRET is not configured.",
+            trace_id=trace_id,
+        )
+        return body, 503
+
+    if not secrets.compare_digest(shared_secret, expected_secret):
+        _log_phone_audit(
+            deps,
+            supabase_user_id=None,
+            event_type="smspm_delivery_status_updated",
+            provider="smspm",
+            success=False,
+            failure_reason="invalid_secret",
+            request_id=trace_id,
+        )
+        body = build_error_envelope(
+            "UNAUTHORIZED",
+            "invalid smspm webhook secret",
+            trace_id=trace_id,
+        )
+        return body, 401
+
+    session_store = deps.phone_verification_session_store
+    if session_store is None:
+        body = build_error_envelope(
+            "CONFIG_ERROR",
+            "phone verification session store is not configured.",
+            trace_id=trace_id,
+        )
+        return body, 500
+
+    try:
+        event = parse_smspm_delivery_query(query)
+    except ValueError as exc:
+        _log_phone_audit(
+            deps,
+            supabase_user_id=None,
+            event_type="smspm_delivery_status_updated",
+            provider="smspm",
+            success=False,
+            failure_reason="invalid_payload",
+            request_id=trace_id,
+        )
+        body = build_error_envelope(
+            "BAD_REQUEST",
+            str(exc),
+            trace_id=trace_id,
+        )
+        return body, 400
+
+    result = apply_delivery_update(
+        session_store,
+        provider_message_id=event.provider_message_id,
+        new_status=event.delivery_status,
+        occurred_at=event.occurred_at,
+    )
+
+    user_id = result.session.supabase_user_id if result.session is not None else None
+    _log_phone_audit(
+        deps,
+        supabase_user_id=user_id,
+        event_type="smspm_delivery_status_updated",
+        provider="smspm",
+        success=result.outcome in {"updated", "noop", "not_found"},
+        failure_reason=None if result.outcome != "not_found" else "session_not_found",
+        request_id=trace_id,
+    )
+    return None, 200
 
 
 def handle_bearer_stub(

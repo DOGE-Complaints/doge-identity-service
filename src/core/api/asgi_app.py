@@ -25,6 +25,7 @@ from core.api.handlers import (
     handle_phone_confirm,
     handle_phone_request,
     handle_readiness,
+    handle_smspm_delivery_webhook,
     handle_telnyx_messaging_webhook,
 )
 from core.oauth.handlers import (
@@ -405,6 +406,20 @@ def _register_routes(app: FastAPI) -> None:
         )
         if body is None:
             return Response(status_code=status)
+        return _json_envelope(body, status)
+
+    @app.get("/webhooks/smspm/delivery/{shared_secret}")
+    async def smspm_delivery_webhook(shared_secret: str, request: Request) -> Response:
+        deps = get_api_dependencies()
+        trace_id = _trace_id_from_request(request)
+        body, status = handle_smspm_delivery_webhook(
+            deps,
+            shared_secret=shared_secret,
+            query=_query_params_as_strings(request),
+            trace_id=trace_id,
+        )
+        if body is None:
+            return Response(content="OK", media_type="text/plain", status_code=status)
         return _json_envelope(body, status)
 
     @app.get("/oauth/authorize")

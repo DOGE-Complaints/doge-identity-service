@@ -24,6 +24,8 @@ class SmspmSettings:
     token: str
     from_sender: str
     api_base_url: str
+    webhook_shared_secret: str
+    report_url: str
 
     @classmethod
     def load(cls, env: Mapping[str, str]) -> SmspmSettings:
@@ -32,6 +34,8 @@ class SmspmSettings:
             token=_env_value(env, "SMSPM_TOKEN"),
             from_sender=_env_value(env, "SMSPM_FROM"),
             api_base_url=_env_value(env, "SMSPM_API_BASE_URL", DEFAULT_SMSPM_API_BASE_URL),
+            webhook_shared_secret=_env_value(env, "SMSPM_WEBHOOK_SHARED_SECRET"),
+            report_url=_env_value(env, "SMSPM_REPORT_URL"),
         )
 
 
