@@ -1,7 +1,7 @@
 # Runbook: верификация телефона по SMS — настройка и smoke-проверка
 
 > **Для кого.** Для человека, который хочет настроить и «прощупать» (smoke-test) механизм отправки SMS-кода и полный процесс OTP-верификации.
-> **Два режима:** **A — mock** (локально, бесплатно, без реальных SMS) и **B — live Telnyx** (настоящая SMS на телефон, после настройки аккаунта Telnyx, см. [SPIKE-IDS-PV-08](../tasks/backlog-stories/phone-verification/SPIKE-IDS-PV-08-telnyx-account-setup.md)).
+> **Три режима:** **A — mock** (локально, бесплатно, без реальных SMS); **B — live Telnyx** (настоящая SMS, после [SPIKE-IDS-PV-08](../tasks/backlog-stories/phone-verification/SPIKE-IDS-PV-08-telnyx-account-setup.md)); **C — live SMSPM** (`SMS_PROVIDER=smspm`, после [SPIKE-IDS-SMSPM-01](../tasks/backlog-stories/smspm/SPIKE-IDS-SMSPM-01-account-sender-setup.md)).
 > **Что проверяем.** Пользователь вводит номер → получает 6-значный код по SMS → вводит код → в профиле ставится `phone_verified=true`.
 > Аудит реализации: [`phone-verification-code-audit-2026-06-11.md`](../analysis/phone-verification-code-audit-2026-06-11.md).
 
@@ -21,7 +21,7 @@
 | POST | `/auth/phone/request` | запросить код (шлёт SMS) | `{"phone":"+372..."}` |
 | POST | `/auth/phone/confirm` | подтвердить код | `{"phone":"+372...","code":"123456"}` |
 | GET | `/me` | проверить флаг `phone_verified` | — |
-| POST | `/webhooks/telnyx/messaging` | статусы доставки от Telnyx (только live) | приходит от Telnyx |
+| POST | `/webhooks/telnyx/messaging` | статусы доставки от Telnyx (только live Telnyx) | приходит от Telnyx |
 
 Успех `/request` → `200 {"data":{"sent":true,"expires_at":"...Z"}}`. **Код в ответе НЕ приходит** (специально, ради безопасности). Ошибки → `{"error":{"code":"COUNTRY_NOT_ALLOWED|RATE_LIMITED|CODE_MISMATCH|CODE_EXPIRED|TOO_MANY_ATTEMPTS|..."}}`.
 
@@ -32,7 +32,7 @@
 ### Общее (ядро)
 ```env
 APP_PROFILE=demo
-SMS_PROVIDER=mock                 # mock | telnyx
+SMS_PROVIDER=mock                 # mock | telnyx | smspm
 PHONE_ALLOWED_DIAL_PREFIXES=+372  # разрешённые префиксы, через запятую
 PHONE_CODE_LENGTH=6
 PHONE_CODE_TTL_S=300
@@ -51,6 +51,16 @@ TELNYX_MESSAGING_PROFILE_ID=<profile-uuid>   # обязателен при бу�
 ```
 Значения берутся из [SPIKE-IDS-PV-08](../tasks/backlog-stories/phone-verification/SPIKE-IDS-PV-08-telnyx-account-setup.md).
 
+### Режим C (добавить только для live SMSPM)
+```env
+SMS_PROVIDER=smspm
+SMSPM_HASH=
+SMSPM_TOKEN=
+SMSPM_FROM=
+SMSPM_API_BASE_URL=https://api.smspm.com
+```
+Имена ключей — из [`.env.example`](../../.env.example) / SA §5. **Не** класть hash/token в git и не подставлять значения секретов в этот runbook. Значения — из секрет-хранилища после [SPIKE-IDS-SMSPM-01](../tasks/backlog-stories/smspm/SPIKE-IDS-SMSPM-01-account-sender-setup.md).
+
 Проверить, что подхватилось: `make check-env`.
 
 ---
@@ -62,7 +72,7 @@ make serve     # поднимает API на http://127.0.0.1:8100
 curl -s http://127.0.0.1:8100/health
 ```
 
-## 4. Тестовый токен (нужен для обоих режимов)
+## 4. Тестовый токен (нужен для всех режимов)
 Эндпоинты требуют Bearer JWT, подписанный ключом из JWKS вашего Supabase-проекта. Для локальной разработки используйте реальный access token после login в Supabase Auth или offline-харнес из [`tests/supabase_jwt_harness.py`](../../tests/supabase_jwt_harness.py) (ES256 + mock JWKS).
 
 Для ручного smoke с реальным Cloud-проектом: залогиньтесь через Supabase Auth и возьмите `access_token` из session.
@@ -92,7 +102,7 @@ curl -s -X POST http://127.0.0.1:8100/auth/phone/request \
   -d '{"phone":"+37255555555"}'
 #   → ожидаем 200 {"data":{"sent":true,"expires_at":"...Z"}}
 ```
-> ⚠️ **Подтвердить код (`/confirm`) через curl в mock-режиме нельзя** — mock реально SMS не шлёт, а код по дизайну не возвращается и не логируется. Для проверки `/confirm` в mock используйте путь 5A.1 (тест). Полный «живой» curl request→confirm доступен **только в режиме B** (там код приходит реальной SMS).
+> ⚠️ **Подтвердить код (`/confirm`) через curl в mock-режиме нельзя** — mock реально SMS не шлёт, а код по дизайну не возвращается и не логируется. Для проверки `/confirm` в mock используйте путь 5A.1 (тест). Полный «живой» curl request→confirm доступен в **режиме B (Telnyx)** и **режиме C (SMSPM)** (код приходит реальной SMS).
 
 Негативы, которые можно прогнать curl'ом в mock:
 ```bash
@@ -132,16 +142,40 @@ Telnyx присылает статусы доставки на `POST /webhooks/t
 
 ---
 
+## 6C. Режим C — live SMSPM (настоящая SMS)
+Предусловие: выполнен [SPIKE-IDS-SMSPM-01](../tasks/backlog-stories/smspm/SPIKE-IDS-SMSPM-01-account-sender-setup.md) (аккаунт, hash/token, approved sender, тестовый EE-номер), `.env` из §2 (режим C), сервис перезапущен. Telnyx §6 остаётся опцией (D-G3).
+
+```bash
+# 1) запросить код — на телефон придёт реальная SMS:
+curl -s -X POST http://127.0.0.1:8100/auth/phone/request \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"phone":"+372XXXXXXXX"}'         # тестовый EE-номер (E.164)
+#   → 200 {"data":{"sent":true,"expires_at":"..."}}
+
+# 2) подсмотреть код в пришедшей SMS, затем подтвердить:
+curl -s -X POST http://127.0.0.1:8100/auth/phone/confirm \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"phone":"+372XXXXXXXX","code":"123456"}'
+#   → 200 {"data":{"status":"verified"}}  (поле статуса см. в ответе)
+
+# 3) проверить флаг в профиле:
+curl -s http://127.0.0.1:8100/me -H "Authorization: Bearer $TOKEN"
+#   → "phone_verified": true, "phone_provider": "smspm"
+```
+
+---
+
 ## 7. Если что-то не так (быстрая таблица)
 | Симптом | Причина | Что делать |
 |---------|---------|-----------|
 | `401` на `/auth/phone/*` | нет/неверный Bearer токен | сминтить токен (§4); проверить секрет/iss |
-| `error.code = COUNTRY_NOT_ALLOWED` | префикс номера не в `PHONE_ALLOWED_DIAL_PREFIXES` (или не в whitelist Telnyx) | добавить префикс в `.env` (и в Messaging Profile для live) |
+| `error.code = COUNTRY_NOT_ALLOWED` | префикс номера не в `PHONE_ALLOWED_DIAL_PREFIXES` (ядро до провайдера) | добавить префикс в `.env` (live Telnyx: ещё whitelist Messaging Profile) |
 | `error.code = RATE_LIMITED` | повтор быстрее `PHONE_RESEND_COOLDOWN_S` | подождать (по умолч. 60 сек) |
 | `error.code = CODE_MISMATCH/CODE_EXPIRED/TOO_MANY_ATTEMPTS` | неверный/просроченный код или лимит попыток | запросить новый код |
 | `409 profile_conflict` | номер уже подтверждён на другом аккаунте (P1) | это ожидаемо при `PHONE_ONE_ACCOUNT_PER_NUMBER=true` |
-| `CONFIG_ERROR` при старте | для `SMS_PROVIDER=telnyx` не заданы обязательные `TELNYX_*` (или буквенный `from` без `MESSAGING_PROFILE_ID`) | заполнить `.env` (§2, режим B) |
-| live: SMS не приходит | Telnyx: страна не в whitelist / sender не настроен / trial шлёт только на верифицированный номер | проверить Messaging Profile и SPIKE-08 |
+| `CONFIG_ERROR` при старте | для `SMS_PROVIDER=telnyx` не заданы обязательные `TELNYX_*` (или буквенный `from` без `MESSAGING_PROFILE_ID`); для `SMS_PROVIDER=smspm` пустые `SMSPM_HASH` / `SMSPM_TOKEN` / `SMSPM_FROM` | заполнить `.env` (§2, режим B или C) |
+| `error.code = SEND_FAILED` (HTTP 503) | live SMSPM: 401 / 4xx провайдера (невалидные creds или отказ send) | проверить hash/token/sender в кабинете SMSPM (SPIKE-01); не логировать секреты |
+| live: SMS не приходит | Telnyx: страна не в whitelist / sender не настроен / trial шлёт только на верифицированный номер. SMSPM: sender не approved / EE не в кабинете / creds | Telnyx: Messaging Profile и SPIKE-08. SMSPM: SPIKE-01 |
 
 ---
 
@@ -150,3 +184,4 @@ Telnyx присылает статусы доставки на `POST /webhooks/t
 - Архитектура: [`phone-verification-architecture-2026-06-10.md`](../analysis/phone-verification-architecture-2026-06-10.md)
 - Спека Telnyx: [`telnyx-integration-spec-dogestonia-2026-06-10.md`](../analysis/telnyx-integration-spec-dogestonia-2026-06-10.md)
 - Настройка Telnyx-аккаунта: [`SPIKE-IDS-PV-08`](../tasks/backlog-stories/phone-verification/SPIKE-IDS-PV-08-telnyx-account-setup.md)
+- Настройка SMSPM-аккаунта: [`SPIKE-IDS-SMSPM-01`](../tasks/backlog-stories/smspm/SPIKE-IDS-SMSPM-01-account-sender-setup.md)
