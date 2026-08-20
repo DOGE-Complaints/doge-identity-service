@@ -5,11 +5,10 @@ from __future__ import annotations
 import pytest
 
 from core.config import ConfigError, load_config_from_env
-from core.phone.base import SmsErrorCode, SmsSenderError
 from core.phone.registry_builder import build_sms_registry, registered_sms_provider_names
 from core.phone.runtime_factory import build_sms_provider_runtime
 from core.phone.smspm.config import DEFAULT_SMSPM_API_BASE_URL, SMSPM_SMS_CONFIG_SPEC
-from core.phone.smspm.descriptor import SmspmSmsStub
+from core.phone.smspm.sender import SmspmSmsSender
 
 
 def _minimal_env(**overrides: str) -> dict[str, str]:
@@ -98,18 +97,15 @@ def test_unknown_sms_provider_still_rejected() -> None:
         load_config_from_env(_minimal_env(SMS_PROVIDER="unknown"))
 
 
-def test_build_sms_registry_active_smspm_stub() -> None:
+def test_build_sms_registry_active_smspm_sender() -> None:
     env = _smspm_env()
     config = load_config_from_env(env)
     runtime = build_sms_provider_runtime(config=config, env=env)
     try:
         registry = build_sms_registry(runtime)
         sender = registry.get("smspm")
-        assert isinstance(sender, SmspmSmsStub)
+        assert isinstance(sender, SmspmSmsSender)
         assert sender.provider_name == "smspm"
-        with pytest.raises(SmsSenderError) as exc_info:
-            sender.send(to_e164="+37255555555", text="123456")
-        assert exc_info.value.code is SmsErrorCode.PROVIDER_UNAVAILABLE
     finally:
         if runtime.http_client is not None:
             runtime.http_client.close()
