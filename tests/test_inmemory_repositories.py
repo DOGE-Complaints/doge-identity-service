@@ -134,6 +134,7 @@ def test_attach_phone_verification_sets_profile_fields() -> None:
     assert updated.phone_provider == "mock"
     assert updated.phone_dial_prefix == "+372"
     assert updated.phone_verified_at == verified_at
+    assert updated.identity_verified is True
 
 
 def test_attach_phone_verification_enforces_unique_hash_when_one_account() -> None:
