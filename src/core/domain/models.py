@@ -36,6 +36,7 @@ class ProfileRecord:
     phone_provider: str | None
     phone_dial_prefix: str | None
     phone_verified_at: datetime | None
+    identity_verified: bool
     wallet_address: str | None
     wallet_linked_at: datetime | None
     wallet_signature_verified_at: datetime | None
