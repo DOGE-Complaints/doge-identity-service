@@ -32,6 +32,7 @@ def build_me_data(profile: ProfileRecord | None, current_user: UserClaims) -> di
         "phone_provider": None,
         "phone_dial_prefix": None,
         "phone_verified_at": None,
+        "identity_verified": False,
         "created_at": None,
         "account_status": "active",
     }
@@ -47,5 +48,6 @@ def build_me_data(profile: ProfileRecord | None, current_user: UserClaims) -> di
         data["phone_provider"] = profile.phone_provider
         data["phone_dial_prefix"] = profile.phone_dial_prefix
         data["phone_verified_at"] = _format_datetime(profile.phone_verified_at)
+        data["identity_verified"] = profile.identity_verified
         data["created_at"] = _format_datetime(profile.created_at)
     return data
