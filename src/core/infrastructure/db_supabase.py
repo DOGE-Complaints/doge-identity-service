@@ -431,6 +431,7 @@ class SupabaseProfileRepository:
             "eid_method": method,
             "eid_country": country,
             "eid_verified_at": _format_datetime(verified_at),
+            "identity_verified": True,
             "updated_at": _format_datetime(_utcnow()),
         }
         try:
@@ -471,7 +472,7 @@ class SupabaseProfileRepository:
                 phone_provider=None,
                 phone_dial_prefix=None,
                 phone_verified_at=None,
-                identity_verified=False,
+                identity_verified=True,
                 wallet_address=None,
                 wallet_linked_at=None,
                 wallet_signature_verified_at=None,
@@ -490,6 +491,7 @@ class SupabaseProfileRepository:
             eid_method=method,
             eid_country=country,
             eid_verified_at=verified_at,
+            identity_verified=True,
             updated_at=_utcnow(),
         )
         return self.upsert(updated)
@@ -517,6 +519,7 @@ class SupabaseProfileRepository:
             "phone_provider": provider,
             "phone_dial_prefix": dial_prefix,
             "phone_verified_at": _format_datetime(verified_at),
+            "identity_verified": True,
             "updated_at": _format_datetime(_utcnow()),
         }
         try:
@@ -557,7 +560,7 @@ class SupabaseProfileRepository:
                 phone_provider=provider,
                 phone_dial_prefix=dial_prefix,
                 phone_verified_at=verified_at,
-                identity_verified=False,
+                identity_verified=True,
                 wallet_address=None,
                 wallet_linked_at=None,
                 wallet_signature_verified_at=None,
@@ -575,6 +578,7 @@ class SupabaseProfileRepository:
             phone_provider=provider,
             phone_dial_prefix=dial_prefix,
             phone_verified_at=verified_at,
+            identity_verified=True,
             updated_at=_utcnow(),
         )
         return self.upsert(updated)

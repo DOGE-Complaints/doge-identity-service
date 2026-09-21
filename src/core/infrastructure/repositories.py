@@ -158,6 +158,7 @@ class InMemoryProfileRepository:
             eid_method=method,
             eid_country=country,
             eid_verified_at=verified_at,
+            identity_verified=True,
             updated_at=_utcnow(),
         )
         self._by_verified_hash[verified_person_hash] = user_id
@@ -223,6 +224,7 @@ class InMemoryProfileRepository:
             phone_provider=provider,
             phone_dial_prefix=dial_prefix,
             phone_verified_at=verified_at,
+            identity_verified=True,
             updated_at=_utcnow(),
         )
         self._by_verified_phone_hash[verified_phone_hash] = user_id
