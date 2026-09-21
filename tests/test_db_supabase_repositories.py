@@ -51,6 +51,7 @@ def _demo_profile(**overrides: object) -> ProfileRecord:
         "phone_provider": None,
         "phone_dial_prefix": None,
         "phone_verified_at": None,
+        "identity_verified": False,
         "wallet_address": None,
         "wallet_linked_at": None,
         "wallet_signature_verified_at": None,

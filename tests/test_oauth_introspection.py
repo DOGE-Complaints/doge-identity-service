@@ -114,6 +114,7 @@ def _seed_profile(*, phone_verified: bool) -> None:
             phone_provider="mock" if phone_verified else None,
             phone_dial_prefix="+372" if phone_verified else None,
             phone_verified_at=now if phone_verified else None,
+            identity_verified=False,
             wallet_address=None,
             wallet_linked_at=None,
             wallet_signature_verified_at=None,

@@ -88,6 +88,22 @@ POST_HISTORICAL_MIGRATIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
             "phone_audit_events_service_role_all",
         ),
     ),
+    (
+        "20260921000001_profiles_identity_verified.sql",
+        (
+            "identity_verified",
+            "ADD COLUMN IF NOT EXISTS",
+            "BOOLEAN NOT NULL DEFAULT FALSE",
+        ),
+    ),
+    (
+        "20260921000002_profiles_identity_verified_backfill.sql",
+        (
+            "identity_verified = TRUE",
+            "phone_verified = TRUE",
+            "eid_verified = TRUE",
+        ),
+    ),
 )
 
 HISTORICAL_MIGRATIONS: tuple[tuple[str, tuple[str, ...]], ...] = (

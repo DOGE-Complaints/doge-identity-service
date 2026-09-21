@@ -74,6 +74,9 @@ def _block_dotenv_leakage(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PHONE_MAX_ATTEMPTS", "5")
     monkeypatch.setenv("PHONE_RESEND_COOLDOWN_S", "60")
     monkeypatch.setenv("PHONE_ONE_ACCOUNT_PER_NUMBER", "true")
+    # SMSPM optional webhook env — pin empty so dotenv placeholders cannot leak into resolve_config_env
+    monkeypatch.setenv("SMSPM_WEBHOOK_SHARED_SECRET", "")
+    monkeypatch.setenv("SMSPM_REPORT_URL", "")
     # CORS default for most tests (test_client may override)
     monkeypatch.setenv("CORS_ALLOWED_ORIGINS", "*")
 
