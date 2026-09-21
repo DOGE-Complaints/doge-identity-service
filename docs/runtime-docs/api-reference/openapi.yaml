@@ -95,6 +95,14 @@ components:
         phone_provider: { type: [string, "null"] }
         phone_dial_prefix: { type: [string, "null"] }
         phone_verified_at: { type: [string, "null"], format: date-time }
+        identity_verified:
+          type: boolean
+          description: >-
+            Method-opaque verified boolean for consumers (REQ 21 / TECH-ARCH §2.1).
+            Default false when no profile. With profile: profiles.identity_verified
+            (not a read-time OR of method flags). phone_verified / eid_verified may
+            coexist; consumers must not treat method flags as the sole contract.
+            account_status is not the verified boolean.
         created_at:
           type: [string, "null"]
           format: date-time

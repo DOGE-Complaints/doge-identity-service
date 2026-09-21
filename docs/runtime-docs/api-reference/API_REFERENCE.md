@@ -80,8 +80,9 @@ Implemented in [`envelope.py`](../../../src/core/api/envelope.py):
 - **As-is**: [asgi_app.py:301](../../../src/core/api/asgi_app.py) → `handle_me` ([handlers.py:73-88](../../../src/core/api/handlers.py)); payload [`me_response.py`](../../../src/core/api/me_response.py)
 - **Auth**: Supabase JWT (Bearer) · **Purpose**: current user profile + verification flags from JWT + profile store
 - **No auto-provision**: missing profile → `200` with `eid_verified=false` and profile fields `null` (no DB write); `created_at=null`, `account_status="active"`
-- **Account fields (AUTHCORE-02 / CAB-02):** `created_at` — ISO-8601 from `profiles.created_at` or `null` (**семантика D-CAB-2:** момент создания профиля / первой верификации, **не** дата регистрации в Supabase Auth; UI-label «Account Created» может быть неточным); `account_status` — enum in contract, **MVP always `"active"`** (no migration)
+- **Account fields (AUTHCORE-02 / CAB-02):** `created_at` — ISO-8601 from `profiles.created_at` or `null` (**семантика D-CAB-2:** момент создания профиля / первой верификации, **не** дата регистрации в Supabase Auth; UI-label «Account Created» может быть неточным); `account_status` — enum in contract, **MVP always `"active"`** (no migration). **`account_status` is not the verified boolean** (REQ §4.5).
 - **Email fields (ONB-01 / D-CAB-3):** `email` — из JWT claim (`null`, если claim отсутствует); для **OAuth/GPT** access-токенов Identity структурно отдаёт `email: null` ([`security.py`](../../../src/core/api/security.py) OAuth path). `email_verified` — **всегда `true`** для валидного токена (политика «токен ⇒ подтверждён»; корректно только при включённом Supabase **Confirm email** — [`supabase-project-setup.md` §2a](../../runbook/supabase-project-setup.md)). ⚠️ Не трактовать `email_verified: true` как «есть подтверждённый адрес» без проверки `email != null` (OAuth/GPT: `email:null` + `email_verified:true` — принятый дизайн).
+- **Verification boolean (VB-02 / REQ 21):** `identity_verified` — method-opaque bool for gateway / threads / spa (wire lock TECH-ARCH §2.1). Default `false` when no profile; with profile = `profiles.identity_verified` (not read-time OR). Legacy `phone_verified` / `eid_verified` **coexist** in the same payload but must not be the sole consumer contract after this REQ.
 - **Response** `200`:
 
 ```json
@@ -92,6 +93,7 @@ Implemented in [`envelope.py`](../../../src/core/api/envelope.py):
     "eid_verified": false, "display_name": null, "avatar_url": null,
     "eid_provider": null, "eid_method": null, "eid_country": null, "eid_verified_at": null,
     "phone_verified": false, "phone_provider": null, "phone_dial_prefix": null, "phone_verified_at": null,
+    "identity_verified": false,
     "created_at": null,
     "account_status": "active"
   }
