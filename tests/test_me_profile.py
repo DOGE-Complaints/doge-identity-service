@@ -87,6 +87,10 @@ def test_me_with_valid_jwt_and_profile_returns_200_envelope(
     assert "T" in data["created_at"]
     assert data["email"] == "user@example.com"
     assert data["email_verified"] is True
+    assert "identity_verified" in data
+    assert data["identity_verified"] is False
+    assert "phone_verified" in data
+    assert "eid_verified" in data
 
 
 def test_me_email_null_when_jwt_has_no_email_claim(test_client: TestClient) -> None:
@@ -143,6 +147,51 @@ def test_me_with_phone_verified_profile_returns_phone_fields(
     assert data["phone_dial_prefix"] == "+372"
     assert data["phone_verified_at"] is not None
     assert "verified_phone_hash" not in data
+    assert data["identity_verified"] is False
+    assert "eid_verified" in data
+
+
+def test_me_identity_verified_reflects_persisted_profile(
+    test_client: TestClient,
+) -> None:
+    """VB-02: opaque flag from profile.identity_verified; method fields coexist."""
+    now = datetime.now(timezone.utc)
+    repo = get_api_dependencies().profile_repository
+    assert repo is not None
+    repo.upsert(
+        ProfileRecord(
+            id="cccccccc-cccc-cccc-cccc-cccccccccccc",
+            supabase_user_id=_DEMO_USER_ID,
+            display_name="Opaque User",
+            avatar_url=None,
+            eid_verified=False,
+            verified_person_hash=None,
+            eid_provider=None,
+            eid_method=None,
+            eid_country=None,
+            eid_verified_at=None,
+            phone_verified=True,
+            verified_phone_hash="secret-phone-hash",
+            phone_provider="mock",
+            phone_dial_prefix="+372",
+            phone_verified_at=now,
+            identity_verified=True,
+            wallet_address=None,
+            wallet_linked_at=None,
+            wallet_signature_verified_at=None,
+            wallet_signature_scheme=None,
+            wallet_chain_id=None,
+            created_at=now,
+            updated_at=now,
+        )
+    )
+    token = mint_supabase_access_token()
+    response = test_client.get("/me", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["identity_verified"] is True
+    assert data["phone_verified"] is True
+    assert data["eid_verified"] is False
 
 
 def test_me_missing_profile_returns_200_not_verified_no_db_write(
@@ -162,6 +211,8 @@ def test_me_missing_profile_returns_200_not_verified_no_db_write(
     assert data["phone_provider"] is None
     assert data["phone_dial_prefix"] is None
     assert data["phone_verified_at"] is None
+    assert data["identity_verified"] is False
+    assert data["eid_verified"] is False
     assert data["created_at"] is None
     assert data["account_status"] == "active"
     assert data["email"] == "user@example.com"
