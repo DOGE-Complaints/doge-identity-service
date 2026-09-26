@@ -10,6 +10,8 @@
 
 ```bash
 # Локально (профиль demo, in-memory, mock-провайдеры — без Supabase/секретов)
+# Требуется cwd ./.env (скопировать из .env.example) — иначе make serve/dev падают
+cp -n .env.example .env         # один раз
 make serve                      # http://127.0.0.1:8100
 
 # Быстрая проверка живости (в другом терминале)
@@ -32,7 +34,7 @@ python3.11 -m venv .venv
 
 **Профиль по умолчанию.** Без переменных окружения [`provide_app_config`](../../src/core/config/providers.py) поднимает безопасные дефолты: `APP_PROFILE=demo`, `PORT=8100`, `API_BASE_URL=http://localhost:8100`, `DB_BACKEND=in_memory`, `EID_PROVIDER=mock`, `SMS_PROVIDER=mock`. То есть сервис стартует «из коробки» — без Supabase, БД и секретов.
 
-`provide_app_config` мёржит переменные из cwd `.env` поверх process-env (см. `resolve_config_env`), так что локальный `.env` (по образцу [`.env.example`](../../.env.example)) подхватывается автоматически.
+`make serve` / `make dev` **требуют** cwd [`./.env`](../../.env.example) (G8): shell-source `set -a && . ./.env && set +a` — как gateway/threads; без файла Make падает. Дополнительно `provide_app_config` мёржит переменные из cwd `.env` поверх process-env (см. `resolve_config_env`). Имена env без rename: `PORT`, `API_BASE_URL`, `SERVICE_API_TOKEN` (см. [`.env.example`](../../.env.example)).
 
 ---
 
@@ -40,13 +42,14 @@ python3.11 -m venv .venv
 
 | Команда | Что делает |
 |---------|-----------|
-| `make serve` | uvicorn на `127.0.0.1:${PORT:-8100}`, подхватывает `./.env` |
-| `make dev` | то же + `--reload --reload-dir src` (горячая перезагрузка) |
-| `make check-env` | печатает ключевые env (APP_PROFILE/PORT/SUPABASE_*/EID_PROVIDER) |
+| `make serve` | uvicorn на `127.0.0.1:${PORT:-8100}`; **required** shell-source `./.env` (fail if absent) |
+| `make dev` | то же + `--reload --reload-dir src` (горячая перезагрузка); **required** `./.env` |
+| `make check-env` | печатает ключевые env (APP_PROFILE/PORT/SUPABASE_*/EID_PROVIDER); optional `.env` until REQ9-02 |
 
-Под капотом обе цели запускают (из [`Makefile`](../../Makefile)):
+Под капотом `serve`/`dev` (из [`Makefile`](../../Makefile)):
 
 ```bash
+set -a && . ./.env && set +a && \
 .venv/bin/python -m uvicorn --app-dir src core.api.asgi_app:app --host 127.0.0.1 --port ${PORT:-8100}
 ```
 
