@@ -1,6 +1,6 @@
 .PHONY: serve dev check-env test test-live smoke
 
-# Make start requires cwd ./.env (G8 / REQ9-01). Names unchanged: PORT, API_BASE_URL, SERVICE_API_TOKEN.
+# Make start + check-env require cwd ./.env (G8 / REQ9-01/02). Names unchanged: PORT, API_BASE_URL, SERVICE_API_TOKEN.
 serve:
 	set -a && . ./.env && set +a && \
 	.venv/bin/python -m uvicorn --app-dir src core.api.asgi_app:app \
@@ -11,8 +11,9 @@ dev:
 	.venv/bin/python -m uvicorn --app-dir src core.api.asgi_app:app \
 	  --host 127.0.0.1 --port $${PORT:-8100} --reload --reload-dir src
 
+# Diagnostic print — same required shell-source as serve/dev (REQ9-02); not optional.
 check-env:
-	@if [ -f ./.env ]; then set -a && . ./.env && set +a; fi; \
+	set -a && . ./.env && set +a && \
 	echo "APP_PROFILE          = $${APP_PROFILE:-demo}" && \
 	echo "PORT                 = $${PORT:-8100}" && \
 	echo "SUPABASE_URL         = $${SUPABASE_URL:-<not set>}" && \
