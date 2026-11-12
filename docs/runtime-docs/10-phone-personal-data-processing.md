@@ -159,7 +159,9 @@ JWT sub  →  UserClaims.supabase_user_id
 
 ### 6.2 `profiles` (phone-поля)
 
-[Миграция `20260611000001`](../../supabase/migrations/20260611000001_profiles_phone_verification.sql): `phone_verified`, `verified_phone_hash`, `phone_provider`, `phone_dial_prefix`, `phone_verified_at`. Модель [`ProfileRecord`](../../src/core/domain/models.py:34-38). **Plaintext phone нет.**
+[Миграция `20260611000001`](../../supabase/migrations/20260611000001_profiles_phone_verification.sql): `phone_verified`, `verified_phone_hash`, `phone_provider`, `phone_dial_prefix`, `phone_verified_at`. Модель [`ProfileRecord`](../../src/core/domain/models.py). **Plaintext phone нет.**
+
+**Method-opaque (REQ21):** [`20260921000001_profiles_identity_verified.sql`](../../supabase/migrations/20260921000001_profiles_identity_verified.sql) + backfill [`00002`](../../supabase/migrations/20260921000002_profiles_identity_verified_backfill.sql) — колонка `identity_verified`; также в bootstrap `000_full_init.sql` §5b. Поле в [`ProfileRecord`](../../src/core/domain/models.py) (`identity_verified`).
 
 ### 6.3 `phone_audit_events`
 
@@ -167,7 +169,7 @@ JWT sub  →  UserClaims.supabase_user_id
 
 ### 6.4 API `GET /me`
 
-Отдаёт `email` + phone **status** (`phone_verified`, `phone_provider`, `phone_dial_prefix`, `phone_verified_at`). **`verified_phone_hash` в ответ не включается** ([`me_response.py:17-51`](../../src/core/api/me_response.py)).
+Отдаёт `email` + phone **status** (`phone_verified`, `phone_provider`, `phone_dial_prefix`, `phone_verified_at`) + method-opaque **`identity_verified`** (REQ7 consumer canon). **`verified_phone_hash` в ответ не включается** ([`me_response.py`](../../src/core/api/me_response.py); [API_REFERENCE §6](../api-reference/API_REFERENCE.md)).
 
 ---
 
@@ -190,6 +192,7 @@ JWT sub  →  UserClaims.supabase_user_id
 | Канал | Что уходит в plaintext | Retention в этом репо |
 |-------|------------------------|------------------------|
 | **Telnyx** | `to` = E.164, `text` = SMS с OTP ([`telnyx/sender.py:21-46`](../../src/core/phone/telnyx/sender.py)) | **Вне репо** (процессор SMS); текст: [`sms_text.py:4-5`](../../src/core/phone/sms_text.py) |
+| **SMSPM** | `toNumber` = E.164 **без** `+`, `text` = SMS с OTP ([`smspm/sender.py:19-30`](../../src/core/phone/smspm/sender.py)) | **Вне репо** (процессор SMS); webhook не пишет `toNumber` ([`delivery_ingest.py:28-29`](../../src/core/phone/smspm/delivery_ingest.py)); текст тот же [`sms_text.py:4-5`](../../src/core/phone/sms_text.py) |
 | **mock** | `(to_e164, text)` в `_sent` ([`mock_sender.py:23-25`](../../src/core/phone/mock/mock_sender.py)) | Память процесса до рестарта |
 | **file** (dev) | Имя файла ≈ E.164; тело — timestamp + текст с OTP ([`file_sender.py:34-41`](../../src/core/phone/file/file_sender.py)) | Append-only на диск; **TTL/delete в коде нет**; **запрещён в `APP_PROFILE=pilot`** ([`schema.py:180`](../../src/core/config/schema.py)) |
 
@@ -205,7 +208,7 @@ JWT sub  →  UserClaims.supabase_user_id
 4. Измеренное время HMAC (мс).
 5. Scheduled purge сессий / audit / file outbox.
 6. Application GDPR erase endpoint (помимо SQL CASCADE при удалении user в Supabase).
-7. Retention SMS у Telnyx (нужен их DPA / политика, не этот репозиторий).
+7. Retention SMS у Telnyx / SMSPM (нужен их DPA / политика, не этот репозиторий).
 
 ---
 
@@ -222,4 +225,4 @@ JWT sub  →  UserClaims.supabase_user_id
 | Модели | [`src/core/domain/models.py`](../../src/core/domain/models.py) |
 | Supabase store / mark_consumed | [`src/core/infrastructure/db_supabase.py`](../../src/core/infrastructure/db_supabase.py) |
 | Миграции | [`supabase/migrations/20260611000001_profiles_phone_verification.sql`](../../supabase/migrations/20260611000001_profiles_phone_verification.sql), [`20260626000001_phone_persistence_tables.sql`](../../supabase/migrations/20260626000001_phone_persistence_tables.sql) |
-| Telnyx / file / mock | [`src/core/phone/telnyx/sender.py`](../../src/core/phone/telnyx/sender.py), [`file/file_sender.py`](../../src/core/phone/file/file_sender.py), [`mock/mock_sender.py`](../../src/core/phone/mock/mock_sender.py) |
+| Telnyx / SMSPM / file / mock | [`src/core/phone/telnyx/sender.py`](../../src/core/phone/telnyx/sender.py), [`smspm/sender.py`](../../src/core/phone/smspm/sender.py), [`file/file_sender.py`](../../src/core/phone/file/file_sender.py), [`mock/mock_sender.py`](../../src/core/phone/mock/mock_sender.py); карта — [11-sms-providers](11-sms-providers.md) |

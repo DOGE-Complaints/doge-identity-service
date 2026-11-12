@@ -4,7 +4,7 @@
 
 SOA (service-oriented architecture) здесь — это **не** «много микросервисов». Речь про то, как устроен **сам identity внутри**: он разбит на несколько слоёв-компонентов с чёткими границами и контрактами, где каждый слой отвечает за своё и общается с соседями только через объявленные интерфейсы. Это даёт две вещи: (1) бизнес-логику можно тестировать без поднятия HTTP и без реальной базы; (2) хранилище (память или Supabase) меняется одним переключателем, не трогая остальной код.
 
-Этот документ — про модули **внутри** одного сервиса. Как identity стыкуется с соседними сервисами (gateway, Supabase) — отдельно в [09-gateway-expectations](09-gateway-expectations.md).
+Этот документ — про модули **внутри** одного сервиса. Как identity стыкуется с соседними сервисами (gateway, Supabase) — отдельно в [09-gateway-expectations](09-gateway-expectations.md). SMS-провайдеры — [11-sms-providers](11-sms-providers.md).
 
 Источник: пакеты в [`src/core/`](../../src/core/).
 
@@ -42,6 +42,7 @@ SOA (service-oriented architecture) здесь — это **не** «много 
 | 4. Service Factory | `core.application` + `core.infrastructure.providers` | «Сборщик»: по настройке решает, какие реализации подставить | [`application/factory.py`](../../src/core/application/factory.py), [`infrastructure/providers.py`](../../src/core/infrastructure/providers.py), [`infrastructure/service_factory.py`](../../src/core/infrastructure/service_factory.py) | ✅ |
 | 5. Domain | `core.domain` | Контракты (интерфейсы) и модели данных — «язык», на котором говорят слои | [`contracts.py`](../../src/core/domain/contracts.py), [`models.py`](../../src/core/domain/models.py) | ✅ |
 | 6. Persistence | `core.infrastructure` | Две взаимозаменяемые реализации хранилищ | [`repositories.py`](../../src/core/infrastructure/repositories.py) (память), [`db_supabase.py`](../../src/core/infrastructure/db_supabase.py) (Supabase) | ✅ |
+| Phone / SMS | `core.phone` | OTP-ядро + сменные отправители SMS (`SmsSenderPort` + реестр: mock, file, telnyx, smspm) | [`phone/base.py`](../../src/core/phone/base.py), [`registry_builder.py`](../../src/core/phone/registry_builder.py), [`otp_engine.py`](../../src/core/phone/otp_engine.py) | ✅ |
 | eID | `core.providers` | Модульные провайдеры eID-верификации (порт + реестр + mock) | [`providers/base.py`](../../src/core/providers/base.py), [`registry.py`](../../src/core/providers/registry.py), [`mock/mock_provider.py`](../../src/core/providers/mock/mock_provider.py) | ✅ mock |
 | Config | `core.config` | Чтение настроек из env/.env, профили demo/pilot | [`schema.py`](../../src/core/config/schema.py), [`providers.py`](../../src/core/config/providers.py), [`env_file.py`](../../src/core/config/env_file.py) | ✅ |
 | Логи | `core.logging_setup` | Единая настройка логирования (text/json) | [`logging_setup.py`](../../src/core/logging_setup.py) | ✅ |

@@ -31,6 +31,7 @@
 | 08 | [08-ui-expectations.md](08-ui-expectations.md) | Что сервис ждёт от UI (spa-app) | контракт |
 | 09 | [09-gateway-expectations.md](09-gateway-expectations.md) | Как identity стыкуется с gateway | целевая модель + 🟡 |
 | 10 | [10-phone-personal-data-processing.md](10-phone-personal-data-processing.md) | Телефон при верификации: HMAC, окна plaintext, связь с user/email (GDPR / ответственность) | ✅ по коду |
+| 11 | [11-sms-providers.md](11-sms-providers.md) | SMS-разъём (порт + реестр) и live-провайдер SMSPM: архитектура, `.env`, аккаунт, тесты | ✅ по коду |
 
 ## Где искать «что не так»
 

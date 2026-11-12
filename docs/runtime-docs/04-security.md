@@ -24,9 +24,10 @@
 Когда gateway создаёт историю от имени пользователя, он должен ответить на **два разных** вопроса — но **на разных путях** transport может отличаться:
 
 1. **«Меня зовёт доверенный сервис или кто попало?»** → **сервисный токен** (или mTLS). На пути stash: `POST /story-drafts` (только service token). На browser submit service token **не** требуется — доверие к вызову обеспечивает публичный HTTPS + Bearer пользователя.
-2. **«Кто этот человек и прошёл ли он верификацию (телефон)?»** → **проверка у identity**. Продуктовый submit (GW-DRAFT-02): gateway форвардит Supabase Bearer на **`GET /me`** (не локальная JWT-валидация в gateway). OAuth **`POST /oauth/introspect`** остаётся валидным для других потребителей (GPT Actions, legacy intake) — D-6.
+2. **«Кто этот человек и прошёл ли он верификацию?»** → **проверка у identity**. Продуктовый story-draft submit (GW-DRAFT-02): gateway форвардит Supabase Bearer на **`GET /me`** и (as-built) гейтит **`phone_verified`**. **REQ7 civic/threads canon:** consumers read method-opaque **`identity_verified`** on the same `/me` (EPIC-IDS-15 Done; gateway cutover = GW-THR-03). OAuth **`POST /oauth/introspect`** остаётся для GPT Actions / legacy — D-6 (`phone_verified` in introspect body).
 
-> **Phone-pivot (2026-06):** активный гейт — `phone_verified` (разовая верификация по SMS-OTP). eID **отложен** (доп. расходы SK) — eID-разделы ниже сохранены как DEFERRED. Источник: [`phone-verification-architecture-2026-06-10`](../analysis/phone-verification-architecture-2026-06-10.md).
+> **Phone-pivot (2026-06):** активный *метод* — `phone_verified` (SMS-OTP). eID **отложен**.  
+> **REQ21 (2026-09-21):** consumer contract for new civic/threads paths = **`identity_verified`** ([TECH-ARCH](../architecture/TECH-ARCH-threads-verification-boolean.md); [API_REFERENCE §6](api-reference/API_REFERENCE.md)).
 
 Сервисный токен сам по себе **не** доказывает, какой пользователь стоит за запросом — поэтому browser submit всегда сопровождается проверкой пользователя у identity. Если довериться только сервисному токену на user-facing path, появляется «confused deputy» (подача от имени кого угодно).
 
@@ -98,14 +99,14 @@ sequenceDiagram
 | Шаг | Где в коде | Статус |
 |-----|-----------|--------|
 | Проверка Supabase JWT пользователя | [`auth/supabase_validator.py`](../../src/core/auth/supabase_validator.py) | ✅ |
-| **`/me`** (профиль + `phone_verified`) | [`me_response.py`](../../src/core/api/me_response.py), [`asgi_app.py:235`](../../src/core/api/asgi_app.py) | ✅ построен (AUTHCORE-01) |
-| **Телефонная верификация** `/auth/phone/request|confirm` | [`asgi_app.py:286,302`](../../src/core/api/asgi_app.py), `core/phone/` | ✅ (PV-01…07) |
+| **`/me`** (профиль + **`identity_verified`** + legacy method flags) | [`me_response.py`](../../src/core/api/me_response.py), [`asgi_app.py:302`](../../src/core/api/asgi_app.py) | ✅ AUTHCORE-01 + **REQ21 / EPIC-IDS-15** |
+| **Телефонная верификация** `/auth/phone/request|confirm` | [`asgi_app.py:360,378`](../../src/core/api/asgi_app.py), `core/phone/` | ✅ (PV-01…07; SMSPM — [11-sms-providers](11-sms-providers.md)) |
 | OAuth-движок (код/токен/PKCE) | [`repositories.py:430`](../../src/core/infrastructure/repositories.py) (in-memory), [`db_supabase.py`](../../src/core/infrastructure/db_supabase.py) (Supabase при `DB_BACKEND=supabase`) | ✅ |
-| OAuth-маршруты `/oauth/authorize`, `/oauth/authorize/complete`, `/oauth/token` | [`asgi_app.py:368-403`](../../src/core/api/asgi_app.py), [`core/oauth/handlers.py`](../../src/core/oauth/handlers.py) | ✅ построен ([OAUTH-01](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-01-oauth-server-endpoints.md)) |
+| OAuth-маршруты `/oauth/authorize`, `/oauth/authorize/complete`, `/oauth/token` | [`asgi_app.py:425-460`](../../src/core/api/asgi_app.py), [`core/oauth/handlers.py`](../../src/core/oauth/handlers.py) | ✅ построен ([OAUTH-01](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-01-oauth-server-endpoints.md)) |
 | Durable handshake/codes (Supabase Postgres) | [`SupabaseAuthorizationRequestStore`](../../src/core/infrastructure/db_supabase.py), [`SupabaseOAuthTokenService`](../../src/core/infrastructure/db_supabase.py), миграция [`20260624000001_oauth_authorization_tables.sql`](../../supabase/migrations/20260624000001_oauth_authorization_tables.sql) | ✅ при `DB_BACKEND=supabase` ([OAUTH-03](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-03-persistent-token-store-supabase.md)); demo — in-memory |
 | eID-старт/callback (`/auth/eid/start`, `/auth/{provider}/callback`) | [`asgi_app.py`](../../src/core/api/asgi_app.py), [`rate_limit_dependency.py`](../../src/core/api/rate_limit_dependency.py) | ✅ HTTP rate-limit (SEC-01, pkg-000035) |
 | Флаг «нужна верификация» в сессии | поля `return_context`/`requested_action` в [`models.py`](../../src/core/domain/models.py) | ✅ relay через OAuth ([OAUTH-04](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-04-verify-gate-and-verification-required.md)) |
-| **introspection-endpoint** (`{active, sub, phone_verified}`) | [`introspection.py`](../../src/core/oauth/introspection.py), [`asgi_app.py:407-416`](../../src/core/api/asgi_app.py) | ✅ ([OAUTH-02](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-02-introspection-and-service-token.md)); D-6 — канон для GPT Actions |
+| **introspection-endpoint** (`{active, sub, phone_verified}`) | [`introspection.py`](../../src/core/oauth/introspection.py), [`asgi_app.py:462-471`](../../src/core/api/asgi_app.py) | ✅ ([OAUTH-02](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-02-introspection-and-service-token.md)); D-6 — канон для GPT Actions |
 | Gateway story-draft → identity **`GET /me`** | as-built gateway [`me_client.py`](../../../doge-complaints-gateway/src/core/identity/me_client.py), [`API_REFERENCE §6.8`](../../../doge-complaints-gateway/docs/runtime-docs/api-reference/API_REFERENCE.md) | ✅ на стороне gateway (GW-DRAFT-02) |
 | Проверка сервисного токена на входе identity | `AppConfig.service_api_token` ([`schema.py:70,238`](../../src/core/config/schema.py)), `ServiceTokenAuth` ([`security.py:89-116`](../../src/core/api/security.py)); **обязателен в pilot** | ✅ (gate disabled в demo при пустом токене) |
 
@@ -132,7 +133,7 @@ Identity-side: телефонная верификация, `/me`, OAuth, intros
 
 ## 3. OAuth-движок ✅ (логика + наружу)
 
-`InMemoryOAuthTokenService` ([`repositories.py:430+`](../../src/core/infrastructure/repositories.py)) и `SupabaseOAuthTokenService` ([`db_supabase.py`](../../src/core/infrastructure/db_supabase.py)) умеют: выдать authorization code с TTL, обменять его на access-токен, проверить **PKCE S256**, подписать self-signed JWT (HS256) через [`access_token_jwt.py`](../../src/core/oauth/access_token_jwt.py). **`client_secret` проверяется** через [`verify_client_secret`](../../src/core/oauth/client_secret.py). Наружу подключён через [`core/oauth/handlers.py`](../../src/core/oauth/handlers.py) и маршруты [`asgi_app.py:368-403`](../../src/core/api/asgi_app.py). **Handshake/codes:** durable в Supabase при `DB_BACKEND=supabase` ([OAUTH-03](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-03-persistent-token-store-supabase.md) ✅); demo/offline — in-memory.
+`InMemoryOAuthTokenService` ([`repositories.py:430+`](../../src/core/infrastructure/repositories.py)) и `SupabaseOAuthTokenService` ([`db_supabase.py`](../../src/core/infrastructure/db_supabase.py)) умеют: выдать authorization code с TTL, обменять его на access-токен, проверить **PKCE S256**, подписать self-signed JWT (HS256) через [`access_token_jwt.py`](../../src/core/oauth/access_token_jwt.py). **`client_secret` проверяется** через [`verify_client_secret`](../../src/core/oauth/client_secret.py). Наружу подключён через [`core/oauth/handlers.py`](../../src/core/oauth/handlers.py) и маршруты [`asgi_app.py:425-460`](../../src/core/api/asgi_app.py). **Handshake/codes:** durable в Supabase при `DB_BACKEND=supabase` ([OAUTH-03](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-03-persistent-token-store-supabase.md) ✅); demo/offline — in-memory.
 
 ## 4. Защита персональных данных — HMAC ✅
 
@@ -154,7 +155,7 @@ Identity-side: телефонная верификация, `/me`, OAuth, intros
 
 ## 6. CORS ✅
 
-[`asgi_app.py:75-80`](../../src/core/api/asgi_app.py): список разрешённых origin'ов из `CORS_ALLOWED_ORIGINS` (в проде — конкретные домены, не `*`).
+[`asgi_app.py:204-209`](../../src/core/api/asgi_app.py): список разрешённых origin'ов из `CORS_ALLOWED_ORIGINS` (в проде — конкретные домены, не `*`).
 
 ## 8. HTTP rate limiting (anti-abuse) ✅
 
@@ -162,7 +163,7 @@ Identity-side: телефонная верификация, `/me`, OAuth, intros
 
 ## 9. Audit IP/UA hashing (eID + phone) ✅
 
-Волна pkg-000037: request IP и `User-Agent` извлекаются в [`request_context.py`](../../src/core/api/request_context.py), хэшируются через [`audit_context.py`](../../src/core/security/audit_context.py) (`hash_secret` + `DOGESTONIA_EID_SECRET`) **до** записи в `EIDAuditEvent` / `PhoneAuditEvent`. В хранилище — только `ip_hash` / `user_agent_hash`; сырой IP/UA и PII (телефон, OTP) в аудит не попадают. eID: [`handlers.py`](../../src/core/api/handlers.py) `_log_eid_audit`; phone: `_log_phone_audit`. Telnyx webhook-аудит без user request — hash-поля `None`. Тесты: [`test_audit_ip_ua_hashing.py`](../../tests/test_audit_ip_ua_hashing.py).
+Волна pkg-000037: request IP и `User-Agent` извлекаются в [`request_context.py`](../../src/core/api/request_context.py), хэшируются через [`audit_context.py`](../../src/core/security/audit_context.py) (`hash_secret` + `DOGESTONIA_EID_SECRET`) **до** записи в `EIDAuditEvent` / `PhoneAuditEvent`. В хранилище — только `ip_hash` / `user_agent_hash`; сырой IP/UA и PII (телефон, OTP) в аудит не попадают. eID: [`handlers.py`](../../src/core/api/handlers.py) `_log_eid_audit`; phone: `_log_phone_audit`. Webhook-аудит без user request (Telnyx POST, SMSPM GET) — hash-поля `None`; SMSPM path-secret — [`handlers.py:759-837`](../../src/core/api/handlers.py), не JWT. Тесты: [`test_audit_ip_ua_hashing.py`](../../tests/test_audit_ip_ua_hashing.py).
 
 ## 7. Секреты
 

@@ -9,40 +9,41 @@
 ## Контракт «identity ← UI» по пунктам
 
 ### 1. Ходить с разрешённого адреса (CORS)
-Браузер пускает запросы только с origin'ов из `CORS_ALLOWED_ORIGINS` ([`asgi_app.py:203-208`](../../src/core/api/asgi_app.py), runbook [`cors-allowed-origins.md`](../runbook/cors-allowed-origins.md)). В проде это конкретные домены (например публичный URL spa на Railway), не `*`. Если UI на другом адресе — браузер заблокирует. ✅ применяется.
+Браузер пускает запросы только с origin'ов из `CORS_ALLOWED_ORIGINS` ([`asgi_app.py:204-209`](../../src/core/api/asgi_app.py), runbook [`cors-allowed-origins.md`](../runbook/cors-allowed-origins.md)). В проде это конкретные домены (например публичный URL spa на Railway), не `*`. Если UI на другом адресе — браузер заблокирует. ✅ применяется.
 
 ### 2. Прислать токен пользователя
 UI логинит человека через **Supabase Auth** (email/пароль или magic link) и в каждый защищённый запрос кладёт `Authorization: Bearer <supabase_jwt>`. identity сам логин не делает — только проверяет токен ([04-security](04-security.md)). ✅ проверяется.
 
 ### 3. Активная inline-верификация телефона (без внешнего redirect)
-Активный механизм проверки «реальный уникальный человек» — **телефон по SMS-OTP**, гейт `phone_verified` (eID отложен). Внешнего redirect здесь **нет** — SPA делает два API-вызова прямо из кабинета:
+Активный *метод* проверки «реальный уникальный человек» — **телефон по SMS-OTP** (eID отложен). После успеха identity ставит `phone_verified=true` **и** method-opaque `identity_verified=true` (REQ21 / EPIC-IDS-15). Внешнего redirect **нет** — SPA делает два API-вызова прямо из кабинета:
 
 1. SPA → `POST /auth/phone/request` (Bearer JWT + `{phone}`) → identity шлёт SMS-OTP, отвечает `{data:{sent,expires_at}}`.
 2. Пользователь вводит код в форме SPA (inline), SPA → `POST /auth/phone/confirm` (`{phone,code}`) → `{data:{status:"verified"}}`.
-3. После успеха `phone_verified=true` в профиле (`GET /me`); никаких 303-редиректов и `return_url`.
+3. После успеха в `GET /me`: `phone_verified=true` и **`identity_verified=true`**; никаких 303-редиректов и `return_url`.
 
 Ограничения и ошибки (см. [04-security](04-security.md) и [19-phone-verification-flow](../requirements/19-phone-verification-flow.md)): только эстонские номера **+372**; один номер = один аккаунт (конфликт → `409 profile_conflict`); иностранный номер → `COUNTRY_NOT_ALLOWED` (waitlist-механизм — [`onboarding-waitlist.md`](../runbook/onboarding-waitlist.md)). ✅ применяется.
 
 ### 3b. Ленивый гейт: verify-экран по защищённому действию
 
-> **Источник:** [DOC-IDS-ONB-01](../tasks/backlog-stories/identity-onboarding/DOC-IDS-ONB-01-lazy-phone-gate-contract.md) · [`09-gateway-expectations`](09-gateway-expectations.md) §«Ленивый гейт телефона».
+> **Источник:** [DOC-IDS-ONB-01](../tasks/backlog-stories/identity-onboarding/DOC-IDS-ONB-01-lazy-phone-gate-contract.md) · [`09-gateway-expectations`](09-gateway-expectations.md) §«Ленивый гейт телефона».  
+> **REQ7 consumer canon (2026-09-21):** для threads / civic / новых spa gates читать **`identity_verified`** на `GET /me` ([`me_response.py:35,51`](../../src/core/api/me_response.py); [API_REFERENCE §6](api-reference/API_REFERENCE.md)). `phone_verified` — legacy method flag (coexist); не sole contract после REQ21.
 
-При **web signup** телефон **не** обязателен сразу после регистрации. SPA **не** показывает verify-экран «на всякий случай» — только когда пользователь инициирует **защищённое действие**, требующее подтверждённый телефон.
+При **web signup** телефон **не** обязателен сразу после регистрации. SPA **не** показывает verify-экран «на всякий случай» — только когда пользователь инициирует **защищённое действие**, требующее верификации.
 
 **Ожидание к spa-app:**
 
-1. Перед защищённым действием (напр. «создать/опубликовать стори») SPA вызывает `GET /me` и читает `phone_verified` ([`me_response.py:42`](../../src/core/api/me_response.py)).
-2. Если `phone_verified === false` → **не** вызывать backend действия; показать **verify-экран** (inline, без внешнего redirect).
-3. На verify-экране — PV-05: `POST /auth/phone/request` → пользователь вводит OTP → `POST /auth/phone/confirm` (см. §3 выше).
-4. После `{data:{status:"verified"}}` и `phone_verified=true` в `/me` → вернуть пользователя к прерванному действию и выполнить его.
+1. Перед защищённым действием SPA вызывает `GET /me` и читает **`identity_verified`** (REQ7). Legacy spa paths, ещё не мигрированные, могут читать `phone_verified` — после cutover предпочитать opaque.
+2. Если `identity_verified === false` → **не** вызывать backend действия; показать **verify-экран** (inline, без внешнего redirect).
+3. На verify-экране — PV-05: `POST /auth/phone/request` → OTP → `POST /auth/phone/confirm` (см. §3).
+4. После confirm и `identity_verified=true` в `/me` → вернуть пользователя к прерванному действию.
 
-**Sequence (словами):** регистрация/email-only → обычное использование UI → защищённое действие → `phone_verified=false` → verify-экран → успех → действие разрешено.
+**Sequence:** регистрация/email-only → UI → защищённое действие → `identity_verified=false` → verify → успех → действие разрешено.
 
-**SSOT:** [STORY-IDS-PV-05](../tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-05-verification-flow-api/STORY-IDS-PV-05-verification-flow-api.md) · [onboarding-phone-verification-api.md](../runbook/onboarding-phone-verification-api.md) · gateway-side контракт — [`09-gateway-expectations`](09-gateway-expectations.md).
+**SSOT:** [STORY-IDS-PV-05](../tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-05-verification-flow-api/STORY-IDS-PV-05-verification-flow-api.md) · [21-verification-boolean-and-audit](../requirements/21-verification-boolean-and-audit.md) · gateway-side — [`09-gateway-expectations`](09-gateway-expectations.md).
 
-**Disclosure + boundary copy (EN SSOT):** на verify-экране (перед вводом номера) и для `COUNTRY_NOT_ALLOWED` / 409 `profile_conflict` — [`onboarding-copy.md`](../runbook/onboarding-copy.md) ([DOC-IDS-ONB-02](../tasks/backlog-stories/identity-onboarding/DOC-IDS-ONB-02-disclosure-copy.md)). Рендер — spa-app; канон текста — identity runbook.
+**Disclosure + boundary copy (EN SSOT):** на verify-экране — [`onboarding-copy.md`](../runbook/onboarding-copy.md) ([DOC-IDS-ONB-02](../tasks/backlog-stories/identity-onboarding/DOC-IDS-ONB-02-disclosure-copy.md)).
 
-**Enforce на потребителе:** identity не перехватывает «создать стори» — только отдаёт флаг и API verify.
+**Enforce на потребителе:** identity не перехватывает «создать стори» — только отдаёт флаги и API verify.
 
 ### 3c. GPT verify landing: web-страница `/verify` + возврат в GPT
 

@@ -299,3 +299,37 @@ paths:
         "503":
           description: TELNYX_WEBHOOK_PUBLIC_KEY not configured
           content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } }
+  /webhooks/smspm/delivery/{shared_secret}:
+    get:
+      tags: [Webhooks]
+      summary: SMSPM SMS delivery-status webhook
+      description: |
+        Public GET callback; authenticated by path secret (compare_digest vs SMSPM_WEBHOOK_SHARED_SECRET), not Ed25519.
+        Missing secret → 503 CONFIG_ERROR. Success is 200 text/plain `OK`.
+        Query `id` and `status` only; `toNumber` is not persisted. Does not gate OTP confirm.
+        Pass this URL as send `report` when SMSPM_REPORT_URL is set.
+      parameters:
+        - name: shared_secret
+          in: path
+          required: true
+          schema: { type: string }
+        - name: id
+          in: query
+          required: true
+          schema: { type: string }
+          description: SMSPM message id
+        - name: status
+          in: query
+          required: true
+          schema: { type: string, enum: [queued, submitted, sent, delivered, failed] }
+      responses:
+        "200":
+          description: Delivery event processed (plain OK)
+          content:
+            text/plain:
+              schema: { type: string, examples: ["OK"] }
+        "400": { description: missing/unsupported query, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } } }
+        "401": { description: shared_secret mismatch, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } } }
+        "503":
+          description: SMSPM_WEBHOOK_SHARED_SECRET not configured
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } }

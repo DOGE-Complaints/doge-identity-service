@@ -49,7 +49,7 @@
 
 [`schema.py`](../../src/core/config/schema.py): если переменная не задана → `*`.
 
-`*` удобно для локальной разработки, но на **pilot/Railway** рекомендуется явный список доменов ([DEPLOY-01](../tasks/backlog-stories/railway-deploy/STORY-IDS-DEPLOY-01-railway-deployability.md)).
+`*` удобно для локальной разработки, но на **pilot/Railway** рекомендуется явный список доменов (см. [`run-and-healthcheck.md`](./run-and-healthcheck.md) §3 и этот handbook).
 
 ---
 
@@ -157,7 +157,7 @@ IDENTITY_SERVICE_URL=https://doge-identity-service-tallinn-demo.up.railway.app \
 | `401` на `GET /me` без Bearer | Норма — нужна Supabase-сессия |
 | CORS error в браузере, curl с правильным `Origin` без `Access-Control-Allow-Origin` | Origin spa не в `CORS_ALLOWED_ORIGINS` |
 | OAuth редирект ведёт не на тот spa | Первый origin в списке не тот; поправить порядок |
-| `*` на pilot | Работает, но слабее с точки зрения политики; DEPLOY-01 просит явный origin spa |
+| `*` на pilot | Работает, но слабее с точки зрения политики; на pilot задайте явный origin spa |
 
 ---
 

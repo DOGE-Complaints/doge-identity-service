@@ -1,6 +1,6 @@
 # Тестовые SMS в identity: как запускать без реального провайдера и где читать OTP-коды
 
-> **Дата:** 2026-06-28 · **Скоуп:** серверное `doge-identity-service` (фронт `spa-app` — вне фокуса).
+> **Дата:** 2026-08-21 · **Скоуп:** серверное `doge-identity-service` (фронт `spa-app` — вне фокуса).
 > **Тип:** операционная документация (how-to), все утверждения подтверждены кодом (`file:line`) по [`analysis.mdc`](../../../.cursor/rules/analysis.mdc).
 > **История:** документ вырос из gap-анализа SMS-моков; gap **G-SMS-1** («через mock код негде взять для ручного теста») закрыт стори [STORY-IDS-PV-10](../tasks/backlog-stories/phone-verification/STORY-IDS-PV-10-file-sms-sink-dev.md) — добавлен провайдер `file`. Аудит закрытия: [`epic-ids-10-pv-10-file-sms-sink-audit-2026-06-28.md`](./epic-ids-10-pv-10-file-sms-sink-audit-2026-06-28.md).
 
@@ -13,6 +13,7 @@
 | **`file`** ⭐ | пишет текст SMS в файл на диске, **один файл на номер** | `<cwd>/var/sms-outbox/<номер>.log` → `tail -f` | **Ручной тест через фронт локально.** Бюджет не тратится, сети нет. |
 | **`mock`** (default) | складывает SMS в **память процесса** | только in-process `sent_messages` — **снаружи не видно** | Автотесты. Для ручного теста **код взять негде**. |
 | **`telnyx`** | реальная отправка через Telnyx | **настоящая SMS** на телефон `+372…` | Финальный e2e на реальном устройстве (тратит бюджет). |
+| **`smspm`** | реальная отправка через SMSPM | **настоящая SMS** на телефон `+372…` | Live EE, когда Telnyx/geo не подходит. Архитектура: [`11-sms-providers.md`](../runtime-docs/11-sms-providers.md). Прямой smoke без JWT: [`phone-sms-verification.md`](./phone-sms-verification.md) §6C0. |
 
 **Вывод для ручного тестирования:** локально — `SMS_PROVIDER=file`. На Railway — см. §6 (есть нюансы).
 
@@ -65,9 +66,9 @@
 | Текст SMS | `"Your Dogestonia verification code is {code}."` ([`sms_text.py:4-5`](../../src/core/phone/sms_text.py)) | — |
 | HTTP-ответ | `{sent, expires_at}` ([`handlers.py:531-532`](../../src/core/api/handlers.py)) | **кода нет** |
 | Логи/аудит | пишется `event_type`, номер **хешируется** | **кода нет** |
-| **Отправка** | `mock` → память; `file` → файл; `telnyx` → реальная SMS | зависит от провайдера |
+| **Отправка** | `mock` → память; `file` → файл; `telnyx` / `smspm` → реальная SMS | зависит от провайдера |
 
-Единственная «легитимная утечка» кода в открытом виде — **то, что делает активный провайдер**: память (`mock`), файл (`file`) или SMS (`telnyx`). Это намеренный анти-leak дизайн ([spa STORY-SPA-ID-04:51](../../../spa-app/docs/tasks/backlog-stories/identity-auth/STORY-SPA-ID-04-phone-verification-flow.md)) — поэтому `file` строго demo-only.
+Единственная «легитимная утечка» кода в открытом виде — **то, что делает активный провайдер**: память (`mock`), файл (`file`) или SMS (`telnyx` / `smspm`). Это намеренный анти-leak дизайн ([spa STORY-SPA-ID-04:51](../../../spa-app/docs/tasks/backlog-stories/identity-auth/STORY-SPA-ID-04-phone-verification-flow.md)) — поэтому `file` строго demo-only.
 
 ---
 
@@ -105,6 +106,7 @@ curl http://localhost:8100/me -H "Authorization: Bearer $TOKEN"   # → phone_ve
 | `mock` | ✅ работает | ✅ работает (но верификация «бутафорская») |
 | `file` | ✅ работает | ❌ **`ConfigError` на старте** ([`schema.py:180-182`](../../src/core/config/schema.py)) — plaintext OTP на диск в pilot запрещён |
 | `telnyx` | ✅ (если заданы creds) | ✅ (creds обязательны при отправке) |
+| `smspm` | ✅ (если заданы HASH/TOKEN/FROM) | ✅ (те же required env; webhook secret optional) |
 
 - Валидация значения провайдера: [`schema.py:173-176`](../../src/core/config/schema.py) (неизвестный → `ConfigError`).
 - Pilot **не требует** Telnyx (SMS-полей нет в pilot-required списке, [`schema.py:185+`](../../src/core/config/schema.py)) — pilot можно запустить с `mock`.
@@ -117,7 +119,7 @@ curl http://localhost:8100/me -H "Authorization: Bearer $TOKEN"   # → phone_ve
 Короткий ответ: **`file`-режим технически запишет файлы и на Railway, но прочитать их там — неудобно, а `mock` — невозможно.** Разбор по фактам:
 
 ### 6.1 Что известно про деплой из репозитория
-- [`railway.json`](../../railway.json) содержит **только** healthcheck `/health` (эндпоинт есть: [`asgi_app.py:285-286`](../../src/core/api/asgi_app.py)) и timeout. **Нет** `startCommand` и **нет** конфигурации **Volume** (persistent disk).
+- [`railway.json`](../../railway.json) содержит **только** healthcheck `/health` (эндпоинт есть: [`asgi_app.py:288-293`](../../src/core/api/asgi_app.py)) и timeout. **Нет** `startCommand` и **нет** конфигурации **Volume** (persistent disk).
 - Значит файловая система контейнера на Railway — **эфемерная**: persistent-том не примонтирован.
 
 ### 6.2 `mock` на Railway → код прочитать НЕЛЬЗЯ
@@ -130,7 +132,7 @@ curl http://localhost:8100/me -H "Authorization: Bearer $TOKEN"   # → phone_ve
 4. **Профиль.** Если сервис запущен с `APP_PROFILE=pilot`, `file` вообще не стартует (§5, [`schema.py:180-182`](../../src/core/config/schema.py)) — для `file` нужен `APP_PROFILE=demo`.
 
 ### 6.4 Что делать для ручного теста «в облаке» (по убыванию практичности)
-- **Telnyx + реальный `+372`** — единственный режим, где код приходит на устройство без доступа в контейнер. Подходит для облака напрямую. Тратит бюджет.
+- **Telnyx или SMSPM + реальный `+372`** — режимы, где код приходит на устройство без доступа в контейнер. Подходит для облака напрямую. Тратит бюджет. SMSPM: прямой send без JWT — [`phone-sms-verification.md`](./phone-sms-verification.md) §6C0.
 - **Railway Volume + `file`.** Примонтировать Railway Volume (напр. в `/data`) и задать `FILE_SMS_OUTBOX_DIR=/data/sms-outbox` — файлы станут persistent. Но **чтение всё равно требует доступа в контейнер** (п.6.3.2). *(Том в репозитории сейчас не настроен — это инфраструктурная правка вне кода.)*
 - **Локальный прогон против облачной БД.** Запустить identity локально (`SMS_PROVIDER=file`, `tail -f`), указав в `.env` те же Supabase-креды, что и в облаке — фронт-тест гоняем на локальный identity, коды читаем из локальных файлов.
 - **(Не построено)** demo-only dev-эндпоинт `GET /dev/last-otp`, читающий outbox/`sent_messages` — это был вариант 2 закрытия G-SMS-1; в коде его нет. Был бы самым удобным для облака, но потребовал бы отдельной стори с жёстким `demo`-gate.
@@ -142,6 +144,7 @@ curl http://localhost:8100/me -H "Authorization: Bearer $TOKEN"   # → phone_ve
 | Railway + `file` (без Volume) | ⚠️ пишется в эфемерный диск, не в логах, нужен шелл; теряется при редеплое |
 | Railway + `file` + Volume | ⚠️ persistent, но читать всё равно через шелл контейнера; `APP_PROFILE=demo` обязателен |
 | Railway + `telnyx` | ✅ реальная SMS на телефон |
+| Railway + `smspm` | ✅ реальная SMS на телефон (после SPIKE-01 creds) |
 | **Локально + `file`** | ✅ **проще всего: `tail -f var/sms-outbox/<номер>.log`** |
 
 ---
@@ -150,11 +153,12 @@ curl http://localhost:8100/me -H "Authorization: Bearer $TOKEN"   # → phone_ve
 
 - Провайдер `file`: [`file_sender.py`](../../src/core/phone/file/file_sender.py) (append, санитайз, таймстемп), [`config.py`](../../src/core/phone/file/config.py) (`FILE_SMS_OUTBOX_DIR`, default `var/sms-outbox`), [`descriptor.py`](../../src/core/phone/file/descriptor.py).
 - Провайдер `mock`: [`mock_sender.py:9-25`](../../src/core/phone/mock/mock_sender.py) (in-memory).
+- Провайдер `smspm`: [`smspm/sender.py`](../../src/core/phone/smspm/sender.py); карта — [`11-sms-providers.md`](../runtime-docs/11-sms-providers.md).
 - Реестр/выбор активного: [`registry_builder.py`](../../src/core/phone/registry_builder.py), `get_active` [`registry.py:24-25`](../../src/core/phone/registry.py).
 - `SMS_PROVIDER` default `mock` + валидация + file-fail-fast в pilot: [`schema.py:170-182`](../../src/core/config/schema.py); pilot-required без SMS: [`schema.py:185+`](../../src/core/config/schema.py).
 - `file`/`mock` не поднимают HTTP-клиент: [`runtime_factory.py:14-15`](../../src/core/phone/runtime_factory.py).
 - Реестр строится 1 раз при старте: [`providers.py:130-132`](../../src/core/infrastructure/providers.py), [`service_factory.py:75-76`](../../src/core/infrastructure/service_factory.py).
 - Код только хешируется в сессию: [`otp_engine.py:48-64`](../../src/core/phone/otp_engine.py); текст SMS: [`sms_text.py:4-5`](../../src/core/phone/sms_text.py); в ответе кода нет: [`handlers.py:531-532`](../../src/core/api/handlers.py); отправка: [`handlers.py:494-510`](../../src/core/api/handlers.py).
-- Деплой: [`railway.json`](../../railway.json) (healthcheck `/health`, без startCommand/Volume), `/health` [`asgi_app.py:285-286`](../../src/core/api/asgi_app.py), запуск [`Makefile:3-11`](../../Makefile).
+- Деплой: [`railway.json`](../../railway.json) (healthcheck `/health`, без startCommand/Volume), `/health` [`asgi_app.py:288-293`](../../src/core/api/asgi_app.py), запуск [`Makefile:3-11`](../../Makefile).
 - Тестовый шов (чтение кода в автотестах): [`test_phone_verification_flow.py:51-66`](../../tests/test_phone_verification_flow.py); тесты `file`: [`test_phone_file_sms_sender.py`](../../tests/test_phone_file_sms_sender.py).
 - Анти-leak на фронте: [spa STORY-SPA-ID-04:51](../../../spa-app/docs/tasks/backlog-stories/identity-auth/STORY-SPA-ID-04-phone-verification-flow.md).

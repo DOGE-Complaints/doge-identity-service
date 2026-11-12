@@ -30,7 +30,7 @@ make serve    # http://127.0.0.1:8100
 |------------|-------------|
 | `APP_PROFILE` | `pilot` |
 | `DB_BACKEND` | `supabase` |
-| `SMS_PROVIDER` | `mock` (не `file`) |
+| `SMS_PROVIDER` | `mock` (не `file`; live: `telnyx` или `smspm`) |
 | `API_BASE_URL` | публичный URL identity |
 | `SUPABASE_URL` | из Supabase Dashboard |
 | `SUPABASE_SERVICE_ROLE` | из Supabase Dashboard |
@@ -128,7 +128,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 | `APP_PROFILE` | `demo` | `demo` или `pilot` | `pilot` |
 | `API_BASE_URL` | `http://localhost:8100` | `http://localhost:8100` | `https://doge-identity-service-….up.railway.app` |
 | `DB_BACKEND` | `in_memory` | `supabase` | `supabase` |
-| `SMS_PROVIDER` | `mock` | `mock` | `mock` (**не** `file`) |
+| `SMS_PROVIDER` | `mock` | `mock` | `mock` (**не** `file`; live — `telnyx` \| `smspm`) |
 | `CORS_ALLOWED_ORIGINS` | `*` или `http://localhost:5173,…` | как demo | origin spa (не `*`) |
 | Секреты `pilot_required` | не нужны в demo | нужны если `pilot` | все обязательны |
 | `PORT` | `8100` | `8100` | не трогать |
@@ -251,7 +251,7 @@ token=<oauth_access_token_to_check>
 
 ### Phone / SMS
 
-`SMS_PROVIDER=mock` на pilot/Railway. `SMS_PROVIDER=file` **запрещён** для pilot ([`schema.py:178-181`](../../src/core/config/schema.py)).
+`SMS_PROVIDER=mock` на pilot/Railway по умолчанию. `SMS_PROVIDER=file` **запрещён** для pilot ([`schema.py:178-181`](../../src/core/config/schema.py)). Live: `telnyx` или `smspm` + required env активного провайдера (см. [`.env.example`](../../.env.example), [11-sms-providers.md](../runtime-docs/11-sms-providers.md)). `SMSPM_HASH` / `SMSPM_TOKEN` — секреты; не в git.
 
 ### eID / Authentigate
 
@@ -300,4 +300,4 @@ IDENTITY_SERVICE_URL=https://doge-identity-service-tallinn-demo.up.railway.app \
 | [`cors-allowed-origins.md`](./cors-allowed-origins.md) | CORS и spa origin |
 | [`run-and-healthcheck.md`](./run-and-healthcheck.md) | запуск и smoke |
 | [`supabase-project-setup.md`](./supabase-project-setup.md) | новый Supabase проект |
-| [`STORY-IDS-DEPLOY-01`](../tasks/backlog-stories/railway-deploy/STORY-IDS-DEPLOY-01-railway-deployability.md) | Railway deploy checklist |
+| [`run-and-healthcheck.md`](./run-and-healthcheck.md) | Railway deploy: startCommand, healthcheck, pilot env, smoke |

@@ -22,6 +22,7 @@
 | POST | `/auth/phone/confirm` | подтвердить код | `{"phone":"+372...","code":"123456"}` |
 | GET | `/me` | проверить флаг `phone_verified` | — |
 | POST | `/webhooks/telnyx/messaging` | статусы доставки от Telnyx (только live Telnyx) | приходит от Telnyx |
+| GET | `/webhooks/smspm/delivery/{shared_secret}` | статусы доставки от SMSPM (phase-2, `SMSPM_WEBHOOK_SHARED_SECRET`) | query `id`/`status`; тело ответа `OK` |
 
 Успех `/request` → `200 {"data":{"sent":true,"expires_at":"...Z"}}`. **Код в ответе НЕ приходит** (специально, ради безопасности). Ошибки → `{"error":{"code":"COUNTRY_NOT_ALLOWED|RATE_LIMITED|CODE_MISMATCH|CODE_EXPIRED|TOO_MANY_ATTEMPTS|..."}}`.
 
@@ -58,6 +59,10 @@ SMSPM_HASH=
 SMSPM_TOKEN=
 SMSPM_FROM=
 SMSPM_API_BASE_URL=https://api.smspm.com
+# phase-2 delivery webhook (optional until live callbacks):
+# SMSPM_WEBHOOK_SHARED_SECRET=
+# SMSPM_REPORT_URL=https://<public-api>/webhooks/smspm/delivery/<shared-secret>
+# SMSPM_TEST_PHONE=+372XXXXXXXX   # optional; прямой smoke §6C0, не нужен для старта
 ```
 Имена ключей — из [`.env.example`](../../.env.example) / SA §5. **Не** класть hash/token в git и не подставлять значения секретов в этот runbook. Значения — из секрет-хранилища после [SPIKE-IDS-SMSPM-01](../tasks/backlog-stories/smspm/SPIKE-IDS-SMSPM-01-account-sender-setup.md).
 
@@ -140,9 +145,44 @@ curl -s http://127.0.0.1:8100/me -H "Authorization: Bearer $TOKEN"
 ### (Опц.) Доставка — webhook
 Telnyx присылает статусы доставки на `POST /webhooks/telnyx/messaging` (нужен публичный URL и настроенный в профиле webhook). Это для наблюдаемости; на саму верификацию не влияет.
 
+SMSPM (phase-2): `GET /webhooks/smspm/delivery/{shared_secret}` (env `SMSPM_WEBHOOK_SHARED_SECRET`; optional `SMSPM_REPORT_URL` на send). Ответ plain `200` `OK`. На OTP-confirm не влияет.
+
+### 6C0. Прямой smoke SMSPM — только интеграция (без JWT / пользователя)
+
+Проверка creds, sender и EE-доставки **без** `/auth/phone/*`, без Bearer и без записи в `profiles` / OTP-сессию. Предусловие: [SPIKE-IDS-SMSPM-01](../tasks/backlog-stories/smspm/SPIKE-IDS-SMSPM-01-account-sender-setup.md) (hash/token/sender/тестовый номер). Имена ключей — ниже; **значения секретов в этот файл не копировать**.
+
+Identity **не** имеет маршрута `/balance` — balance и прямой send идут в **API SMSPM**, тот же POST, что [`SmspmSmsSender`](../../src/core/phone/smspm/sender.py). Архитектура: [`11-sms-providers.md`](../runtime-docs/11-sms-providers.md).
+
+```bash
+# секреты только в shell env (не в git):
+# export SMSPM_HASH=… SMSPM_TOKEN=… SMSPM_FROM=… SMSPM_TEST_PHONE=+372XXXXXXXX
+# export SMSPM_API_BASE_URL=https://api.smspm.com   # optional
+
+# 1) creds живые? (vendor /balance — в identity клиента нет)
+curl -s -X POST "${SMSPM_API_BASE_URL:-https://api.smspm.com}/balance" \
+  -H "Content-Type: application/json" \
+  -d "{\"hash\":\"$SMSPM_HASH\",\"token\":\"$SMSPM_TOKEN\"}"
+#   → 200 {"hash":"…","balance":…}  /  401 {"error":"Unauthorized"}
+
+# 2) send на тестовый номер (toNumber без +; текст НЕ OTP-сессии)
+TO="${SMSPM_TEST_PHONE#+}"
+curl -s -X POST "${SMSPM_API_BASE_URL:-https://api.smspm.com}" \
+  -H "Content-Type: application/json" \
+  -d "{\"hash\":\"$SMSPM_HASH\",\"token\":\"$SMSPM_TOKEN\",\"toNumber\":\"$TO\",\"fromNumber\":\"$SMSPM_FROM\",\"text\":\"DOGEstonia SMSPM integration smoke (not an OTP).\"}"
+#   → 200 {"messages":[{"id":"…","status":"Added to queue",…}]}
+```
+
+Автомат того же send (skip без creds/`SMSPM_TEST_PHONE`; default suite его не гоняет):
+
+```bash
+.venv/bin/python -m pytest tests/test_smspm_sms_sender.py -q -m live_integration
+```
+
+Полный продуктовый OTP (JWT → request → confirm → `/me`) — §6C ниже.
+
 ---
 
-## 6C. Режим C — live SMSPM (настоящая SMS)
+## 6C. Режим C — live SMSPM (настоящая SMS, полный OTP)
 Предусловие: выполнен [SPIKE-IDS-SMSPM-01](../tasks/backlog-stories/smspm/SPIKE-IDS-SMSPM-01-account-sender-setup.md) (аккаунт, hash/token, approved sender, тестовый EE-номер), `.env` из §2 (режим C), сервис перезапущен. Telnyx §6 остаётся опцией (D-G3).
 
 ```bash
@@ -185,3 +225,4 @@ curl -s http://127.0.0.1:8100/me -H "Authorization: Bearer $TOKEN"
 - Спека Telnyx: [`telnyx-integration-spec-dogestonia-2026-06-10.md`](../analysis/telnyx-integration-spec-dogestonia-2026-06-10.md)
 - Настройка Telnyx-аккаунта: [`SPIKE-IDS-PV-08`](../tasks/backlog-stories/phone-verification/SPIKE-IDS-PV-08-telnyx-account-setup.md)
 - Настройка SMSPM-аккаунта: [`SPIKE-IDS-SMSPM-01`](../tasks/backlog-stories/smspm/SPIKE-IDS-SMSPM-01-account-sender-setup.md)
+- SMS-провайдеры (as-built): [`11-sms-providers.md`](../runtime-docs/11-sms-providers.md)

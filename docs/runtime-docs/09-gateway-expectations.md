@@ -8,7 +8,8 @@ identity и gateway — два разных сервиса, и важно, чт�
 
 ## Целевая парадигма (решено 2026-06-04, submit актуализирован 2026-07-04) — «не смешиваем сервисы»
 
-> **Phone-pivot (2026-06):** активный гейт — `phone_verified` (SMS-OTP); eID **отложен**. Везде ниже, где «eID», читать как «верификация (телефон)».
+> **Phone-pivot (2026-06):** активный *метод* верификации — SMS-OTP (`phone_verified`); eID **отложен**.  
+> **REQ7 consumer canon (2026-09-21, EPIC-IDS-15):** method-opaque **`identity_verified`** на `GET /me` — канон для threads / civic / новых spa gates. Legacy story-draft submit (GW-DRAFT-02) и OAuth introspect пока читают `phone_verified` до sibling cutover (STORY-GW-THR-03 / OAuth follow-up).
 
 > **Browser-submit (2026-07-04, GW-DRAFT-02):** продуктовый user path — GPT стешит → браузер сабмитит через `/story-drafts*`. OAuth/introspection **остаются** для GPT Actions (D-6). As-built: [`API_REFERENCE §6.8`](../../../doge-complaints-gateway/docs/runtime-docs/api-reference/API_REFERENCE.md).
 
@@ -34,12 +35,13 @@ identity и gateway — два разных сервиса, и важно, чт�
 |------|---------------|-----------|----------------|
 | GPT stash `POST /story-drafts` | ✅ required | ❌ none | identity не участвует |
 | Browser read `GET /story-drafts/{id}` | ❌ | Supabase Bearer | **`GET /me`** (session only) |
-| Browser submit `POST …/submit` | ❌ | Supabase Bearer | **`GET /me`** + `phone_verified` gate |
-| GPT Actions / lazy-gate (D-6) | varies | OAuth or Supabase | **`POST /oauth/introspect`** or **`GET /me`** → `{active/sub, phone_verified}` |
+| Browser submit `POST …/submit` | ❌ | Supabase Bearer | **`GET /me`** + **legacy** `phone_verified` gate (GW-DRAFT-02 as-built; civic REQ7 → THR-03 → `identity_verified`) |
+| GPT Actions / lazy-gate (D-6) | varies | OAuth or Supabase | **`POST /oauth/introspect`** → `{active, sub, phone_verified}` (**legacy**) or **`GET /me`** |
+| Civic / threads write (REQ7) | — | Bearer / Me client | **`GET /me`** → **`identity_verified`** only (identity Done; gateway gate cutover = GW-THR-03) |
 
 **Слой доверия сервисов:** `SERVICE_API_TOKEN` / `X-Service-Token` на stash и operator intake ([`gateway security.py`](../../../doge-complaints-gateway/src/core/api/security.py)).
 
-**Слой пользователя:** статус верификации **не** кодируется в JWT навсегда — gateway/spa **всегда** спрашивают identity свежий `phone_verified`. На story-draft submit as-built transport = **`GET /me`**, не introspection.
+**Слой пользователя:** статус верификации **не** кодируется в JWT навсегда — потребители спрашивают identity свежий флаг. **REQ7 canon:** `data.identity_verified` на **`GET /me`**. Story-draft submit as-built (GW-DRAFT-02) всё ещё гейтит `phone_verified` до THR-03.
 
 Почему так: сервисный токен доказывает «зовёт доверенный сервис», но не доказывает человека. Browser submit без проверки у identity = «confused deputy». Подробный разбор — в gap-отчёте.
 
@@ -47,18 +49,18 @@ identity и gateway — два разных сервиса, и важно, чт�
 
 > **Источник:** [DOC-IDS-ONB-01](../tasks/backlog-stories/identity-onboarding/DOC-IDS-ONB-01-lazy-phone-gate-contract.md) · gap G3 в [`identity-onboarding-ux-2026-06-12`](../analysis/identity-onboarding-ux-2026-06-12.md).
 
-При **web signup** телефон **не** спрашиваем при регистрации — только в момент **защищённого действия** (продуктовое решение 2026-06-12). Identity **не** блокирует действия сам: отдаёт флаг `phone_verified` и флоу верификации; **enforce — на потребителе** (spa-app / gateway).
+При **web signup** телефон **не** спрашиваем при регистрации — только в момент **защищённого действия** (продуктовое решение 2026-06-12). Identity **не** блокирует действия сам: отдаёт флаги и флоу верификации; **enforce — на потребителе** (spa-app / gateway / threads).
 
-### Контракт (gateway / spa перед действием)
+### Контракт (gateway / spa / threads перед действием)
 
 1. Потребитель читает статус верификации:
-   - **spa-app:** `GET /me` → `phone_verified` ([`me_response.py:42`](../../src/core/api/me_response.py));
-   - **gateway (story-draft submit, GW-DRAFT-02):** форвард Supabase Bearer → identity **`GET /me`** → `{sub, phone_verified}` ([`me_client.py`](../../../doge-complaints-gateway/src/core/identity/me_client.py));
-   - **gateway / GPT Actions (D-6):** `POST /oauth/introspect` (service-token) → `{active, sub, phone_verified}` ([`introspection.py`](../../src/core/oauth/introspection.py), [OAUTH-02](../tasks/backlog-stories/oauth/STORY-IDS-OAUTH-02-introspection-and-service-token.md)).
-2. Если `phone_verified === false` → **не выполнять** защищённое действие; направить пользователя на verify (inline PV-05: `/auth/phone/request` → `/auth/phone/confirm`).
-3. После успешного confirm (`phone_verified=true`) → повторить действие.
+   - **REQ7 (threads / civic / new spa):** `GET /me` → **`identity_verified`** ([`me_response.py:35,51`](../../src/core/api/me_response.py); [API_REFERENCE §6](api-reference/API_REFERENCE.md); [REQ 21](../requirements/21-verification-boolean-and-audit.md)).
+   - **gateway story-draft submit (GW-DRAFT-02, legacy as-built):** `GET /me` → `phone_verified` ([`me_client.py`](../../../doge-complaints-gateway/src/core/identity/me_client.py)) — cutover to opaque = [STORY-GW-THR-03](../../../doge-complaints-gateway/docs/tasks/backlog-stories/issue-thread-context-and-node-verification/STORY-GW-THR-03-civic-gate-identity-verified.md).
+   - **gateway / GPT Actions (D-6, legacy):** `POST /oauth/introspect` → `{active, sub, phone_verified}` ([`introspection.py`](../../src/core/oauth/introspection.py)).
+2. Если требуемый флаг false → **не выполнять** действие; направить на verify (PV-05).
+3. После успешного confirm (`phone_verified` + **`identity_verified`** true) → повторить действие.
 
-**Каноничный пример (browser-submit):** публикация стори — `POST /story-drafts/{draft_id}/submit` на gateway после stash; gateway проверяет `phone_verified` через identity **`GET /me`**. Альтернатива на OAuth-path: identity отдаёт `verification_required` при `requested_action=stories:submit` (OAUTH-04) — **GPT Actions**, не заменяет lazy-gate в web.
+**Каноничный пример (browser-submit, as-built):** `POST /story-drafts/{draft_id}/submit` гейтит **`phone_verified`** через `/me` до THR-03. **Канон REQ7 для новых civic/threads paths:** opaque **`identity_verified`**.
 
 > **Superseded:** «перед `POST …/stories`» как единственный user path — operator/service intake; GPT-direct submit с introspection — см. GW-DRAFT-03.
 
