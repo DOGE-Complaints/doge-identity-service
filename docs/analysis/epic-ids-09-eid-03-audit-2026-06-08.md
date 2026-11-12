@@ -2,7 +2,7 @@
 
 > **Дата:** 2026-06-08
 > **Методология:** [`analysis.mdc`](../../../.cursor/rules/analysis.mdc) — только проверяемые claims с `file:line`, регрессии, gaps с severity.
-> **Предмет:** [`STORY-IDS-EID-03-provider-plugin-backbone`](../tasks/backlog-stories/STORY-IDS-EID-03-provider-plugin-backbone.md) vs фактический код. Исполнена под **EPIC-IDS-09-eid-verification** (pkg-000016), 6 tasks.
+> **Предмет:** [`STORY-IDS-EID-03-provider-plugin-backbone`](../tasks/backlog-stories/eid/STORY-IDS-EID-03-provider-plugin-backbone.md) vs фактический код. Исполнена под **EPIC-IDS-09-eid-verification** (pkg-000016), 6 tasks.
 > **Выбор из** [`bullrun-launch-index.md`](../tasks/bullrun-launch-index.md): EPIC-IDS-09, task queue t01–t06 (pkg-000016).
 
 ## Команды верификации (выполнены)
@@ -53,7 +53,7 @@
 
 | ID | Severity | Тип | Суть | Где |
 |----|----------|-----|------|-----|
-| F1 | MEDIUM | Doc-stale | backlog-story помечена `⚪ Todo` (стр.6), а «Точки в коде (текущее состояние)» описывают **удалённый** код: «Хардкод реестра providers.py:92 (`EIDProviderRegistry({"mock": ...})`)» и «Голый KeyError registry.py:11-14» — оба заменены | [`STORY-IDS-EID-03...md:6,26-27`](../tasks/backlog-stories/STORY-IDS-EID-03-provider-plugin-backbone.md) |
+| F1 | MEDIUM | Doc-stale | backlog-story помечена `⚪ Todo` (стр.6), а «Точки в коде (текущее состояние)» описывают **удалённый** код: «Хардкод реестра providers.py:92 (`EIDProviderRegistry({"mock": ...})`)» и «Голый KeyError registry.py:11-14» — оба заменены | [`STORY-IDS-EID-03...md:6,26-27`](../tasks/backlog-stories/eid/STORY-IDS-EID-03-provider-plugin-backbone.md) |
 | F2 | LOW | Design-observation | `build_registry` **молча пропускает** валидируемый, но не описанный active-провайдер (`continue` при `descriptor is None`, [registry_builder.py:24](../../src/core/providers/registry_builder.py)). Поэтому `EID_PROVIDER=eideasy` → сервис **стартует** с реестром только из `mock`; `ProviderNotRegisteredError` всплывает лишь при `get_active` (per-request 500), не fail-fast на старте | [registry_builder.py:22-26](../../src/core/providers/registry_builder.py) |
 
 > F2 — наблюдение: AC3 требует корректный тип ошибки **в точке использования** — он соблюдён (`get_active` бросает `ProviderNotRegisteredError`). Fail-fast на старте дал бы раннее обнаружение мисконфига, но это не нарушение AC. Сейчас провайдеры eideasy/authentigate ещё не описаны (EID-02 backlog), так что путь не активен в проде.

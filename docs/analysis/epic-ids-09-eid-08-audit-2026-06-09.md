@@ -2,7 +2,7 @@
 
 > **Дата:** 2026-06-09
 > **Методология:** [`analysis.mdc`](../../../.cursor/rules/analysis.mdc) — только проверяемые claims с `file:line`, регрессии, gaps с severity.
-> **Предмет:** [`STORY-IDS-EID-08-session-secret-box`](../tasks/backlog-stories/STORY-IDS-EID-08-session-secret-box.md) vs фактический код. Исполнена под **EPIC-IDS-09-eid-verification** (pkg-000021), 5 tasks.
+> **Предмет:** [`STORY-IDS-EID-08-session-secret-box`](../tasks/backlog-stories/eid/STORY-IDS-EID-08-session-secret-box.md) vs фактический код. Исполнена под **EPIC-IDS-09-eid-verification** (pkg-000021), 5 tasks.
 > **Выбор из** [`bullrun-launch-index.md`](../tasks/bullrun-launch-index.md): EPIC-IDS-09, Текущая волна — pkg-000021, STORY-IDS-EID-08 🟢 (стр.11,33).
 
 ## Команды верификации (выполнены)
@@ -54,13 +54,13 @@
 
 | ID | Severity | Тип | Суть | Где |
 |----|----------|-----|------|-----|
-| **F1** | MEDIUM | Doc-stale | Backlog-story помечена `Status: ⚪ Todo` (стр.6), AC-чекбоксы `[ ]` (стр.33-37) — реально 🟢 Done под `EPIC-IDS-09` (pkg-000021). Секция «Точки в коде (текущее состояние)» описывает пред-состояние («helper'а шифрования **нет** (убрали в CLEANUP-02)») — теперь helper есть. **Как закрыть:** Status ⚪→🟢, AC `[ ]`→`[x]`, обновить «Точки в коде» (добавить `session_secret.py`, `EID_SESSION_ENC_KEY`, слот в runtime). Рекуррентный паттерн (как у EID-04/05/06/07). | [`STORY-IDS-EID-08...md:6,25-29,33-37`](../tasks/backlog-stories/STORY-IDS-EID-08-session-secret-box.md) |
+| **F1** | MEDIUM | Doc-stale | Backlog-story помечена `Status: ⚪ Todo` (стр.6), AC-чекбоксы `[ ]` (стр.33-37) — реально 🟢 Done под `EPIC-IDS-09` (pkg-000021). Секция «Точки в коде (текущее состояние)» описывает пред-состояние («helper'а шифрования **нет** (убрали в CLEANUP-02)») — теперь helper есть. **Как закрыть:** Status ⚪→🟢, AC `[ ]`→`[x]`, обновить «Точки в коде» (добавить `session_secret.py`, `EID_SESSION_ENC_KEY`, слот в runtime). Рекуррентный паттерн (как у EID-04/05/06/07). | [`STORY-IDS-EID-08...md:6,25-29,33-37`](../tasks/backlog-stories/eid/STORY-IDS-EID-08-session-secret-box.md) |
 | **F2** | LOW | Doc-stale | Индекс декларирует «253 pytest offline» ([bullrun-launch-index.md:11](../tasks/bullrun-launch-index.md)), фактически **254 passed** (off-by-one). **Как закрыть:** синхронизировать число в строке Текущей волны. | [`bullrun-launch-index.md:11`](../tasks/bullrun-launch-index.md) |
 
 Иных материальных findings нет. Наблюдения (severity none, по scope, **не gap**):
 - **`_DEMO_EID_SESSION_ENC_KEY` — фиксированная константа** в исходнике ([schema.py:20](../../src/core/config/schema.py)), не эфемерный (per-process) ключ. Имя теста `..._uses_ephemeral_default...` неточно («ephemeral» ≠ хардкод-дефолт). Безопасно: ключ demo-only, в pilot не используется (guard fail-fast), комментарий это фиксирует ([schema.py:19](../../src/core/config/schema.py)). По scope story («demo — дефолтный/эфемерный допустим») — допустимо.
 - **`secret_box` строится для всех профилей** (в отличие от `oidc`/`http_client`, которые non-mock-only). Корректно: PKCE-секреты нужны и в mock-флоу; слот `| None` сохранён для типовой гибкости, но фабрика всегда заполняет.
-- **Реальное использование** (`start_flow` пишет `code_verifier_encrypted=seal(...)`, callback `open(...)`) — **вне scope EID-08** (отнесено к [EID-02](../tasks/backlog-stories/STORY-IDS-EID-02-real-eid-providers.md)). Поля `code_verifier_encrypted/_hash` в модели существуют ([models.py:49-50]), пишутся пока nullable — это ожидаемо, не gap данной story.
+- **Реальное использование** (`start_flow` пишет `code_verifier_encrypted=seal(...)`, callback `open(...)`) — **вне scope EID-08** (отнесено к [EID-02](../tasks/backlog-stories/eid-deferred/STORY-IDS-EID-02-real-eid-providers.md)). Поля `code_verifier_encrypted/_hash` в модели существуют ([models.py:49-50]), пишутся пока nullable — это ожидаемо, не gap данной story.
 
 ---
 

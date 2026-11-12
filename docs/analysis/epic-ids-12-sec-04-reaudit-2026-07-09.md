@@ -119,7 +119,7 @@ Identity `run-summary`/ticket: decision rotate yes/no + дата исполне�
 
 | Проверка | Факт | Статус |
 |----------|------|--------|
-| [`bullrun-launch-index.md:153`](../tasks/bullrun-launch-index.md) | `DEPLOY-01 finish → ONB-01` без `→ SEC-04` | ✅ |
+| [`bullrun-launch-index.md:153`](../tasks/bullrun-launch-index.md) | `ONB-01` без `→ SEC-04`; DEPLOY-01 retired | ✅ |
 | Audit link | ссылка на первичный audit report | ✅ |
 
 **Вердикт F4:** **закрыт**.

@@ -2,7 +2,7 @@
 
 > **Дата:** 2026-06-05
 > **Методология:** [`analysis.mdc`](../../../.cursor/rules/analysis.mdc) — только проверяемые claims с `file:line`, регрессии, gaps с severity.
-> **Предмет:** [`STORY-IDS-AUTHCORE-01-profile-and-me`](../tasks/backlog-stories/STORY-IDS-AUTHCORE-01-profile-and-me.md) vs фактический код. Реализована под **EPIC-IDS-07-auth-core** (pkg-000009), не «EPIC-IDS-AUTH-CORE».
+> **Предмет:** [`STORY-IDS-AUTHCORE-01-profile-and-me`](../tasks/backlog-stories/auth-core/STORY-IDS-AUTHCORE-01-profile-and-me.md) vs фактический код. Реализована под **EPIC-IDS-07-auth-core** (pkg-000009), не «EPIC-IDS-AUTH-CORE».
 > **Выбор из** [`bullrun-launch-index.md`](../tasks/bullrun-launch-index.md): EPIC-IDS-07, 6 tasks.
 
 ## Команды верификации (выполнены)
@@ -56,7 +56,7 @@
 | ID | Severity | Тип | Суть | Где |
 |----|----------|-----|------|-----|
 | F1 | **MEDIUM** | Регрессия (тест) | offline-сюита красная: `test_access_app_with_incomplete_supabase_env_raises_config_error` не падает с `ConfigError` | [`test_asgi_import_config_isolation.py:28-41`](../../tests/test_asgi_import_config_isolation.py) |
-| F2 | MEDIUM | Doc-stale | backlog-story помечена `⚪ Todo` / эпик `EPIC-IDS-AUTH-CORE`; реально 🟢 Done под `EPIC-IDS-07` | [`STORY-IDS-AUTHCORE-01...md:5-6,24`](../tasks/backlog-stories/STORY-IDS-AUTHCORE-01-profile-and-me.md) |
+| F2 | MEDIUM | Doc-stale | backlog-story помечена `⚪ Todo` / эпик `EPIC-IDS-AUTH-CORE`; реально 🟢 Done под `EPIC-IDS-07` | [`STORY-IDS-AUTHCORE-01...md:5-6,24`](../tasks/backlog-stories/auth-core/STORY-IDS-AUTHCORE-01-profile-and-me.md) |
 | F3 | LOW | Dead code | `handle_me_stub` больше не используется; в тексте — устаревший `EPIC-IDS-AUTH-CORE` | [`handlers.py:41-52`](../../src/core/api/handlers.py) |
 | F4 | LOW | Scope-partial | scope обещал «+ базовые права»; в payload только `role` из JWT, отдельной модели прав нет | [`me_response.py:17-34`](../../src/core/api/me_response.py) |
 | F5 | MEDIUM | Index-vs-факт | индекс фиксирует «200 pytest offline, 199 passed» и эпик «P3 Execute Done», но в сюите 1 падение (F1) | [`bullrun-launch-index.md:11`](../tasks/bullrun-launch-index.md) |

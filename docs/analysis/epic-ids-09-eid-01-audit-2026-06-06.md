@@ -2,7 +2,7 @@
 
 > **Дата:** 2026-06-06
 > **Методология:** [`analysis.mdc`](../../../.cursor/rules/analysis.mdc) — только проверяемые claims с `file:line`, регрессии, gaps с severity.
-> **Предмет:** [`STORY-IDS-EID-01-eid-verification-flow`](../tasks/backlog-stories/STORY-IDS-EID-01-eid-verification-flow.md) vs фактический код. Исполнена под **EPIC-IDS-09-eid-verification** (pkg-000015), 6 tasks (story-файл всё ещё помечен `EPIC-IDS-EID`).
+> **Предмет:** [`STORY-IDS-EID-01-eid-verification-flow`](../tasks/backlog-stories/eid/STORY-IDS-EID-01-eid-verification-flow.md) vs фактический код. Исполнена под **EPIC-IDS-09-eid-verification** (pkg-000015), 6 tasks (story-файл всё ещё помечен `EPIC-IDS-EID`).
 > **Выбор из** [`bullrun-launch-index.md`](../tasks/bullrun-launch-index.md): EPIC-IDS-09, task queue t01–t06.
 
 ## Команды верификации (выполнены)
@@ -54,7 +54,7 @@
 
 | ID | Severity | Тип | Суть | Где |
 |----|----------|-----|------|-----|
-| F1 | MEDIUM | Doc-stale | backlog-story помечена `⚪ Todo` / эпик `EPIC-IDS-EID`; реально 🟢 Done под `EPIC-IDS-09`. Секция «Точки в коде» утверждает «Заглушки: /auth/eid/start (171-181)» — теперь ложно (реализовано) | [`STORY-IDS-EID-01...md:5-6,24`](../tasks/backlog-stories/STORY-IDS-EID-01-eid-verification-flow.md) |
+| F1 | MEDIUM | Doc-stale | backlog-story помечена `⚪ Todo` / эпик `EPIC-IDS-EID`; реально 🟢 Done под `EPIC-IDS-09`. Секция «Точки в коде» утверждает «Заглушки: /auth/eid/start (171-181)» — теперь ложно (реализовано) | [`STORY-IDS-EID-01...md:5-6,24`](../tasks/backlog-stories/eid/STORY-IDS-EID-01-eid-verification-flow.md) |
 | F2 | LOW | Security-observation | `verified_person_hash` считается с **пустым HMAC-ключом**, если `DOGESTONIA_EID_SECRET` не задан: `key=deps.config.eid_secret or ""` — в `demo` секрет может отсутствовать → хэш без pepper. В `pilot` секрет обязателен ([`schema.py`](../../src/core/config/schema.py) pilot_required), так что enforced только там | [`handlers.py:283-286`](../../src/core/api/handlers.py) |
 | F3 | LOW | Robustness | `return_context`/`requested_action` не валидируются против enum перед персистом. На `in_memory` — сохраняются как есть; на `supabase` БД-CHECK ([миграция сессий](../../supabase/migrations/20260525000002_create_eid_verification_sessions.sql)) отклонит чужое значение → необработанная ошибка PostgREST. Вне AC (scope = «прокинуть флаг»), но потенциальный 500 на supabase | [`handlers.py:152-157`](../../src/core/api/handlers.py) |
 

@@ -2,7 +2,7 @@
 
 > **Дата:** 2026-06-08
 > **Методология:** [`analysis.mdc`](../../../.cursor/rules/analysis.mdc) — только проверяемые claims с `file:line`, регрессии, gaps с severity.
-> **Предмет:** [`STORY-IDS-EID-04-provider-owned-config`](../tasks/backlog-stories/STORY-IDS-EID-04-provider-owned-config.md) vs фактический код. Исполнена под **EPIC-IDS-09-eid-verification** (pkg-000017), 6 tasks.
+> **Предмет:** [`STORY-IDS-EID-04-provider-owned-config`](../tasks/backlog-stories/eid/STORY-IDS-EID-04-provider-owned-config.md) vs фактический код. Исполнена под **EPIC-IDS-09-eid-verification** (pkg-000017), 6 tasks.
 > **Выбор из** [`bullrun-launch-index.md`](../tasks/bullrun-launch-index.md): EPIC-IDS-09, task queue t01–t06 (pkg-000017).
 
 ## Команды верификации (выполнены)
@@ -54,7 +54,7 @@
 
 | ID | Severity | Тип | Суть | Где |
 |----|----------|-----|------|-----|
-| F1 | MEDIUM | Doc-stale | backlog-story помечена `⚪ Todo` (стр.6), а «Точки в коде (текущее состояние)» описывают **отрефакторенный** провайдер-`if` («[schema.py:96-112] eid_provider membership + eideasy required») — eideasy-валидация уже вынесена | [`STORY-IDS-EID-04...md:6,27-31`](../tasks/backlog-stories/STORY-IDS-EID-04-provider-owned-config.md) |
+| F1 | MEDIUM | Doc-stale | backlog-story помечена `⚪ Todo` (стр.6), а «Точки в коде (текущее состояние)» описывают **отрефакторенный** провайдер-`if` («[schema.py:96-112] eid_provider membership + eideasy required») — eideasy-валидация уже вынесена | [`STORY-IDS-EID-04...md:6,27-31`](../tasks/backlog-stories/eid/STORY-IDS-EID-04-provider-owned-config.md) |
 | F2 | MEDIUM | AC3 partial / SSOT | Список допустимых провайдеров `{"mock","eideasy","authentigate"}` остался **захардкоженным литералом** в [schema.py:106-107](../../src/core/config/schema.py), дублируя имена из каталога дескрипторов ([registry_builder._DESCRIPTOR_BY_NAME](../../src/core/providers/registry_builder.py)). Добавление нового провайдера всё ещё требует правки `schema.py`. Acceptance-тест `test_schema_has_no_provider_specific_ifs` проверяет только `== "authentigate"`-ифы и этот литерал **не ловит** | schema.py:106 |
 
 ### F2 — пояснение

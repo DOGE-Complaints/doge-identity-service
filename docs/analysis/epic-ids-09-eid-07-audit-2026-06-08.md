@@ -2,7 +2,7 @@
 
 > **Дата:** 2026-06-08
 > **Методология:** [`analysis.mdc`](../../../.cursor/rules/analysis.mdc) — только проверяемые claims с `file:line`, регрессии, gaps с severity.
-> **Предмет:** [`STORY-IDS-EID-07-oidc-toolkit`](../tasks/backlog-stories/STORY-IDS-EID-07-oidc-toolkit.md) vs фактический код. Исполнена под **EPIC-IDS-09-eid-verification** (pkg-000020), 6 tasks.
+> **Предмет:** [`STORY-IDS-EID-07-oidc-toolkit`](../tasks/backlog-stories/eid/STORY-IDS-EID-07-oidc-toolkit.md) vs фактический код. Исполнена под **EPIC-IDS-09-eid-verification** (pkg-000020), 6 tasks.
 > **Выбор из** [`bullrun-launch-index.md`](../tasks/bullrun-launch-index.md): EPIC-IDS-09, task queue t01–t06 (pkg-000020).
 
 ## Команды верификации (выполнены)
@@ -54,7 +54,7 @@
 
 | ID | Severity | Тип | Суть | Где |
 |----|----------|-----|------|-----|
-| F1 | MEDIUM | Doc-stale | backlog-story помечена `⚪ Todo` (стр.6), реально 🟢 Done под `EPIC-IDS-09` (pkg-000020); «Точки в коде (текущее состояние)» описывают пред-состояние («`joserfc` только HS256/симметрично») — теперь есть RS256 OIDC-тулкит | [`STORY-IDS-EID-07...md:6,25-29`](../tasks/backlog-stories/STORY-IDS-EID-07-oidc-toolkit.md) |
+| F1 | MEDIUM | Doc-stale | backlog-story помечена `⚪ Todo` (стр.6), реально 🟢 Done под `EPIC-IDS-09` (pkg-000020); «Точки в коде (текущее состояние)» описывают пред-состояние («`joserfc` только HS256/симметрично») — теперь есть RS256 OIDC-тулкит | [`STORY-IDS-EID-07...md:6,25-29`](../tasks/backlog-stories/eid/STORY-IDS-EID-07-oidc-toolkit.md) |
 
 Иных материальных findings нет. Наблюдения (severity none, по scope):
 - `OidcDiscoveryClient` кэширует discovery **без TTL** (per-issuer навсегда). Для стабильных endpoint'ов приемлемо; scope требовал TTL только для JWKS. Не gap.

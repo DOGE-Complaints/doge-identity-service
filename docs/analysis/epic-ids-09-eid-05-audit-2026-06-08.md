@@ -2,7 +2,7 @@
 
 > **Дата:** 2026-06-08
 > **Методология:** [`analysis.mdc`](../../../.cursor/rules/analysis.mdc) — только проверяемые claims с `file:line`, регрессии, gaps с severity.
-> **Предмет:** [`STORY-IDS-EID-05-canonical-provider-contract`](../tasks/backlog-stories/STORY-IDS-EID-05-canonical-provider-contract.md) vs фактический код. Исполнена под **EPIC-IDS-09-eid-verification** (pkg-000018), 5 tasks.
+> **Предмет:** [`STORY-IDS-EID-05-canonical-provider-contract`](../tasks/backlog-stories/eid/STORY-IDS-EID-05-canonical-provider-contract.md) vs фактический код. Исполнена под **EPIC-IDS-09-eid-verification** (pkg-000018), 5 tasks.
 > **Выбор из** [`bullrun-launch-index.md`](../tasks/bullrun-launch-index.md): EPIC-IDS-09, task queue t01–t05 (pkg-000018).
 
 ## Команды верификации (выполнены)
@@ -52,7 +52,7 @@
 
 | ID | Severity | Тип | Суть | Где |
 |----|----------|-----|------|-----|
-| F1 | MEDIUM | Doc-stale | backlog-story помечена `⚪ Todo` (стр.6), реально 🟢 Done под `EPIC-IDS-09` (pkg-000018); «Точки в коде» ссылаются на устаревшие строки (`handlers.py:263-281` except, `283-286` hash) — сместились на 266-302 / 304 | [`STORY-IDS-EID-05...md:6,23-27`](../tasks/backlog-stories/STORY-IDS-EID-05-canonical-provider-contract.md) |
+| F1 | MEDIUM | Doc-stale | backlog-story помечена `⚪ Todo` (стр.6), реально 🟢 Done под `EPIC-IDS-09` (pkg-000018); «Точки в коде» ссылаются на устаревшие строки (`handlers.py:263-281` except, `283-286` hash) — сместились на 266-302 / 304 | [`STORY-IDS-EID-05...md:6,23-27`](../tasks/backlog-stories/eid/STORY-IDS-EID-05-canonical-provider-contract.md) |
 | F2 | MEDIUM | Doc-drift / contradiction | [06-eid-providers.md](../runtime-docs/06-eid-providers.md) обновлён сверху (EidErrorCode/каноническая идентичность — корректно), но секция реестра **устарела после EID-03/04**: стр.41 «реестр… только mock»; стр.48-51 таблица «eideasy/authentigate — конфиг есть, кода нет» + «⚠️ Ловушка (gap EID-1)… `get_active()` упадёт с `KeyError`… безопасно только mock»; стр.62 «зарегистрировать в реестре в `providers.py` (словарь жёстко содержит только mock)». В коде уже `build_registry` + `ProviderNotRegisteredError` (не `KeyError`) + authentigate `config_spec`. Документ внутренне противоречив | `06-eid-providers.md:39-64` |
 
 ### F2 — пояснение
