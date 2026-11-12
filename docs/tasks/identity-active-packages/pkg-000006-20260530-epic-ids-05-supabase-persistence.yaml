@@ -1,0 +1,38 @@
+schema_version: 1
+package_sequence: 6
+created_at: "2026-05-30T12:00:00Z"
+label: EPIC-IDS-05 Supabase persistence decomposition
+input_kind: epic_story_tree
+tasks_root: doge-identity-service/docs/tasks/
+epic_file: doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence.md
+decision_ref: doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence.md
+story_groups:
+- story_key: STORY-IDS-05-01-supabase-database-http-client
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence/stories/STORY-IDS-05-01-supabase-database-http-client/task-ids-05-01-t01-supabase-database-http-client/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence/stories/STORY-IDS-05-01-supabase-database-http-client/task-ids-05-01-t02-story1-acceptance-verification/README.md
+- story_key: STORY-IDS-05-02-supabase-repositories-identity-set
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence/stories/STORY-IDS-05-02-supabase-repositories-identity-set/task-ids-05-02-t01-profile-and-verification-session-repos/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence/stories/STORY-IDS-05-02-supabase-repositories-identity-set/task-ids-05-02-t02-audit-oauth-story-health-repos/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence/stories/STORY-IDS-05-02-supabase-repositories-identity-set/task-ids-05-02-t03-story2-acceptance-verification/README.md
+- story_key: STORY-IDS-05-03-five-level-healthcheck
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence/stories/STORY-IDS-05-03-five-level-healthcheck/task-ids-05-03-t01-supabase-database-healthcheck-methods/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence/stories/STORY-IDS-05-03-five-level-healthcheck/task-ids-05-03-t02-build-api-dependencies-db-checks/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence/stories/STORY-IDS-05-03-five-level-healthcheck/task-ids-05-03-t03-story3-acceptance-verification/README.md
+- story_key: STORY-IDS-05-04-sql-schema-migrations
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence/stories/STORY-IDS-05-04-sql-schema-migrations/task-ids-05-04-t01-req08-core-migrations/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence/stories/STORY-IDS-05-04-sql-schema-migrations/task-ids-05-04-t02-req17-req15-migrations/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence/stories/STORY-IDS-05-04-sql-schema-migrations/task-ids-05-04-t03-story4-acceptance-verification/README.md
+- story_key: STORY-IDS-05-05-supabase-project-setup-live-credentials
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence/stories/STORY-IDS-05-05-supabase-project-setup-live-credentials/task-ids-05-05-t01-supabase-setup-runbook/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence/stories/STORY-IDS-05-05-supabase-project-setup-live-credentials/task-ids-05-05-t02-ci-test-secrets-layout/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence/stories/STORY-IDS-05-05-supabase-project-setup-live-credentials/task-ids-05-05-t03-story5-acceptance-verification/README.md
+- story_key: STORY-IDS-05-06-backend-switch-provide-service-factory
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence/stories/STORY-IDS-05-06-backend-switch-provide-service-factory/task-ids-05-06-t01-provide-service-factory-supabase-branch/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence/stories/STORY-IDS-05-06-backend-switch-provide-service-factory/task-ids-05-06-t02-supabase-fallback-test-migration/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence/stories/STORY-IDS-05-06-backend-switch-provide-service-factory/task-ids-05-06-t03-story6-acceptance-verification/README.md

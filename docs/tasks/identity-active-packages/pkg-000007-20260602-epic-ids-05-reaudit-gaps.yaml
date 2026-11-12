@@ -1,0 +1,20 @@
+schema_version: 1
+package_sequence: 7
+created_at: "2026-06-02T12:00:00Z"
+label: EPIC-IDS-05 re-audit gap closure (override wave)
+input_kind: epic_story_tree
+tasks_root: doge-identity-service/docs/tasks/
+epic_file: doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence/EPIC-IDS-05-supabase-persistence.md
+decision_ref: doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence/re-audit-report-2026-06-02.md
+story_groups:
+- story_key: STORY-IDS-05-01-supabase-database-http-client
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence/stories/STORY-IDS-05-01-supabase-database-http-client/task-ids-05-01-t03-audit-s1-1-empty-service-role-key-test/README.md
+- story_key: STORY-IDS-05-02-supabase-repositories-identity-set
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence/stories/STORY-IDS-05-02-supabase-repositories-identity-set/task-ids-05-02-t04-audit-s2-1-oauth-store-env-doc/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence/stories/STORY-IDS-05-02-supabase-repositories-identity-set/task-ids-05-02-t05-audit-s2-2-mark-consumed-started-guard/README.md
+- story_key: STORY-IDS-05-03-five-level-healthcheck
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence/stories/STORY-IDS-05-03-five-level-healthcheck/task-ids-05-03-t04-audit-s3-1-dual-health-db-comment/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-05-supabase-persistence/stories/STORY-IDS-05-03-five-level-healthcheck/task-ids-05-03-t05-audit-s3-2-health-db-request-timeout/README.md

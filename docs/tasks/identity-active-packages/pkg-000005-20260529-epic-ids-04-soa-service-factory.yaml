@@ -1,0 +1,38 @@
+schema_version: 1
+package_sequence: 5
+created_at: "2026-05-29T18:00:00Z"
+label: EPIC-IDS-04 SOA service factory decomposition
+input_kind: epic_story_tree
+tasks_root: doge-identity-service/docs/tasks/
+epic_file: doge-identity-service/docs/tasks/epics/EPIC-IDS-04-soa-service-factory.md
+decision_ref: doge-identity-service/docs/tasks/epics/EPIC-IDS-04-soa-service-factory.md
+story_groups:
+- story_key: STORY-IDS-04-01-domain-protocols-contracts
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-04-soa-service-factory/stories/STORY-IDS-04-01-domain-protocols-contracts/task-ids-04-01-t01-domain-contracts-protocols/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-04-soa-service-factory/stories/STORY-IDS-04-01-domain-protocols-contracts/task-ids-04-01-t02-domain-models-dataclasses/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-04-soa-service-factory/stories/STORY-IDS-04-01-domain-protocols-contracts/task-ids-04-01-t03-story1-acceptance-verification/README.md
+- story_key: STORY-IDS-04-02-inmemory-repositories
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-04-soa-service-factory/stories/STORY-IDS-04-02-inmemory-repositories/task-ids-04-02-t01-hash-secret-contract-verify/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-04-soa-service-factory/stories/STORY-IDS-04-02-inmemory-repositories/task-ids-04-02-t02-inmemory-repositories/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-04-soa-service-factory/stories/STORY-IDS-04-02-inmemory-repositories/task-ids-04-02-t03-story2-acceptance-verification/README.md
+- story_key: STORY-IDS-04-03-service-factory-default
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-04-soa-service-factory/stories/STORY-IDS-04-03-service-factory-default/task-ids-04-03-t01-service-factory-protocol-and-default/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-04-soa-service-factory/stories/STORY-IDS-04-03-service-factory-default/task-ids-04-03-t02-story3-acceptance-verification/README.md
+- story_key: STORY-IDS-04-04-eid-provider-registry-mock
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-04-soa-service-factory/stories/STORY-IDS-04-04-eid-provider-registry-mock/task-ids-04-04-t01-eid-provider-port-base/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-04-soa-service-factory/stories/STORY-IDS-04-04-eid-provider-registry-mock/task-ids-04-04-t02-eid-registry-and-mock-provider/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-04-soa-service-factory/stories/STORY-IDS-04-04-eid-provider-registry-mock/task-ids-04-04-t03-story4-acceptance-verification/README.md
+- story_key: STORY-IDS-04-05-supabase-jwt-bearer-auth
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-04-soa-service-factory/stories/STORY-IDS-04-05-supabase-jwt-bearer-auth/task-ids-04-05-t01-supabase-jwt-validator-impl/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-04-soa-service-factory/stories/STORY-IDS-04-05-supabase-jwt-bearer-auth/task-ids-04-05-t02-supabase-jwt-bearer-token-auth/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-04-soa-service-factory/stories/STORY-IDS-04-05-supabase-jwt-bearer-auth/task-ids-04-05-t03-story5-acceptance-verification/README.md
+- story_key: STORY-IDS-04-06-provide-factory-di-integration
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-04-soa-service-factory/stories/STORY-IDS-04-06-provide-factory-di-integration/task-ids-04-06-t01-provide-service-factory/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-04-soa-service-factory/stories/STORY-IDS-04-06-provide-factory-di-integration/task-ids-04-06-t02-build-api-dependencies-integration/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-04-soa-service-factory/stories/STORY-IDS-04-06-provide-factory-di-integration/task-ids-04-06-t03-story6-epic-integration-verification/README.md

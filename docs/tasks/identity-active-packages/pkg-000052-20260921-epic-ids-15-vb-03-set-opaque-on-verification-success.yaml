@@ -1,0 +1,17 @@
+schema_version: 1
+package_sequence: 52
+created_at: "2026-09-21T20:47:00Z"
+label: EPIC-IDS-15 VB-03 set identity_verified on verification success
+input_kind: epic_story_tree
+tasks_root: doge-identity-service/docs/tasks/
+epic_file: doge-identity-service/docs/tasks/epics/EPIC-IDS-15-threads-verification-boolean/EPIC-IDS-15-threads-verification-boolean.md
+decision_ref: doge-identity-service/docs/tasks/backlog-stories/threads-verification-boolean/STORY-IDS-VB-03-set-opaque-on-verification-success.md
+story_groups:
+- story_key: STORY-IDS-VB-03-set-opaque-on-verification-success
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-03-set-opaque-on-verification-success/task-ids-15-03-t01-attach-phone-sets-opaque/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-03-set-opaque-on-verification-success/task-ids-15-03-t02-attach-eid-sets-opaque/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-03-set-opaque-on-verification-success/task-ids-15-03-t03-failure-no-clear-opaque/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-03-set-opaque-on-verification-success/task-ids-15-03-t04-audit-precedent-unchanged/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-03-set-opaque-on-verification-success/task-ids-15-03-t05-offline-success-failure-tests/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-03-set-opaque-on-verification-success/task-ids-15-03-t06-story-acceptance-verification/README.md

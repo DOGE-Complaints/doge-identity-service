@@ -1,0 +1,17 @@
+schema_version: 1
+package_sequence: 26
+created_at: "2026-06-11T18:00:00Z"
+label: EPIC-IDS-10 PV-05 verification flow api
+input_kind: epic_story_tree
+tasks_root: doge-identity-service/docs/tasks/
+epic_file: doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/EPIC-IDS-10-phone-verification.md
+decision_ref: doge-identity-service/docs/tasks/backlog-stories/phone-verification/STORY-IDS-PV-05-verification-flow-api.md
+story_groups:
+- story_key: STORY-IDS-PV-05-verification-flow-api
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-05-verification-flow-api/task-ids-10-05-t01-phone-audit-event-repository/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-05-verification-flow-api/task-ids-10-05-t02-phone-services-di-wiring/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-05-verification-flow-api/task-ids-10-05-t03-handle-phone-request-orchestrator/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-05-verification-flow-api/task-ids-10-05-t04-handle-phone-confirm-orchestrator/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-05-verification-flow-api/task-ids-10-05-t05-asgi-routes-offline-flow-tests/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-05-verification-flow-api/task-ids-10-05-t06-story-acceptance-verification/README.md

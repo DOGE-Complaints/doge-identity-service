@@ -1,0 +1,17 @@
+schema_version: 1
+package_sequence: 20
+created_at: "2026-06-10T12:00:00Z"
+label: EPIC-IDS-09 EID-07 oidc toolkit
+input_kind: epic_story_tree
+tasks_root: doge-identity-service/docs/tasks/
+epic_file: doge-identity-service/docs/tasks/epics/EPIC-IDS-09-eid-verification/EPIC-IDS-09-eid-verification.md
+decision_ref: doge-identity-service/docs/tasks/backlog-stories/STORY-IDS-EID-07-oidc-toolkit.md
+story_groups:
+- story_key: STORY-IDS-EID-07-oidc-toolkit
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-09-eid-verification/stories/STORY-IDS-EID-07-oidc-toolkit/task-ids-09-07-t01-oidc-discovery-client/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-09-eid-verification/stories/STORY-IDS-EID-07-oidc-toolkit/task-ids-09-07-t02-jwks-cache-refresh-on-unknown-kid/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-09-eid-verification/stories/STORY-IDS-EID-07-oidc-toolkit/task-ids-09-07-t03-id-token-validator-rs256-claims/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-09-eid-verification/stories/STORY-IDS-EID-07-oidc-toolkit/task-ids-09-07-t04-oidc-toolkit-provider-runtime-wire/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-09-eid-verification/stories/STORY-IDS-EID-07-oidc-toolkit/task-ids-09-07-t05-offline-oidc-toolkit-mocked-http-tests/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-09-eid-verification/stories/STORY-IDS-EID-07-oidc-toolkit/task-ids-09-07-t06-story-acceptance-verification/README.md

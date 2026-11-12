@@ -1,0 +1,18 @@
+schema_version: 1
+package_sequence: 11
+created_at: "2026-06-05T12:00:00Z"
+label: EPIC-IDS-08 CLEANUP remove stories from identity
+input_kind: epic_story_tree
+tasks_root: doge-identity-service/docs/tasks/
+epic_file: doge-identity-service/docs/tasks/epics/EPIC-IDS-08-cleanup/EPIC-IDS-08-cleanup.md
+decision_ref: doge-identity-service/docs/tasks/backlog-stories/STORY-IDS-CLEANUP-01-remove-stories-from-identity.md
+story_groups:
+- story_key: STORY-IDS-CLEANUP-01-remove-stories-from-identity
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-08-cleanup/stories/STORY-IDS-CLEANUP-01-remove-stories-from-identity/task-ids-08-01-t01-remove-story-drafts-required-tables/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-08-cleanup/stories/STORY-IDS-CLEANUP-01-remove-stories-from-identity/task-ids-08-01-t02-remove-story-http-routes/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-08-cleanup/stories/STORY-IDS-CLEANUP-01-remove-stories-from-identity/task-ids-08-01-t03-remove-storydraft-domain-and-repos/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-08-cleanup/stories/STORY-IDS-CLEANUP-01-remove-stories-from-identity/task-ids-08-01-t04-remove-core-stories-package/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-08-cleanup/stories/STORY-IDS-CLEANUP-01-remove-stories-from-identity/task-ids-08-01-t05-migration-fate-and-req15-deprecated/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-08-cleanup/stories/STORY-IDS-CLEANUP-01-remove-stories-from-identity/task-ids-08-01-t06-story-related-tests-cleanup/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-08-cleanup/stories/STORY-IDS-CLEANUP-01-remove-stories-from-identity/task-ids-08-01-t07-story-acceptance-verification/README.md

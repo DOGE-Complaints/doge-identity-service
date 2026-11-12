@@ -1,0 +1,18 @@
+schema_version: 1
+package_sequence: 41
+created_at: "2026-06-28T17:42:29Z"
+label: EPIC-IDS-10 PV-10 file SMS sink dev
+input_kind: epic_story_tree
+tasks_root: doge-identity-service/docs/tasks/
+epic_file: doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/EPIC-IDS-10-phone-verification.md
+decision_ref: doge-identity-service/docs/tasks/backlog-stories/phone-verification/STORY-IDS-PV-10-file-sms-sink-dev.md
+story_groups:
+- story_key: STORY-IDS-PV-10-file-sms-sink-dev
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-10-file-sms-sink-dev/task-ids-10-10-t01-file-sms-sender-core/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-10-file-sms-sink-dev/task-ids-10-10-t02-file-sms-config-spec/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-10-file-sms-sink-dev/task-ids-10-10-t03-file-descriptor-registry-runtime/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-10-file-sms-sink-dev/task-ids-10-10-t04-pilot-file-provider-fail-fast/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-10-file-sms-sink-dev/task-ids-10-10-t05-dev-hygiene-gitignore-env-example/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-10-file-sms-sink-dev/task-ids-10-10-t06-offline-file-sms-tests/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-10-file-sms-sink-dev/task-ids-10-10-t07-story-acceptance-verification/README.md

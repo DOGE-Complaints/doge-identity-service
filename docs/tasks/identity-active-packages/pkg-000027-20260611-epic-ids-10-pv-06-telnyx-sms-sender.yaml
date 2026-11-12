@@ -1,0 +1,17 @@
+schema_version: 1
+package_sequence: 27
+created_at: "2026-06-11T20:00:00Z"
+label: EPIC-IDS-10 PV-06 telnyx sms sender
+input_kind: epic_story_tree
+tasks_root: doge-identity-service/docs/tasks/
+epic_file: doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/EPIC-IDS-10-phone-verification.md
+decision_ref: doge-identity-service/docs/tasks/backlog-stories/phone-verification/STORY-IDS-PV-06-telnyx-sms-sender.md
+story_groups:
+- story_key: STORY-IDS-PV-06-telnyx-sms-sender
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-06-telnyx-sms-sender/task-ids-10-06-t01-telnyx-settings-config-spec/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-06-telnyx-sms-sender/task-ids-10-06-t02-telnyx-sms-sender-http-send/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-06-telnyx-sms-sender/task-ids-10-06-t03-telnyx-error-code-mapping/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-06-telnyx-sms-sender/task-ids-10-06-t04-telnyx-descriptor-registry-runtime/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-06-telnyx-sms-sender/task-ids-10-06-t05-offline-telnyx-sender-tests/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-06-telnyx-sms-sender/task-ids-10-06-t06-story-acceptance-verification/README.md

@@ -1,0 +1,17 @@
+schema_version: 1
+package_sequence: 9
+created_at: "2026-06-04T12:00:00Z"
+label: EPIC-IDS-07 AUTH-CORE profile and /me
+input_kind: epic_story_tree
+tasks_root: doge-identity-service/docs/tasks/
+epic_file: doge-identity-service/docs/tasks/epics/EPIC-IDS-07-auth-core/EPIC-IDS-07-auth-core.md
+decision_ref: doge-identity-service/docs/tasks/backlog-stories/STORY-IDS-AUTHCORE-01-profile-and-me.md
+story_groups:
+- story_key: STORY-IDS-AUTHCORE-01-profile-and-me
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-07-auth-core/stories/STORY-IDS-AUTHCORE-01-profile-and-me/task-ids-07-01-t01-missing-profile-behavior-decision/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-07-auth-core/stories/STORY-IDS-AUTHCORE-01-profile-and-me/task-ids-07-01-t02-handle-me-handler/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-07-auth-core/stories/STORY-IDS-AUTHCORE-01-profile-and-me/task-ids-07-01-t03-me-response-payload/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-07-auth-core/stories/STORY-IDS-AUTHCORE-01-profile-and-me/task-ids-07-01-t04-asgi-route-wire-handle-me/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-07-auth-core/stories/STORY-IDS-AUTHCORE-01-profile-and-me/task-ids-07-01-t05-me-offline-tests/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-07-auth-core/stories/STORY-IDS-AUTHCORE-01-profile-and-me/task-ids-07-01-t06-story-acceptance-verification/README.md

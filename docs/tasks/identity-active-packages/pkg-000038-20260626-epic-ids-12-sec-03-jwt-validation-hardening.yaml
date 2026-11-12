@@ -1,0 +1,17 @@
+schema_version: 1
+package_sequence: 38
+created_at: "2026-06-26T12:35:07Z"
+label: EPIC-IDS-12 SEC-03 jwt validation hardening
+input_kind: epic_story_tree
+tasks_root: doge-identity-service/docs/tasks/
+epic_file: doge-identity-service/docs/tasks/epics/EPIC-IDS-12-security-hardening/EPIC-IDS-12-security-hardening.md
+decision_ref: doge-identity-service/docs/tasks/backlog-stories/security-hardening/STORY-IDS-SEC-03-jwt-validation-hardening.md
+story_groups:
+- story_key: STORY-IDS-SEC-03-jwt-validation-hardening
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-12-security-hardening/stories/STORY-IDS-SEC-03-jwt-validation-hardening/task-ids-12-04-t01-live-supabase-jwt-aud-decision-record/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-12-security-hardening/stories/STORY-IDS-SEC-03-jwt-validation-hardening/task-ids-12-04-t02-confirm-octkey-import-form-live-token/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-12-security-hardening/stories/STORY-IDS-SEC-03-jwt-validation-hardening/task-ids-12-04-t03-aud-claim-registry-or-spec-waiver/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-12-security-hardening/stories/STORY-IDS-SEC-03-jwt-validation-hardening/task-ids-12-04-t04-offline-jwt-aud-key-regression-tests/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-12-security-hardening/stories/STORY-IDS-SEC-03-jwt-validation-hardening/task-ids-12-04-t05-spec-09-g5-gap-closure-docs/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-12-security-hardening/stories/STORY-IDS-SEC-03-jwt-validation-hardening/task-ids-12-04-t06-story-acceptance-verification/README.md

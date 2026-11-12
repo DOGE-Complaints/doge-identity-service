@@ -8,7 +8,43 @@
 
 ## Актуальная точка
 
-- **Текущая волна:** EPIC-IDS-13 — **P6 Done** ONB-01 audit override (`run_mode=epic_ids_13_onb_01_audit_2026_07_24`, F2 🟢 t05, docs-only, 2026-07-24)
+- **Текущая волна:** EPIC-IDS-16 — **P3 Done** REQ9-02 (`STORY-IDS-REQ9-02-check-env-required`, pkg-000054, 2/2 tasks, 456 pytest offline, 2026-09-26T12:21:29Z). Package **2/2 Done**.
+- **Next recommended (HK 2026-09-26):** P4 audit REQ9-02 / epic gate EPIC-IDS-16. SMSPM-03 t04 remains BLOCKED until SPIKE-01 creds.
+- **Предыдущая волна:** EPIC-IDS-16 — **P1 materialize** REQ9-02 (`STORY-IDS-REQ9-02-check-env-required`, `input_mode=backlog_story`, pkg-000054, 2 tasks, 2026-09-26T12:18:23Z)
+- **Предыдущая волна:** EPIC-IDS-16 — **P6 Done** REQ9-01 audit override (`run_mode=epic_ids_16_req9_01_audit_2026_09_26`, G-REQ901-DOC-01 🟢 t04, docs-only, 2026-09-26T12:14:17Z)
+- **Предыдущая волна:** EPIC-IDS-16 — **P3 Done** REQ9-01 (`STORY-IDS-REQ9-01-make-env-required`, pkg-000053, 3/3 tasks, 456 pytest offline, 2026-09-26T12:08:20Z).
+- **Backlog package (2026-09-26):** [req9-make-env-load-parity](./backlog-stories/req9-make-env-load-parity/INDEX.md) / [`EPIC-IDS-16`](./epics/EPIC-IDS-16-make-env-load-parity/EPIC-IDS-16-make-env-load-parity.md) — REQ9-01 🟢 pkg-000053; REQ9-02 🟢 pkg-000054.
+- **Предыдущая волна:** EPIC-IDS-15 — **P3 Done** VB-02 (`STORY-IDS-VB-02-me-expose-identity-verified`, pkg-000051, 4/4 tasks, 451 pytest offline, 2026-09-21T20:40:59Z)
+- **Предыдущая волна:** EPIC-IDS-15 — **P1 materialize** VB-02 (`STORY-IDS-VB-02-me-expose-identity-verified`, `input_mode=backlog_story`, pkg-000051, 4 tasks, 2026-09-21T20:36:40Z)
+- **Предыдущая волна:** EPIC-IDS-15 — **P6 Done** VB-01 audit override (`run_mode=epic_ids_15_vb_01_audit_2026_09_21`, G-VB01-DOC-01 🟢 t06, docs-only, 2026-09-21T20:32:01Z)
+- **Backlog package (2026-09-21):** [threads-verification-boolean](./backlog-stories/threads-verification-boolean/INDEX.md) / [`EPIC-IDS-15`](./epics/EPIC-IDS-15-threads-verification-boolean/EPIC-IDS-15-threads-verification-boolean.md) — VB-01/02/03 🟢 pkg-000050/051/052.
+- **Предыдущая волна:** EPIC-IDS-15 — **P3 Done** VB-01 (`STORY-IDS-VB-01-persist-identity-verified`, pkg-000050, 5/5 tasks, 450 pytest offline, 2026-09-21T20:24:31Z)
+- **Предыдущая волна:** EPIC-IDS-15 — **P1 materialize** VB-01 (`STORY-IDS-VB-01-persist-identity-verified`, `input_mode=backlog_story`, pkg-000050, 5 tasks, 2026-09-21T20:17:48Z)
+- **Backlog package (2026-08-20):** [smspm](./backlog-stories/smspm/INDEX.md) / [`EPIC-IDS-14`](./epics/EPIC-IDS-14-smspm/EPIC-IDS-14-smspm.md) — SMSPM-01 🟢 pkg-000046; SMSPM-02 🟢 pkg-000047; SMSPM-03 ⚪ pkg-000048; SMSPM-04 🟢 pkg-000049 + SPIKE-01 ops; SMSPM-05 draft (F2, excluded from 3/4). Dashboard: [`identity-mvp-dashboard.md`](./identity-mvp-dashboard.md) active **40/42 (95%)**.
+- **Предыдущая волна:** EPIC-IDS-14 — **P3 Done** SMSPM-04 (`STORY-IDS-SMSPM-04-delivery-report-webhook`, pkg-000049, 6/6 tasks, 443 pytest offline, 2026-08-20T11:06:55Z)
+- **Предыдущая волна:** EPIC-IDS-14 — **P1 materialize** SMSPM-04 (`STORY-IDS-SMSPM-04-delivery-report-webhook`, `input_mode=backlog_story`, pkg-000049, 6 tasks, 2026-08-20T11:00:21Z)
+- **Предыдущая волна:** EPIC-IDS-14 — **P5 scaffold** SMSPM-03 audit (`activation: none`, TASKED=0, F1 WAIVED operator, 2026-08-20T10:53:58Z)
+- **Предыдущая волна:** EPIC-IDS-14 — **P3 BLOCKED** SMSPM-03 (`STORY-IDS-SMSPM-03-operator-runbook-smoke`, pkg-000048, t01–t03 🟢 runbook; t04/t05 BLOCKED SPIKE-01 + `SMSPM_*` unset, 2026-08-20T10:48:00Z)
+- **Предыдущая волна:** EPIC-IDS-14 — **P1 materialize** SMSPM-03 (`STORY-IDS-SMSPM-03-operator-runbook-smoke`, `input_mode=backlog_story`, pkg-000048, 5 tasks, 2026-08-20)
+- **Предыдущая волна:** EPIC-IDS-14 — **P6 Done** SMSPM-02 audit override (`run_mode=epic_ids_14_smspm_02_audit_2026_08_20`, F1 🟢 t07, docs-only, 2026-08-20T10:37:37Z)
+- **Предыдущая волна:** EPIC-IDS-14 — **P5 scaffold** SMSPM-02 audit (`run_mode=epic_ids_14_smspm_02_audit_2026_08_20`, F1 ⚪ t07, F2 WAIVED → SMSPM-05 draft, 2026-08-20T10:34:39Z)
+- **Предыдущая волна:** EPIC-IDS-14 — **P3 Done** SMSPM-02 (`STORY-IDS-SMSPM-02-sms-sender`, pkg-000047, 6/6 tasks, 428 pytest offline, 2026-08-20)
+- **Предыдущая волна:** EPIC-IDS-14 — **P1 materialize** SMSPM-02 (`STORY-IDS-SMSPM-02-sms-sender`, `input_mode=backlog_story`, pkg-000047, 6 tasks, 2026-08-20)
+- **Предыдущая волна:** EPIC-IDS-14 — **P6 Done** SMSPM-01 audit override (`run_mode=epic_ids_14_smspm_01_audit_2026_08_20`, F1 🟢 t06, docs-only, 2026-08-20)
+- **Предыдущая волна:** EPIC-IDS-14 — **P5 scaffold** SMSPM-01 audit (`run_mode=epic_ids_14_smspm_01_audit_2026_08_20`, F1 ⚪ t06, docs-only, 2026-08-20)
+- **Предыдущая волна:** EPIC-IDS-14 — **P3 Done** SMSPM-01 (`STORY-IDS-SMSPM-01-provider-config-registry`, pkg-000046, 5/5 tasks, 417 pytest offline, 2026-08-20)
+- **Предыдущая волна:** EPIC-IDS-14 — **P1 materialize** SMSPM-01 (`STORY-IDS-SMSPM-01-provider-config-registry`, `input_mode=backlog_story`, pkg-000046, 5 tasks, 2026-08-20)
+- **Audit (post-P3):** SMSPM-03 — [`identity-smspm-03-code-audit-2026-08-20.md`](../analysis/identity-smspm-03-code-audit-2026-08-20.md). **Product Story Done: нет** (Meta ⚪; vs AC **1 OPEN / 4** — AC #4 live EE). Docs t01–t03 🟢 ≠ empty gap-list (F1 residual). **P5 `activation: none`** (TASKED=0; no `run_mode`; no t06; SPIKE not duplicated). YAML default pkg-000049.
+  - Disposition (all gaps):
+
+    | Gap | Sev | Disposition | Reason | Follow_up | Path |
+    |-----|-----|-------------|--------|-----------|------|
+    | F1 | MEDIUM | WAIVED `reason=operator` | AC #4 OPEN; t04/t05 already BLOCKED; SPIKE-01 exists (ops, out of queue); do not loop P3 t04; do not invent PASS | none | resume [`SPIKE-IDS-SMSPM-01`](./backlog-stories/smspm/SPIKE-IDS-SMSPM-01-account-sender-setup.md) then existing [`t04`](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-03-operator-runbook-smoke/task-ids-14-03-t04-live-ee-smoke-run-summary/README.md) |
+
+  - Decision log: F1 WAIVED operator · follow_up=none · APPLY = this wave note only.
+- **Audit (post-P3):** SMSPM-02 — [`identity-smspm-02-code-audit-2026-08-20.md`](../analysis/identity-smspm-02-code-audit-2026-08-20.md); vs AC **0 OPEN**. Product Story 🟢 Done ≠ empty gap-list. **Override (закрыт):** `run_mode=epic_ids_14_smspm_02_audit_2026_08_20` — F1 🟢 t07 (Stories row `:890` 🟢). **F2 WAIVED** `out-of-DoD` → [`STORY-IDS-SMSPM-05-smsid-session-wire`](./backlog-stories/smspm/STORY-IDS-SMSPM-05-smsid-session-wire.md) (draft; optional PA.3). YAML default pkg-000047.
+- **Audit (post-P3):** SMSPM-01 — [`identity-smspm-01-code-audit-2026-08-20.md`](../analysis/identity-smspm-01-code-audit-2026-08-20.md); vs AC **0 OPEN**. Product Story 🟢 Done ≠ empty gap-list. **Override (закрыт):** `run_mode=epic_ids_14_smspm_01_audit_2026_08_20` — F1 🟢 t06 (docs 12→11). **F2 WAIVED** `out-of-DoD` → [`STORY-IDS-SMSPM-03-operator-runbook-smoke`](./backlog-stories/smspm/STORY-IDS-SMSPM-03-operator-runbook-smoke.md) (не дублировать).
+- **Предыдущая волна:** EPIC-IDS-13 — **P6 Done** ONB-01 audit override (`run_mode=epic_ids_13_onb_01_audit_2026_07_24`, F2 🟢 t05, docs-only, 2026-07-24)
 - **Предыдущая волна:** EPIC-IDS-13 — **P5 scaffold** ONB-01 audit (`run_mode=epic_ids_13_onb_01_audit_2026_07_24`, F2 ⚪ t05, docs-only, 2026-07-24)
 - **Предыдущая волна:** EPIC-IDS-13 — **P3 Done** ONB-01 (`STORY-IDS-ONB-01-email-in-me-and-supabase-confirm`, pkg-000045, 4/4 tasks, 406 pytest offline, 2026-07-24)
 - **Предыдущая волна:** EPIC-IDS-13 — **P1 materialize** ONB-01 (`STORY-IDS-ONB-01-email-in-me-and-supabase-confirm`, `input_mode=backlog_story`, pkg-000045, 4 tasks, 2026-07-24)
@@ -23,7 +59,7 @@
 - **Audit (post-P3):** SEC-04 — [`epic-ids-12-sec-04-audit-2026-07-09.md`](../analysis/epic-ids-12-sec-04-audit-2026-07-09.md)
 - **Предыдущая волна:** EPIC-IDS-12 — **P5 scaffold** SEC-04 audit (`run_mode=epic_ids_12_sec_04_audit_2026_07_09`, F1–F2 ⚪ t06–t07, 2026-07-09)
 - **Предыдущая волна:** EPIC-IDS-12 — **P3 Done** SEC-04 (`STORY-IDS-SEC-04-service-role-isolation`, pkg-000043, 5/5 tasks, 402 pytest offline, 2026-07-09)
-- **Next recommended (HK 2026-07-24):** CLEANUP-04; then DOC-ONB-02…04 / epic gates EPIC-IDS-07/08/12
+- **Next recommended (HK 2026-07-24, superseded 2026-08-16):** CLEANUP-04; then DOC-ONB-02…04 / epic gates — DOC-ONB closed; см. HK 2026-08-16 выше
 - **Предыдущая волна:** EPIC-IDS-12 — **P1 materialize** SEC-04 (`STORY-IDS-SEC-04-service-role-isolation`, pkg-000043, 5 tasks, input_mode `backlog_story`, 2026-07-09)
 - **Предыдущая волна:** EPIC-IDS-12 — **P6 Done** SEC-06 audit override (`run_mode=epic_ids_12_sec_06_audit_2026_07_04`, F1–F2 🟢, 398 pytest offline, 2026-07-04)
 - **Предыдущая волна:** EPIC-IDS-12 — **P5 scaffold** SEC-06 audit (`run_mode=epic_ids_12_sec_06_audit_2026_07_04`, F1–F2 ⚪, 2 tasks, 2026-07-04)
@@ -95,9 +131,17 @@
 - **Предыдущая волна:** EPIC-IDS-08 Cleanup — **P3 Done** pkg-000013 (CLEANUP-02 🟢, 206 pytest offline, 2026-06-02); **override (закрыт):** `run_mode=epic_ids_08_cleanup_02_audit_2026_06_05` — F1–F3 🟢
 - **Предыдущая волна:** EPIC-IDS-08 Cleanup — **P3 Done** pkg-000011 + **P3 Done** pkg-000012 (CLEANUP-01 + audit F1–F4 🟢, 200 pytest offline, 2026-06-05)
 - **Закрыто (runtime):** EPIC-IDS-01 ✅ · EPIC-IDS-02 ✅ · EPIC-IDS-03 ✅ · EPIC-IDS-04 stories ✅ (pkg-000005, **epic gate pending**; override gaps RG-1/RG-2 ⚪)
-- **input_mode (active):** `backlog_story` · **active story:** [`STORY-IDS-PV-10-file-sms-sink-dev`](./epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-10-file-sms-sink-dev/STORY-IDS-PV-10-file-sms-sink-dev.md) · **backlog source:** [`STORY-IDS-PV-10-file-sms-sink-dev`](./backlog-stories/phone-verification/STORY-IDS-PV-10-file-sms-sink-dev.md) · **status:** 🟢 Done (pkg-000041)
+- **input_mode (active):** `backlog_story` · **active story:** [`STORY-IDS-REQ9-02-check-env-required`](./epics/EPIC-IDS-16-make-env-load-parity/stories/STORY-IDS-REQ9-02-check-env-required/STORY-IDS-REQ9-02-check-env-required.md) · **backlog source:** [`STORY-IDS-REQ9-02-check-env-required`](./backlog-stories/req9-make-env-load-parity/STORY-IDS-REQ9-02-check-env-required.md) · **status:** 🟢 Done (pkg-000054, P3 2026-09-26T12:21:29Z)
 - **input_mode (default pkg):** `epic_story` · **override (закрыт):** `run_mode=epic_ids_03_audit_2026_05_28` · **override (partial):** `run_mode=epic_ids_04_audit_2026_05_30` (5/7 gaps closed; RG-1/RG-2 open) · **override (закрыт):** `run_mode=epic_ids_05_reaudit_2026_06_02` — 5/5 gaps 🟢 · **override (закрыт):** `run_mode=epic_ids_06_audit_2026_06_02` — F1–F5 🟢 (196 pytest offline, 2026-06-02) · **override (закрыт):** `run_mode=epic_ids_08_cleanup_02_audit_2026_06_05` — F1–F3 🟢 (206 pytest offline, 2026-06-02)
-- **Active package (SSOT):** [`identity-active-package.current.yaml`](./identity-active-package.current.yaml) → [`pkg-000042-20260704-epic-ids-12-sec-06-jwks-es256-hardening.yaml`](./identity-active-packages/pkg-000042-20260704-epic-ids-12-sec-06-jwks-es256-hardening.yaml) (SEC-06, 🟢 Done, immutable after wave)
+- **Active package (SSOT):** [`identity-active-package.current.yaml`](./identity-active-package.current.yaml) → [`pkg-000054-20260926-epic-ids-16-req9-02-check-env-required.yaml`](./identity-active-packages/pkg-000054-20260926-epic-ids-16-req9-02-check-env-required.yaml) (REQ9-02, 🟢 Done, 2 paths)
+- **Archival (prev):** [`pkg-000053-20260926-epic-ids-16-req9-01-make-env-required.yaml`](./identity-active-packages/pkg-000053-20260926-epic-ids-16-req9-01-make-env-required.yaml) (REQ9-01, 🟢 Done, 3 paths, immutable)
+- **Archival (prev):** [`pkg-000052-20260921-epic-ids-15-vb-03-set-opaque-on-verification-success.yaml`](./identity-active-packages/pkg-000052-20260921-epic-ids-15-vb-03-set-opaque-on-verification-success.yaml) (VB-03, 🟢 Done, 6 paths, immutable)
+- **Archival (prev):** [`pkg-000051-20260921-epic-ids-15-vb-02-me-expose-identity-verified.yaml`](./identity-active-packages/pkg-000051-20260921-epic-ids-15-vb-02-me-expose-identity-verified.yaml) (VB-02, 🟢 Done, 4 paths, immutable)
+- **Archival (prev):** [`pkg-000050-20260921-epic-ids-15-vb-01-persist-identity-verified.yaml`](./identity-active-packages/pkg-000050-20260921-epic-ids-15-vb-01-persist-identity-verified.yaml) (VB-01, 🟢 Done, 5 paths, immutable)
+- **Archival (prev):** [`pkg-000049-20260820-epic-ids-14-smspm-04-delivery-report-webhook.yaml`](./identity-active-packages/pkg-000049-20260820-epic-ids-14-smspm-04-delivery-report-webhook.yaml) (SMSPM-04, 🟢 Done, 6 paths, immutable)
+- **Archival (prev):** [`pkg-000047-20260820-epic-ids-14-smspm-02-sms-sender.yaml`](./identity-active-packages/pkg-000047-20260820-epic-ids-14-smspm-02-sms-sender.yaml) (SMSPM-02, 🟢 Done, 6 paths, immutable)
+- **Archival (prev):** [`pkg-000046-20260820-epic-ids-14-smspm-01-provider-config.yaml`](./identity-active-packages/pkg-000046-20260820-epic-ids-14-smspm-01-provider-config.yaml) (SMSPM-01, 🟢 Done, 5 paths, immutable)
+- **Archival (prev):** [`pkg-000045-20260724-epic-ids-13-onb-01-email-in-me.yaml`](./identity-active-packages/pkg-000045-20260724-epic-ids-13-onb-01-email-in-me.yaml) (4 tasks ONB-01, 🟢 Done, immutable after wave)
 - **Archival (prev):** [`pkg-000041-20260628-epic-ids-10-pv-10-file-sms-sink-dev.yaml`](./identity-active-packages/pkg-000041-20260628-epic-ids-10-pv-10-file-sms-sink-dev.yaml) (7 tasks PV-10, 🟢 Done, immutable after wave)
 - **Archival (prev):** [`pkg-000040-20260626-epic-ids-13-onb-01-lazy-phone-gate-contract.yaml`](./identity-active-packages/pkg-000040-20260626-epic-ids-13-onb-01-lazy-phone-gate-contract.yaml) (5 tasks ONB-01, 🟢 Done, immutable after wave)
 - **Archival (prev):** [`pkg-000039-20260626-epic-ids-10-pv-09-durable-phone-persistence.yaml`](./identity-active-packages/pkg-000039-20260626-epic-ids-10-pv-09-durable-phone-persistence.yaml) (7 tasks PV-09, 🟢 Done, immutable after wave)
@@ -137,7 +181,7 @@
 - **Указатель:** [`identity-active-package.current.yaml`](./identity-active-package.current.yaml)
 - **Verify:** `python3 docs/methodology/Zeya888-builder-queue/cli/builder_resolve_queue.py --project identity --verify`
 - **Decompose marker:** [`pkg-000002-20260528-epic-ids-02-fastapi-transport-pending.yaml`](./identity-active-packages/pkg-000002-20260528-epic-ids-02-fastapi-transport-pending.yaml) (`input_kind=epic_decompose_pending`, archival transition step)
-- **Gap wave (override-only):** … · **audit SEC-06 2026-07-04:** **`run_mode=epic_ids_12_sec_06_audit_2026_07_04`** — F1–F2 🟢 · **audit PV-10 2026-06-28:** **`run_mode=epic_ids_10_pv_10_audit_2026_06_28`** — F1 🟢 · **audit SEC-01 2026-06-26:** **`run_mode=epic_ids_12_sec_01_audit_2026_06_26`** — F1–F2 🟢 · **audit OAUTH-02 2026-06-24:** **`run_mode=epic_ids_11_oauth_02_audit_2026_06_24`** — F2–F4 🟢 · **audit OAUTH-01 2026-06-24:** **`run_mode=epic_ids_11_oauth_01_audit_2026_06_24`** — F1–F3 🟢 · **audit PV-06 2026-06-11:** **`run_mode=epic_ids_10_pv_06_audit_2026_06_11`** — F1–F3 🟢. Default YAML SSOT: **`pkg-000042`** ([`identity-active-package.current.yaml`](./identity-active-package.current.yaml)).
+- **Gap wave (override-only):** **audit SMSPM-01 2026-08-20:** **`run_mode=epic_ids_14_smspm_01_audit_2026_08_20`** — F1 🟢 t06 · F2 WAIVED out-of-DoD (SMSPM-03) · **audit SEC-06 2026-07-04:** **`run_mode=epic_ids_12_sec_06_audit_2026_07_04`** — F1–F2 🟢 · **audit PV-10 2026-06-28:** **`run_mode=epic_ids_10_pv_10_audit_2026_06_28`** — F1 🟢 · **audit SEC-01 2026-06-26:** **`run_mode=epic_ids_12_sec_01_audit_2026_06_26`** — F1–F2 🟢 · **audit OAUTH-02 2026-06-24:** **`run_mode=epic_ids_11_oauth_02_audit_2026_06_24`** — F2–F4 🟢 · **audit OAUTH-01 2026-06-24:** **`run_mode=epic_ids_11_oauth_01_audit_2026_06_24`** — F1–F3 🟢 · **audit PV-06 2026-06-11:** **`run_mode=epic_ids_10_pv_06_audit_2026_06_11`** — F1–F3 🟢. Default YAML SSOT: **`pkg-000049`** ([`identity-active-package.current.yaml`](./identity-active-package.current.yaml)).
 - **Builder resolve (обязательно перед batch-run):** [identity-operator-contract.md](../../../docs/methodology/Zeya888-builder-queue/contracts/identity-operator-contract.md) — index + active pkg + `--verify`; эпик без task queue ниже → P1 decompose.
 
 ## Epic registry (EPIC-IDS-*)
@@ -159,8 +203,11 @@
 | EPIC-IDS-11 | [EPIC-IDS-11-oauth-server.md](./epics/EPIC-IDS-11-oauth-server/EPIC-IDS-11-oauth-server.md) | pkg-000034 · [task queue](#task-queue-epic-ids-11) | 🟡 In Progress — OAUTH-01 🟢; OAUTH-02 🟢; OAUTH-03 🟢; OAUTH-04 🟢 |
 | EPIC-IDS-12 | [EPIC-IDS-12-security-hardening.md](./epics/EPIC-IDS-12-security-hardening/EPIC-IDS-12-security-hardening.md) | pkg-000043 · [task queue](#task-queue-epic-ids-12) | 🟡 In Progress — SEC-01 🟢; SEC-01b 🟢; SEC-02 🟢; SEC-03 🟢; SEC-04 🟢; SEC-06 🟢 |
 | EPIC-IDS-13 | [EPIC-IDS-13-onboarding.md](./epics/EPIC-IDS-13-onboarding/EPIC-IDS-13-onboarding.md) | pkg-000040 + **pkg-000045** · [task queue](#task-queue-epic-ids-13) | 🟡 In Progress — DOC-ONB-01 🟢; ONB-01 🟢 (pkg-000045) |
+| EPIC-IDS-14 | [EPIC-IDS-14-smspm.md](./epics/EPIC-IDS-14-smspm/EPIC-IDS-14-smspm.md) (alias `EPIC-IDS-SMSPM`) | **pkg-000049** · [task queue](#task-queue-epic-ids-14) · backlog [INDEX](./backlog-stories/smspm/INDEX.md) | 🟡 In Progress — SMSPM-01 🟢 (pkg-000046); SMSPM-02 🟢 (pkg-000047); SMSPM-03 ⚪ (pkg-000048); SMSPM-04 🟢 (pkg-000049) |
+| EPIC-IDS-15 | [EPIC-IDS-15-threads-verification-boolean.md](./epics/EPIC-IDS-15-threads-verification-boolean/EPIC-IDS-15-threads-verification-boolean.md) | **pkg-000052** · [task queue](#task-queue-epic-ids-15) · backlog [INDEX](./backlog-stories/threads-verification-boolean/INDEX.md) | 🟢 Done — VB-01/02/03 🟢 (pkg-000050/051/052) |
+| EPIC-IDS-16 | [EPIC-IDS-16-make-env-load-parity.md](./epics/EPIC-IDS-16-make-env-load-parity/EPIC-IDS-16-make-env-load-parity.md) | **pkg-000054** · [task queue](#task-queue-epic-ids-16) · backlog [INDEX](./backlog-stories/req9-make-env-load-parity/INDEX.md) | 🟢 Done — REQ9-01 🟢 (pkg-000053); REQ9-02 🟢 (pkg-000054) |
 
-**Рекомендуемый next (default):** CLEANUP-04; epic gates EPIC-IDS-07/08/12; DOC-ONB-02…04 (spa/product). (ONB-01 🟢 pkg-000045 + F2 override 🟢 + F1 spa 🟢; AUTHCORE-02 🟢 pkg-000044; SEC-04 🟢.)
+**Рекомендуемый next (default YAML):** EPIC-IDS-16 🟢 Done (next = P4 audit REQ9-02 / epic gate). SMSPM-03 ⚪ pkg-000048 t04 BLOCKED (SPIKE-01; do not invent PASS); CLEANUP-04; epic gates EPIC-IDS-07/08/12/15.
 
 ## Gap queue (override-only, audit EPIC-IDS-01 2026-05-28)
 
@@ -787,6 +834,67 @@
 | EPIC-IDS-13 | STORY-IDS-ONB-01 | [t04 story acceptance verification](./epics/EPIC-IDS-13-onboarding/stories/STORY-IDS-ONB-01-email-in-me-and-supabase-confirm/task-ids-13-02-t04-story-acceptance-verification/README.md) | 🟢 Done | pkg-000045 |
 | EPIC-IDS-13 | STORY-IDS-ONB-01 | [t05 audit f2 email_verified oauth semantics docs](./epics/EPIC-IDS-13-onboarding/stories/STORY-IDS-ONB-01-email-in-me-and-supabase-confirm/task-ids-13-02-t05-audit-f2-email-verified-oauth-semantics-docs/README.md) | 🟢 Done | override epic_ids_13_onb_01_audit_2026_07_24 |
 
+## Task queue (EPIC-IDS-14)
+
+| Epic | Story | Task | Status | pkg |
+|------|-------|------|--------|-----|
+| EPIC-IDS-14 | STORY-IDS-SMSPM-01 | [t01 smspm settings config](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-01-provider-config-registry/task-ids-14-01-t01-smspm-settings-config/README.md) | 🟢 Done | pkg-000046 |
+| EPIC-IDS-14 | STORY-IDS-SMSPM-01 | [t02 smspm descriptor registry](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-01-provider-config-registry/task-ids-14-01-t02-smspm-descriptor-registry/README.md) | 🟢 Done | pkg-000046 |
+| EPIC-IDS-14 | STORY-IDS-SMSPM-01 | [t03 smspm config tests](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-01-provider-config-registry/task-ids-14-01-t03-smspm-config-tests/README.md) | 🟢 Done | pkg-000046 |
+| EPIC-IDS-14 | STORY-IDS-SMSPM-01 | [t04 env example smspm block](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-01-provider-config-registry/task-ids-14-01-t04-env-example-smspm-block/README.md) | 🟢 Done | pkg-000046 |
+| EPIC-IDS-14 | STORY-IDS-SMSPM-01 | [t05 story acceptance verification](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-01-provider-config-registry/task-ids-14-01-t05-story-acceptance-verification/README.md) | 🟢 Done | pkg-000046 |
+| EPIC-IDS-14 | STORY-IDS-SMSPM-01 | [t06 audit f1 smspm test count docs](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-01-provider-config-registry/task-ids-14-01-t06-audit-f1-smspm-test-count-docs/README.md) | 🟢 Done | override epic_ids_14_smspm_01_audit_2026_08_20 |
+| EPIC-IDS-14 | STORY-IDS-SMSPM-02 | [t01 smspm sms sender send](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-02-sms-sender/task-ids-14-02-t01-smspm-sms-sender-send/README.md) | 🟢 Done | pkg-000047 |
+| EPIC-IDS-14 | STORY-IDS-SMSPM-02 | [t02 smspm error mapping](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-02-sms-sender/task-ids-14-02-t02-smspm-error-mapping/README.md) | 🟢 Done | pkg-000047 |
+| EPIC-IDS-14 | STORY-IDS-SMSPM-02 | [t03 smspm descriptor wire](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-02-sms-sender/task-ids-14-02-t03-smspm-descriptor-wire/README.md) | 🟢 Done | pkg-000047 |
+| EPIC-IDS-14 | STORY-IDS-SMSPM-02 | [t04 smspm sender offline tests](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-02-sms-sender/task-ids-14-02-t04-smspm-sender-offline-tests/README.md) | 🟢 Done | pkg-000047 |
+| EPIC-IDS-14 | STORY-IDS-SMSPM-02 | [t05 smspm sender live skip without creds](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-02-sms-sender/task-ids-14-02-t05-smspm-sender-live-skip-without-creds/README.md) | 🟢 Done | pkg-000047 |
+| EPIC-IDS-14 | STORY-IDS-SMSPM-02 | [t06 story acceptance verification](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-02-sms-sender/task-ids-14-02-t06-story-acceptance-verification/README.md) | 🟢 Done | pkg-000047 |
+| EPIC-IDS-14 | STORY-IDS-SMSPM-02 | [t07 audit f1 bullrun stories status](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-02-sms-sender/task-ids-14-02-t07-audit-f1-bullrun-stories-status/README.md) | 🟢 Done | override epic_ids_14_smspm_02_audit_2026_08_20 |
+| EPIC-IDS-14 | STORY-IDS-SMSPM-03 | [t01 runbook mode c env table](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-03-operator-runbook-smoke/task-ids-14-03-t01-runbook-mode-c-env-table/README.md) | 🟢 Done | pkg-000048 |
+| EPIC-IDS-14 | STORY-IDS-SMSPM-03 | [t02 runbook curl smoke](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-03-operator-runbook-smoke/task-ids-14-03-t02-runbook-curl-smoke/README.md) | 🟢 Done | pkg-000048 |
+| EPIC-IDS-14 | STORY-IDS-SMSPM-03 | [t03 runbook troubleshooting](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-03-operator-runbook-smoke/task-ids-14-03-t03-runbook-troubleshooting/README.md) | 🟢 Done | pkg-000048 |
+| EPIC-IDS-14 | STORY-IDS-SMSPM-03 | [t04 live ee smoke run summary](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-03-operator-runbook-smoke/task-ids-14-03-t04-live-ee-smoke-run-summary/README.md) | ⚪ BLOCKED | pkg-000048 |
+| EPIC-IDS-14 | STORY-IDS-SMSPM-03 | [t05 story acceptance verification](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-03-operator-runbook-smoke/task-ids-14-03-t05-story-acceptance-verification/README.md) | ⚪ BLOCKED | pkg-000048 |
+| EPIC-IDS-14 | STORY-IDS-SMSPM-04 | [t01 smspm delivery route handler](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-04-delivery-report-webhook/task-ids-14-04-t01-smspm-delivery-route-handler/README.md) | 🟢 Done | pkg-000049 |
+| EPIC-IDS-14 | STORY-IDS-SMSPM-04 | [t02 smspm delivery ingest](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-04-delivery-report-webhook/task-ids-14-04-t02-smspm-delivery-ingest/README.md) | 🟢 Done | pkg-000049 |
+| EPIC-IDS-14 | STORY-IDS-SMSPM-04 | [t03 smspm sender report url](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-04-delivery-report-webhook/task-ids-14-04-t03-smspm-sender-report-url/README.md) | 🟢 Done | pkg-000049 |
+| EPIC-IDS-14 | STORY-IDS-SMSPM-04 | [t04 smspm delivery offline tests](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-04-delivery-report-webhook/task-ids-14-04-t04-smspm-delivery-offline-tests/README.md) | 🟢 Done | pkg-000049 |
+| EPIC-IDS-14 | STORY-IDS-SMSPM-04 | [t05 smspm delivery env docs](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-04-delivery-report-webhook/task-ids-14-04-t05-smspm-delivery-env-docs/README.md) | 🟢 Done | pkg-000049 |
+| EPIC-IDS-14 | STORY-IDS-SMSPM-04 | [t06 story acceptance verification](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-04-delivery-report-webhook/task-ids-14-04-t06-story-acceptance-verification/README.md) | 🟢 Done | pkg-000049 |
+
+## Task queue (EPIC-IDS-15)
+
+| Epic | Story | Task | Status | pkg |
+|------|-------|------|--------|-----|
+| EPIC-IDS-15 | STORY-IDS-VB-01 | [t01 migration identity verified](./epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-01-persist-identity-verified/task-ids-15-01-t01-migration-identity-verified/README.md) | 🟢 Done | pkg-000050 |
+| EPIC-IDS-15 | STORY-IDS-VB-01 | [t02 profile model and db map](./epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-01-persist-identity-verified/task-ids-15-01-t02-profile-model-and-db-map/README.md) | 🟢 Done | pkg-000050 |
+| EPIC-IDS-15 | STORY-IDS-VB-01 | [t03 backfill existing verified](./epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-01-persist-identity-verified/task-ids-15-01-t03-backfill-existing-verified/README.md) | 🟢 Done | pkg-000050 |
+| EPIC-IDS-15 | STORY-IDS-VB-01 | [t04 offline persist tests](./epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-01-persist-identity-verified/task-ids-15-01-t04-offline-persist-tests/README.md) | 🟢 Done | pkg-000050 |
+| EPIC-IDS-15 | STORY-IDS-VB-01 | [t05 story acceptance verification](./epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-01-persist-identity-verified/task-ids-15-01-t05-story-acceptance-verification/README.md) | 🟢 Done | pkg-000050 |
+| EPIC-IDS-15 | STORY-IDS-VB-01 | [t06 audit g-vb01-doc-01 backlog ac sync](./epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-01-persist-identity-verified/task-ids-15-01-t06-audit-g-vb01-doc-01-backlog-ac-sync/README.md) | 🟢 Done | override epic_ids_15_vb_01_audit_2026_09_21 |
+| EPIC-IDS-15 | STORY-IDS-VB-02 | [t01 me response identity verified](./epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-02-me-expose-identity-verified/task-ids-15-02-t01-me-response-identity-verified/README.md) | 🟢 Done | pkg-000051 |
+| EPIC-IDS-15 | STORY-IDS-VB-02 | [t02 api docs medata](./epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-02-me-expose-identity-verified/task-ids-15-02-t02-api-docs-medata/README.md) | 🟢 Done | pkg-000051 |
+| EPIC-IDS-15 | STORY-IDS-VB-02 | [t03 test me profile opaque](./epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-02-me-expose-identity-verified/task-ids-15-02-t03-test-me-profile-opaque/README.md) | 🟢 Done | pkg-000051 |
+| EPIC-IDS-15 | STORY-IDS-VB-02 | [t04 story acceptance verification](./epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-02-me-expose-identity-verified/task-ids-15-02-t04-story-acceptance-verification/README.md) | 🟢 Done | pkg-000051 |
+| EPIC-IDS-15 | STORY-IDS-VB-03 | [t01 attach phone sets opaque](./epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-03-set-opaque-on-verification-success/task-ids-15-03-t01-attach-phone-sets-opaque/README.md) | 🟢 Done | pkg-000052 |
+| EPIC-IDS-15 | STORY-IDS-VB-03 | [t02 attach eid sets opaque](./epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-03-set-opaque-on-verification-success/task-ids-15-03-t02-attach-eid-sets-opaque/README.md) | 🟢 Done | pkg-000052 |
+| EPIC-IDS-15 | STORY-IDS-VB-03 | [t03 failure no clear opaque](./epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-03-set-opaque-on-verification-success/task-ids-15-03-t03-failure-no-clear-opaque/README.md) | 🟢 Done | pkg-000052 |
+| EPIC-IDS-15 | STORY-IDS-VB-03 | [t04 audit precedent unchanged](./epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-03-set-opaque-on-verification-success/task-ids-15-03-t04-audit-precedent-unchanged/README.md) | 🟢 Done | pkg-000052 |
+| EPIC-IDS-15 | STORY-IDS-VB-03 | [t05 offline success failure tests](./epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-03-set-opaque-on-verification-success/task-ids-15-03-t05-offline-success-failure-tests/README.md) | 🟢 Done | pkg-000052 |
+| EPIC-IDS-15 | STORY-IDS-VB-03 | [t06 story acceptance verification](./epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-03-set-opaque-on-verification-success/task-ids-15-03-t06-story-acceptance-verification/README.md) | 🟢 Done | pkg-000052 |
+
+## Task queue (EPIC-IDS-16)
+
+| Epic | Story | Task | Status | Wave |
+|------|-------|------|--------|------|
+| EPIC-IDS-16 | STORY-IDS-REQ9-01 | [t01 makefile serve dev](./epics/EPIC-IDS-16-make-env-load-parity/stories/STORY-IDS-REQ9-01-make-env-required/task-ids-16-01-t01-makefile-serve-dev/README.md) | 🟢 Done | pkg-000053 |
+| EPIC-IDS-16 | STORY-IDS-REQ9-01 | [t02 env example runbook](./epics/EPIC-IDS-16-make-env-load-parity/stories/STORY-IDS-REQ9-01-make-env-required/task-ids-16-01-t02-env-example-runbook/README.md) | 🟢 Done | pkg-000053 |
+| EPIC-IDS-16 | STORY-IDS-REQ9-01 | [t03 story gate](./epics/EPIC-IDS-16-make-env-load-parity/stories/STORY-IDS-REQ9-01-make-env-required/task-ids-16-01-t03-story-gate/README.md) | 🟢 Done | pkg-000053 |
+| EPIC-IDS-16 | STORY-IDS-REQ9-01 | [t04 audit g-req901-doc-01 backlog nested sync](./epics/EPIC-IDS-16-make-env-load-parity/stories/STORY-IDS-REQ9-01-make-env-required/task-ids-16-01-t04-audit-g-req901-doc-01-backlog-nested-sync/README.md) | 🟢 Done | override epic_ids_16_req9_01_audit_2026_09_26 |
+| EPIC-IDS-16 | STORY-IDS-REQ9-02 | [t01 check env source](./epics/EPIC-IDS-16-make-env-load-parity/stories/STORY-IDS-REQ9-02-check-env-required/task-ids-16-02-t01-check-env-source/README.md) | 🟢 Done | pkg-000054 |
+| EPIC-IDS-16 | STORY-IDS-REQ9-02 | [t02 story gate](./epics/EPIC-IDS-16-make-env-load-parity/stories/STORY-IDS-REQ9-02-check-env-required/task-ids-16-02-t02-story-gate/README.md) | 🟢 Done | pkg-000054 |
+
 ## Task queue (EPIC-IDS-12)
 
 | Epic | Story | Task | Status | pkg |
@@ -849,6 +957,15 @@
 |-----------|--------|--------|
 | DOC-IDS-ONB-01-lazy-phone-gate-contract | [story](./epics/EPIC-IDS-13-onboarding/stories/DOC-IDS-ONB-01-lazy-phone-gate-contract/DOC-IDS-ONB-01-lazy-phone-gate-contract.md) | 🟢 Done |
 | STORY-IDS-ONB-01-email-in-me-and-supabase-confirm | [story](./epics/EPIC-IDS-13-onboarding/stories/STORY-IDS-ONB-01-email-in-me-and-supabase-confirm/STORY-IDS-ONB-01-email-in-me-and-supabase-confirm.md) | 🟢 Done (pkg-000045) |
+
+## Stories (EPIC-IDS-14)
+
+| Story key | Anchor | Status |
+|-----------|--------|--------|
+| STORY-IDS-SMSPM-01-provider-config-registry | [story](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-01-provider-config-registry/STORY-IDS-SMSPM-01-provider-config-registry.md) | 🟢 Done (pkg-000046) |
+| STORY-IDS-SMSPM-02-sms-sender | [story](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-02-sms-sender/STORY-IDS-SMSPM-02-sms-sender.md) | 🟢 Done (pkg-000047) |
+| STORY-IDS-SMSPM-03-operator-runbook-smoke | [story](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-03-operator-runbook-smoke/STORY-IDS-SMSPM-03-operator-runbook-smoke.md) | ⚪ Todo (pkg-000048; t04 BLOCKED) |
+| STORY-IDS-SMSPM-04-delivery-report-webhook | [story](./epics/EPIC-IDS-14-smspm/stories/STORY-IDS-SMSPM-04-delivery-report-webhook/STORY-IDS-SMSPM-04-delivery-report-webhook.md) | 🟢 Done (pkg-000049) |
 
 ## Stories (EPIC-IDS-12)
 

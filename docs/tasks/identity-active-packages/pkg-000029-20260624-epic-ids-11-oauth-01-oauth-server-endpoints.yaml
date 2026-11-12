@@ -1,0 +1,18 @@
+schema_version: 1
+package_sequence: 29
+created_at: "2026-06-24T09:28:48Z"
+label: EPIC-IDS-11 OAUTH-01 oauth server endpoints
+input_kind: epic_story_tree
+tasks_root: doge-identity-service/docs/tasks/
+epic_file: doge-identity-service/docs/tasks/epics/EPIC-IDS-11-oauth-server/EPIC-IDS-11-oauth-server.md
+decision_ref: doge-identity-service/docs/tasks/backlog-stories/oauth/STORY-IDS-OAUTH-01-oauth-server-endpoints.md
+story_groups:
+- story_key: STORY-IDS-OAUTH-01-oauth-server-endpoints
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-11-oauth-server/stories/STORY-IDS-OAUTH-01-oauth-server-endpoints/task-ids-11-01-t01-authorization-request-store-and-contracts/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-11-oauth-server/stories/STORY-IDS-OAUTH-01-oauth-server-endpoints/task-ids-11-01-t02-rfc6749-errors-scope-validation-client-secret/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-11-oauth-server/stories/STORY-IDS-OAUTH-01-oauth-server-endpoints/task-ids-11-01-t03-oauth-authorize-handler-and-route/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-11-oauth-server/stories/STORY-IDS-OAUTH-01-oauth-server-endpoints/task-ids-11-01-t04-oauth-complete-token-handlers-and-routes/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-11-oauth-server/stories/STORY-IDS-OAUTH-01-oauth-server-endpoints/task-ids-11-01-t05-oauth-access-token-bearer-dependency/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-11-oauth-server/stories/STORY-IDS-OAUTH-01-oauth-server-endpoints/task-ids-11-01-t06-offline-oauth-server-tests/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-11-oauth-server/stories/STORY-IDS-OAUTH-01-oauth-server-endpoints/task-ids-11-01-t07-story-acceptance-verification/README.md

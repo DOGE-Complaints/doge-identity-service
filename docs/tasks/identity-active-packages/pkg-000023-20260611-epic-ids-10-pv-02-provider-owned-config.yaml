@@ -1,0 +1,17 @@
+schema_version: 1
+package_sequence: 23
+created_at: "2026-06-11T12:00:00Z"
+label: EPIC-IDS-10 PV-02 provider owned config
+input_kind: epic_story_tree
+tasks_root: doge-identity-service/docs/tasks/
+epic_file: doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/EPIC-IDS-10-phone-verification.md
+decision_ref: doge-identity-service/docs/tasks/backlog-stories/phone-verification/STORY-IDS-PV-02-provider-owned-config.md
+story_groups:
+- story_key: STORY-IDS-PV-02-provider-owned-config
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-02-provider-owned-config/task-ids-10-02-t01-sms-provider-config-spec/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-02-provider-owned-config/task-ids-10-02-t02-appconfig-phone-fields-sms-provider-validation/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-02-provider-owned-config/task-ids-10-02-t03-e164-normalize-prefix-allowlist/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-02-provider-owned-config/task-ids-10-02-t04-env-example-phone-block/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-02-provider-owned-config/task-ids-10-02-t05-offline-phone-config-e164-tests/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-10-phone-verification/stories/STORY-IDS-PV-02-provider-owned-config/task-ids-10-02-t06-story-acceptance-verification/README.md

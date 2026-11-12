@@ -1,0 +1,29 @@
+schema_version: 1
+package_sequence: 1
+created_at: '2026-05-27T14:00:00Z'
+label: EPIC-IDS-01 scaffold config launch
+input_kind: epic_story_tree
+tasks_root: doge-identity-service/docs/tasks/
+epic_file: doge-identity-service/docs/tasks/epics/EPIC-IDS-01-scaffold-config-launch.md
+decision_ref: doge-identity-service/docs/analysis/interview-cpo-cto-epics-2026-05-27.md
+story_groups:
+- story_key: STORY-IDS-01-01-init-package-and-dependencies
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-01-scaffold-config-launch/stories/STORY-IDS-01-01-init-package-and-dependencies/task-ids-01-01-t01-package-directory-skeleton/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-01-scaffold-config-launch/stories/STORY-IDS-01-01-init-package-and-dependencies/task-ids-01-01-t02-pyproject-and-pyright/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-01-scaffold-config-launch/stories/STORY-IDS-01-01-init-package-and-dependencies/task-ids-01-01-t03-editable-install-verify/README.md
+- story_key: STORY-IDS-01-02-appconfig
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-01-scaffold-config-launch/stories/STORY-IDS-01-02-appconfig/task-ids-01-02-t01-config-schema/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-01-scaffold-config-launch/stories/STORY-IDS-01-02-appconfig/task-ids-01-02-t02-config-package-exports/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-01-scaffold-config-launch/stories/STORY-IDS-01-02-appconfig/task-ids-01-02-t03-config-schema-tests/README.md
+- story_key: STORY-IDS-01-03-custom-dotenv-parser
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-01-scaffold-config-launch/stories/STORY-IDS-01-03-custom-dotenv-parser/task-ids-01-03-t01-env-file-merge/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-01-scaffold-config-launch/stories/STORY-IDS-01-03-custom-dotenv-parser/task-ids-01-03-t02-provide-app-config/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-01-scaffold-config-launch/stories/STORY-IDS-01-03-custom-dotenv-parser/task-ids-01-03-t03-dotenv-parser-tests/README.md
+- story_key: STORY-IDS-01-04-makefile-railway-env-example
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-01-scaffold-config-launch/stories/STORY-IDS-01-04-makefile-railway-env-example/task-ids-01-04-t01-makefile-targets/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-01-scaffold-config-launch/stories/STORY-IDS-01-04-makefile-railway-env-example/task-ids-01-04-t02-railpack-json/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-01-scaffold-config-launch/stories/STORY-IDS-01-04-makefile-railway-env-example/task-ids-01-04-t03-env-example/README.md

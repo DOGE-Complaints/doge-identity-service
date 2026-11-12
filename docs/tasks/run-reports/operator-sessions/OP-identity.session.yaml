@@ -1,0 +1,19 @@
+builder_project: identity
+op_chat_title: OP-identity
+builder_chat_title: BLD-identity
+validator_chat_title: VAL-identity
+builder_agent_id: 08dc58d3-5173-4dc7-a3c9-ba05951f509c
+validator_agent_id: 1f6dbff3-0c6d-4520-b338-d8725427d0bb
+bind_mode: task
+delivery: subagent
+process_file: doge-identity-service/docs/tasks/run-reports/operator-sessions/OP-identity.process.md
+working_plan: .cursor/plans/OP-identity-req9-20260926.plan.md
+status: ready
+wave: req9-20260926
+overnight: on
+pause_after_story: false
+auto_approve_plan: true
+stop_only_on: explicit operator стоп|stop|pause|halt
+queue: REQ9-01,REQ9-02
+next: exhausted
+Updated: 2026-09-26T12:25:24Z

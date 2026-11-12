@@ -1,0 +1,14 @@
+schema_version: 1
+package_sequence: 53
+created_at: "2026-09-26T12:04:46Z"
+label: EPIC-IDS-16 REQ9-01 make .env required on serve/dev
+input_kind: epic_story_tree
+tasks_root: doge-identity-service/docs/tasks/
+epic_file: doge-identity-service/docs/tasks/epics/EPIC-IDS-16-make-env-load-parity/EPIC-IDS-16-make-env-load-parity.md
+decision_ref: doge-identity-service/docs/tasks/backlog-stories/req9-make-env-load-parity/STORY-IDS-REQ9-01-make-env-required.md
+story_groups:
+- story_key: STORY-IDS-REQ9-01-make-env-required
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-16-make-env-load-parity/stories/STORY-IDS-REQ9-01-make-env-required/task-ids-16-01-t01-makefile-serve-dev/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-16-make-env-load-parity/stories/STORY-IDS-REQ9-01-make-env-required/task-ids-16-01-t02-env-example-runbook/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-16-make-env-load-parity/stories/STORY-IDS-REQ9-01-make-env-required/task-ids-16-01-t03-story-gate/README.md

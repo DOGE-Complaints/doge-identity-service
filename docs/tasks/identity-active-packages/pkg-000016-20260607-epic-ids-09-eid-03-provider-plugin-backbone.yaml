@@ -1,0 +1,17 @@
+schema_version: 1
+package_sequence: 16
+created_at: "2026-06-07T12:00:00Z"
+label: EPIC-IDS-09 EID-03 provider plugin backbone
+input_kind: epic_story_tree
+tasks_root: doge-identity-service/docs/tasks/
+epic_file: doge-identity-service/docs/tasks/epics/EPIC-IDS-09-eid-verification/EPIC-IDS-09-eid-verification.md
+decision_ref: doge-identity-service/docs/tasks/backlog-stories/STORY-IDS-EID-03-provider-plugin-backbone.md
+story_groups:
+- story_key: STORY-IDS-EID-03-provider-plugin-backbone
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-09-eid-verification/stories/STORY-IDS-EID-03-provider-plugin-backbone/task-ids-09-03-t01-descriptor-runtime-types/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-09-eid-verification/stories/STORY-IDS-EID-03-provider-plugin-backbone/task-ids-09-03-t02-provider-runtime-factory/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-09-eid-verification/stories/STORY-IDS-EID-03-provider-plugin-backbone/task-ids-09-03-t03-lazy-registry-mock-descriptor/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-09-eid-verification/stories/STORY-IDS-EID-03-provider-plugin-backbone/task-ids-09-03-t04-registry-guard-config-error/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-09-eid-verification/stories/STORY-IDS-EID-03-provider-plugin-backbone/task-ids-09-03-t05-offline-registry-guard-tests/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-09-eid-verification/stories/STORY-IDS-EID-03-provider-plugin-backbone/task-ids-09-03-t06-story-acceptance-verification/README.md

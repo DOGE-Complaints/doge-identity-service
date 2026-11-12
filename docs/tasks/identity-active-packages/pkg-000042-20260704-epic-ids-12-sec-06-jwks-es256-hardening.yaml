@@ -1,0 +1,19 @@
+schema_version: 1
+package_sequence: 42
+created_at: "2026-07-04T10:27:11Z"
+label: EPIC-IDS-12 SEC-06 JWKS ES256 hardening
+input_kind: epic_story_tree
+tasks_root: doge-identity-service/docs/tasks/
+epic_file: doge-identity-service/docs/tasks/epics/EPIC-IDS-12-security-hardening/EPIC-IDS-12-security-hardening.md
+decision_ref: doge-identity-service/docs/tasks/backlog-stories/security-hardening/STORY-IDS-SEC-06-supabase-jwks-es256-hardening.md
+story_groups:
+- story_key: STORY-IDS-SEC-06-supabase-jwks-es256-hardening
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-12-security-hardening/stories/STORY-IDS-SEC-06-supabase-jwks-es256-hardening/task-ids-12-06-t01-change-propagation-audit/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-12-security-hardening/stories/STORY-IDS-SEC-06-supabase-jwks-es256-hardening/task-ids-12-06-t02-jwks-only-validator/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-12-security-hardening/stories/STORY-IDS-SEC-06-supabase-jwks-es256-hardening/task-ids-12-06-t03-jwks-cache-di-wiring/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-12-security-hardening/stories/STORY-IDS-SEC-06-supabase-jwks-es256-hardening/task-ids-12-06-t04-remove-supabase-jwt-secret/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-12-security-hardening/stories/STORY-IDS-SEC-06-supabase-jwks-es256-hardening/task-ids-12-06-t05-es256-mock-jwks-test-harness/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-12-security-hardening/stories/STORY-IDS-SEC-06-supabase-jwks-es256-hardening/task-ids-12-06-t06-offline-jwks-validator-tests/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-12-security-hardening/stories/STORY-IDS-SEC-06-supabase-jwks-es256-hardening/task-ids-12-06-t07-jwks-only-docs-sync/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-12-security-hardening/stories/STORY-IDS-SEC-06-supabase-jwks-es256-hardening/task-ids-12-06-t08-story-acceptance-verification/README.md

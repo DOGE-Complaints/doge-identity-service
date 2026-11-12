@@ -3,8 +3,8 @@
 > **Scope-Id:** mvp  
 > **Scope:** MVP  
 > **SSOT:** package `INDEX.md` files + [bullrun-launch-index.md](bullrun-launch-index.md)  
-> **Updated:** 2026-07-25  
-> **Last change:** DOC-ONB-04 🟢 (SSOT `onboarding-waitlist.md`) — active **37/1 (97%)**; Remaining 1 (CLEANUP-04). Onboarding DOC-IDS 5/5. CAB-02 identity = **3/3**.  
+> **Updated:** 2026-09-25T12:27:04Z  
+> **Last change:** Materialize [`req9-make-env-load-parity`](backlog-stories/req9-make-env-load-parity/INDEX.md) — REQ9-01/02 ⚪ Todo (G8 Make `.env`; active denominator).  
 > **Audit ([AUTHCORE-02](../analysis/identity-authcore-02-code-audit-2026-07-24.md)):** G3 🟢; G2 🟢 (SPA); G1 🟢 (ONB-01); G4 ignored.  
 > **Audit ([ONB-01](../analysis/identity-onb-01-code-audit-2026-07-24.md)):** 🟢 Done по коду (406 pytest offline); статусы факт-верны (drift нет). F1–F3 = LOW (SPA обратный drift / `email_verified`-семантика / t04).
 
@@ -12,14 +12,14 @@
 
 | Metric | Value |
 |--------|-------|
-| Backlog packages | 9 |
-| Active work items | 38 |
-| Done | 37 |
-| Todo | 1 |
+| Backlog packages | 12 |
+| Active work items | 47 |
+| Done | 43 |
+| Todo | 4 |
 | Deferred | 9 |
-| **Overall progress (active)** | **97%** `████████████` |
+| **Overall progress (active)** | **91%** `███████████░` |
 
-*Active = 32 product stories Done + 1 Todo + 5 DOC-IDS Done. Deferred вне % (eid-deferred 5 + auth-bff 3 + SEC-05). Package table ниже — только stories.*
+*Active = 38 product stories Done + 4 Todo (CLEANUP-04 + SMSPM-03 + REQ9-01 + REQ9-02) + 5 DOC-IDS Done. Deferred вне % (eid-deferred 5 + auth-bff 3 + SEC-05). Package table ниже — только stories.*
 
 ## By package
 
@@ -29,6 +29,9 @@
 | [oauth](backlog-stories/oauth/INDEX.md) | 4 | 4 | 0 | 0 | 100% `████████████` |
 | [eid](backlog-stories/eid/INDEX.md) | 7 | 7 | 0 | 0 | 100% `████████████` |
 | [phone-verification](backlog-stories/phone-verification/INDEX.md) | 9 | 9 | 0 | 0 | 100% `████████████` |
+| [smspm](backlog-stories/smspm/INDEX.md) | 4 | 3 | 1 | 0 | 75% `█████████░░░` |
+| [threads-verification-boolean](backlog-stories/threads-verification-boolean/INDEX.md) | 3 | 3 | 0 | 0 | 100% `████████████` |
+| [req9-make-env-load-parity](backlog-stories/req9-make-env-load-parity/INDEX.md) | 2 | 0 | 2 | 0 | 0% `░░░░░░░░░░░░` |
 | [cleanup](backlog-stories/cleanup/INDEX.md) | 4 | 3 | 1 | 0 | 75% `█████████░░░` |
 | [security-hardening](backlog-stories/security-hardening/INDEX.md) | 7 | 6 | 0 | 1 | 100% `████████████` |
 | [identity-onboarding](backlog-stories/identity-onboarding/INDEX.md) | 1 | 1 | 0 | 0 | 100% `████████████` |
@@ -38,13 +41,16 @@
 *security-hardening: 6 Done active; SEC-05 Accumulating → Deferred (ADR; BFF in auth-bff). Package Progress = Done/(Done+Todo) without Deferred.*  
 *eid-deferred: EID-02 Superseded (denom 0); EID-10…14 Deferred.*  
 *story-draft-handoff aux DOC-DRAFT-05 Done — excluded from product counts.*  
-*SPIKE-PV-08 / SPIKE-EID-09 — ops, excluded.*
+*SPIKE-PV-08 / SPIKE-EID-09 / SPIKE-SMSPM-01 — ops, excluded.*
 
 ## Remaining
 
 | Type | Key | Title | Package/Epic | Status | Priority | Essence |
 |------|-----|-------|--------------|--------|----------|---------|
+| story | [SMSPM-03](backlog-stories/smspm/STORY-IDS-SMSPM-03-operator-runbook-smoke.md) | Operator runbook + live smoke | smspm / EPIC-IDS-14 | Todo | P1 | Режим C в runbook + EE smoke evidence |
 | story | [CLEANUP-04](backlog-stories/cleanup/STORY-IDS-CLEANUP-04-spec-reconciliation.md) | Spec reconciliation | cleanup / EPIC-IDS-08 | Todo | P2 | Досверить или депрекейтнуть gateway-copy и eID-drift спеки |
+| story | [REQ9-01](backlog-stories/req9-make-env-load-parity/STORY-IDS-REQ9-01-make-env-required.md) | Make serve/dev require `.env` | req9-make-env-load-parity / REQ22 | Todo | P2 | G8 fail-closed + runbook |
+| story | [REQ9-02](backlog-stories/req9-make-env-load-parity/STORY-IDS-REQ9-02-check-env-required.md) | Make check-env require `.env` | req9-make-env-load-parity / REQ22 | Todo | P2 | After REQ9-01; TODO-DEP in story |
 
 ## Doc-tasks Done (в active %)
 
@@ -68,20 +74,26 @@
 | EPIC-IDS-11 | Done | OAUTH-01…04 |
 | [EPIC-IDS-12](epics/EPIC-IDS-12-security-hardening/EPIC-IDS-12-security-hardening.md) | In Progress | SEC-01…04/06 🟢; SEC-05 Deferred (ADR → auth-bff) |
 | [EPIC-IDS-13](epics/EPIC-IDS-13-onboarding/EPIC-IDS-13-onboarding.md) | In Progress | DOC-ONB-01…05 🟢; ONB-01 🟢; onboarding docs closed |
+| [EPIC-IDS-14](epics/EPIC-IDS-14-smspm/EPIC-IDS-14-smspm.md) (alias EPIC-IDS-SMSPM) | In Progress | SMSPM-01 🟢 pkg-000046; SMSPM-02 🟢 pkg-000047; SMSPM-04 🟢 pkg-000049; SMSPM-03 ⚪; SPIKE-01 ops |
+| [EPIC-IDS-15](epics/EPIC-IDS-15-threads-verification-boolean/EPIC-IDS-15-threads-verification-boolean.md) | Done | VB-01…03 🟢; wire `identity_verified` on `GET /me` |
+| REQ9 Make `.env` (G8) | Backlog | [`req9-make-env-load-parity`](backlog-stories/req9-make-env-load-parity/INDEX.md) REQ9-01/02 ⚪ |
 
 ## Roadmap → 100%
 
-**Текущая точка:** active **37/38 (97%)**. Product stories 32/33; DOC-IDS 5/5. DOC-ONB-04 🟢 closed. Next: `CLEANUP-04`.
+**Текущая точка:** active **43/47 (91%)**. Product stories 38/42; DOC-IDS 5/5. Next: SMSPM-03; CLEANUP-04; REQ9-01 → REQ9-02.
 
 | Цель | Знаменатель | Как закрыть |
 |------|-------------|-------------|
-| **Активные 100%** | 38 work items | 1 Remaining: CLEANUP-04 |
+| **Активные 100%** | 47 work items | 4 Remaining: SMSPM-03 + CLEANUP-04 + REQ9-01 + REQ9-02 |
 | **Полные 100%** | + 9 deferred | eid-deferred EID-10…14; auth-bff 01…03; SEC-05 BFF impl |
 
 ## §Now
 
-1. [CLEANUP-04](backlog-stories/cleanup/STORY-IDS-CLEANUP-04-spec-reconciliation.md) — spec reconciliation.
-2. Epic gates EPIC-IDS-07/08/12 (когда stories Done).
+1. [SMSPM-03](backlog-stories/smspm/STORY-IDS-SMSPM-03-operator-runbook-smoke.md) — runbook + live smoke (после SPIKE-01).
+2. [CLEANUP-04](backlog-stories/cleanup/STORY-IDS-CLEANUP-04-spec-reconciliation.md) — spec reconciliation.
+3. [REQ9-01](backlog-stories/req9-make-env-load-parity/STORY-IDS-REQ9-01-make-env-required.md) — Make `serve`/`dev` require `.env` + runbook (G8).
+4. [REQ9-02](backlog-stories/req9-make-env-load-parity/STORY-IDS-REQ9-02-check-env-required.md) — after REQ9-01 Done (`check-env`).
+5. Epic gates EPIC-IDS-07/08/12 (когда stories Done).
 
 ## §Deferred
 
@@ -93,8 +105,8 @@
 
 ```mermaid
 pie title Active work items (MVP)
-    "Done" : 37
-    "Todo" : 1
+    "Done" : 43
+    "Todo" : 4
 ```
 
 ## How to refresh

@@ -1,0 +1,17 @@
+schema_version: 1
+package_sequence: 36
+created_at: "2026-06-26T10:58:57Z"
+label: EPIC-IDS-12 SEC-01b phone request HTTP rate limit
+input_kind: epic_story_tree
+tasks_root: doge-identity-service/docs/tasks/
+epic_file: doge-identity-service/docs/tasks/epics/EPIC-IDS-12-security-hardening/EPIC-IDS-12-security-hardening.md
+decision_ref: doge-identity-service/docs/tasks/backlog-stories/security-hardening/STORY-IDS-SEC-01b-phone-request-http-rate-limit.md
+story_groups:
+- story_key: STORY-IDS-SEC-01b-phone-request-http-rate-limit
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-12-security-hardening/stories/STORY-IDS-SEC-01b-phone-request-http-rate-limit/task-ids-12-02-t01-phone-request-rate-limit-config-schema/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-12-security-hardening/stories/STORY-IDS-SEC-01b-phone-request-http-rate-limit/task-ids-12-02-t02-phone-request-rate-limit-dependency/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-12-security-hardening/stories/STORY-IDS-SEC-01b-phone-request-http-rate-limit/task-ids-12-02-t03-phone-request-route-wiring/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-12-security-hardening/stories/STORY-IDS-SEC-01b-phone-request-http-rate-limit/task-ids-12-02-t04-cooldown-http-window-coexistence-policy/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-12-security-hardening/stories/STORY-IDS-SEC-01b-phone-request-http-rate-limit/task-ids-12-02-t05-offline-phone-request-rate-limit-tests/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-12-security-hardening/stories/STORY-IDS-SEC-01b-phone-request-http-rate-limit/task-ids-12-02-t06-story-acceptance-verification/README.md

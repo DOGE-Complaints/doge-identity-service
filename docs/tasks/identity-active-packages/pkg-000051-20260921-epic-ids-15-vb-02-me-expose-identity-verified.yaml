@@ -1,0 +1,15 @@
+schema_version: 1
+package_sequence: 51
+created_at: "2026-09-21T20:36:40Z"
+label: EPIC-IDS-15 VB-02 expose identity_verified on /me
+input_kind: epic_story_tree
+tasks_root: doge-identity-service/docs/tasks/
+epic_file: doge-identity-service/docs/tasks/epics/EPIC-IDS-15-threads-verification-boolean/EPIC-IDS-15-threads-verification-boolean.md
+decision_ref: doge-identity-service/docs/tasks/backlog-stories/threads-verification-boolean/STORY-IDS-VB-02-me-expose-identity-verified.md
+story_groups:
+- story_key: STORY-IDS-VB-02-me-expose-identity-verified
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-02-me-expose-identity-verified/task-ids-15-02-t01-me-response-identity-verified/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-02-me-expose-identity-verified/task-ids-15-02-t02-api-docs-medata/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-02-me-expose-identity-verified/task-ids-15-02-t03-test-me-profile-opaque/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-15-threads-verification-boolean/stories/STORY-IDS-VB-02-me-expose-identity-verified/task-ids-15-02-t04-story-acceptance-verification/README.md

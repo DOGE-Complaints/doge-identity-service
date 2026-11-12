@@ -1,0 +1,17 @@
+schema_version: 1
+package_sequence: 19
+created_at: "2026-06-09T12:00:00Z"
+label: EPIC-IDS-09 EID-06 browser callback redirect
+input_kind: epic_story_tree
+tasks_root: doge-identity-service/docs/tasks/
+epic_file: doge-identity-service/docs/tasks/epics/EPIC-IDS-09-eid-verification/EPIC-IDS-09-eid-verification.md
+decision_ref: doge-identity-service/docs/tasks/backlog-stories/STORY-IDS-EID-06-browser-callback-redirect.md
+story_groups:
+- story_key: STORY-IDS-EID-06-browser-callback-redirect
+  paths:
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-09-eid-verification/stories/STORY-IDS-EID-06-browser-callback-redirect/task-ids-09-06-t01-eid-callback-outcome-dataclass/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-09-eid-verification/stories/STORY-IDS-EID-06-browser-callback-redirect/task-ids-09-06-t02-dynamic-callback-route-registry-guard/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-09-eid-verification/stories/STORY-IDS-EID-06-browser-callback-redirect/task-ids-09-06-t03-callback-redirect-render-accept-negotiate/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-09-eid-verification/stories/STORY-IDS-EID-06-browser-callback-redirect/task-ids-09-06-t04-offline-redirect-and-json-regression-tests/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-09-eid-verification/stories/STORY-IDS-EID-06-browser-callback-redirect/task-ids-09-06-t05-spa-first-runtime-docs/README.md
+  - doge-identity-service/docs/tasks/epics/EPIC-IDS-09-eid-verification/stories/STORY-IDS-EID-06-browser-callback-redirect/task-ids-09-06-t06-story-acceptance-verification/README.md
