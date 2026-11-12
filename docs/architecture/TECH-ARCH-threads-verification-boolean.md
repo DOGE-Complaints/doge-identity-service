@@ -7,6 +7,7 @@
 | **Parent product** | `docs/requirements backlog/REQ7-DOGEstonia-Threads-Entity-Social-Governance.md` (T-REQ7-05, D4, AC-REQ7-04) |
 | **Interview** | [`../analysis/zeya888.req-target-tech-arch-interview-21-verification-boolean-and-audit-2026-09-21.md`](../analysis/zeya888.req-target-tech-arch-interview-21-verification-boolean-and-audit-2026-09-21.md) |
 | **Recorded** | 2026-09-21T19:09:10Z |
+| **Implemented** | 2026-09-21 — EPIC-IDS-15 VB-01…03 Done (pkg-000050/051/052); migrations `20260921000001` + `00002` |
 | **Mode** | Target technical architecture of the REQ focus — **not** implementation tasks / STORY / pkg |
 | **Slug** | `threads-verification-boolean` |
 
@@ -44,8 +45,8 @@ Identity **executes** the verification integration the node configured (phone or
 
 - **Model:** first-class persisted field on the user profile (same sense as wire `identity_verified`).
 - **Not:** read-time `OR(phone_verified, eid_verified)` as the sole source of truth.
-- **As-is gap:** `ProfileRecord` today has `phone_verified` / `eid_verified` only (`src/core/domain/models.py`); no opaque field yet.
-- **Default physical name:** align with wire (`identity_verified`) unless implement wave explicitly diverges (Open residual below).
+- **Physical name:** same as wire — `identity_verified` (Resolved; EPIC-IDS-15).
+- **Implemented:** column + model + DB map + backfill (see §6).
 
 ### 2.3 Write policy
 
@@ -116,23 +117,27 @@ Uus Veerenni target: pack validation type = phone; consumer-facing flag remains 
 
 ---
 
-## 6) Coexistence with as-is (paths)
+## 6) Implemented state (post EPIC-IDS-15)
 
-| Area | As-is | Target |
-|------|--------|--------|
-| `/me` builder | `me_response.py:17-51` — method flags; no opaque | Add `identity_verified` from profile |
-| Profile model / DB map | `models.py` + `db_supabase.py` phone/eID fields | Add persisted opaque + migration/backfill |
-| Phone/eID success handlers | Existing persist of method flags | Also set opaque `true` on success |
-| Audit | `handlers.py:114-176` | Unchanged schema |
-| Threads consumer seam | Reads «verified boolean» (field was Open in threads arch) | Canonical wire: `identity_verified` via Identity `/me` |
+| Area | Fact (path) |
+|------|-------------|
+| `/me` builder | `me_response.py:35` default false; `:51` from `profile.identity_verified`; method flags coexist |
+| Profile model | `ProfileRecord.identity_verified` (`models.py`) |
+| DB map | `db_supabase.py` serialize/parse + attach success PATCH `identity_verified: True` |
+| Migrations | `supabase/migrations/20260921000001_profiles_identity_verified.sql`; backfill `…00002_…_backfill.sql`; bootstrap `000_full_init.sql` §5b |
+| Phone/eID success | `attach_phone_verification` / `attach_eid_verification` (db + `repositories.py`) set opaque true; failure does not clear |
+| Audit | `handlers.py` `_log_phone_audit` / `_log_eid_audit` — unchanged schema |
+| API docs | `runtime-docs/api-reference/API_REFERENCE.md` §6; `openapi.yaml` MeData |
+| Package | `docs/tasks/backlog-stories/threads-verification-boolean/` 3/3 Done · epic `EPIC-IDS-15` |
+| Consumer seam | Canonical wire for gateway / threads / spa: **`identity_verified`** on Identity `GET /me` (not method flags alone). Legacy GPT/OAuth/story-draft may still use `phone_verified` until sibling cutover (e.g. GW-THR-03). |
 
 ---
 
 ## 7) Open questions
 
-1. How pack validation type + integration name **reach** this service (sibling gateway `52` — for Gateway O).
+1. How pack validation type + integration name **reach** this service (sibling gateway `52`).
 2. Whether eID runtime is available when a node selects eID (requirements index: phone = active gate).
-3. Whether DB physical column name must diverge from wire `identity_verified` (default: same).
+3. ~~DB physical column name vs wire~~ — **Resolved:** same (`identity_verified`).
 4. Revoke / clear opaque without clearing method flags (lifecycle beyond shell; not this wave DoD).
 
 ---
