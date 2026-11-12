@@ -253,9 +253,27 @@ def test_smspm_send_does_not_log_secrets_otp_or_msisdn(caplog: pytest.LogCapture
 
 @pytest.mark.live_integration
 def test_smspm_live_send_skips_without_credentials() -> None:
+    """Direct SMSPM send to SMSPM_TEST_PHONE — no JWT, no OTP session, no profiles.
+
+    External gate: SPIKE-IDS-SMSPM-01 (account/sender/test MSISDN). Default
+    ``pytest -m "not live_integration"`` excludes this test.
+    """
     if not os.environ.get("SMSPM_HASH"):
         pytest.skip("SMSPM_HASH not set")
     if not os.environ.get("SMSPM_TOKEN"):
         pytest.skip("SMSPM_TOKEN not set")
     if not os.environ.get("SMSPM_FROM"):
         pytest.skip("SMSPM_FROM not set")
+    test_phone = (os.environ.get("SMSPM_TEST_PHONE") or "").strip()
+    if not test_phone:
+        pytest.skip("SMSPM_TEST_PHONE not set")
+
+    settings = SmspmSettings.load(os.environ)
+    with httpx.Client(timeout=30.0) as client:
+        sender = SmspmSmsSender(settings=settings, http_client=client)
+        result = sender.send(
+            to_e164=test_phone,
+            text="DOGEstonia SMSPM integration smoke (not an OTP).",
+        )
+    assert result.accepted is True
+    assert result.provider_message_id
